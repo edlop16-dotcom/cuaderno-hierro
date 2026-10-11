@@ -884,7 +884,7 @@ const wkStrip = days => `<div class="wk">${days.map(d => `<div class="wkd ${d.tr
 function streakCard() {
   const st = streakInfo(), left = st.target - st.thisWeek;
   const msg = st.safe ? '¡Semana cumplida! Tu racha está a salvo hasta el domingo.'
-    : `Te ${left === 1 ? 'falta 1 entrenamiento' : 'faltan ' + left + ' entrenamientos'} esta semana para mantener tu racha${st.daysLeft <= left + 1 ? ` · ¡quedan ${st.daysLeft} ${st.daysLeft === 1 ? 'día' : 'días'}!` : '.'}`;
+    : `Te ${left === 1 ? 'falta 1 entrenamiento' : 'faltan ' + left + ' entrenamientos'} esta semana para mantener tu racha${st.daysLeft <= left + 1 ? ` · ¡${st.daysLeft === 1 ? 'queda 1 día' : 'quedan ' + st.daysLeft + ' días'}!` : '.'}`;
   return `<div class="card streak-card ${st.count ? '' : 'cold'}">
     <div class="row" style="gap:14px">
       ${FLAME(st.count ? '' : 'off')}
