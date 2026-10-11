@@ -101,7 +101,7 @@ const _saveDaily = saveDaily; saveDaily = function () { _saveDaily(); scheduleSo
 const _finish = finishSession; finishSession = function () { _finish(); scheduleSoon(); };
 const _savePlans = savePlans; savePlans = function () { _savePlans(); scheduleSoon(); };
 const _markSet = markSet; markSet = function (i, j, v) { try { HAP && HAP.impact({ style: 'MEDIUM' }); } catch (e) {} _markSet(i, j, v); };
-const _beep = beep; beep = function () { _beep(); try { HAP && HAP.vibrate({ duration: 600 }); } catch (e) {} };
+if (HAP) window.nativeVibrate = n => { for (let i = 0; i < n; i++) setTimeout(() => { try { HAP.vibrate({ duration: 400 }); } catch (e) {} }, i * 650); };
 
 /* ================== Vista de Ajustes ================== */
 const WD1 = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
@@ -118,11 +118,14 @@ function vSettings() {
         <button class="switch ${r.on ? 'on' : ''}" data-act="r-tog" data-i="${i}" role="switch" aria-checked="${r.on}" aria-label="Activar ${esc(r.label)}"><i></i></button></div>
       <button class="btn small" data-act="r-edit" data-i="${i}" style="align-self:flex-start">Editar</button></div>`).join('')}
     <button class="btn block" data-act="r-new">+ Nuevo recordatorio</button></div>
+  ${typeof alertSettingsCard === 'function' ? alertSettingsCard() : ''}
   <div class="card"><h3>Pantalla</h3>
+    <div class="row"><div class="grow">Figura animada al entrenar<div class="muted" style="font-size:12px">Muestra el muñequito de cada ejercicio dentro de la sesión. Tócalo para ver la técnica y tus videos.</div></div>
+    <button class="switch ${typeof alertCfg === 'function' && alertCfg().fig ? 'on' : ''}" data-act="fig-tog" role="switch" aria-checked="${typeof alertCfg === 'function' && alertCfg().fig}" aria-label="Figura animada al entrenar"><i></i></button></div>
     <div class="row"><div class="grow">Modo reloj<div class="muted" style="font-size:12px">Una serie por pantalla con botones grandes. En pantallas pequeñas se activa solo.</div></div>
     <button class="switch ${isWatch() ? 'on' : ''}" data-act="watch" role="switch" aria-checked="${isWatch()}" aria-label="Modo reloj"><i></i></button></div></div>
   <div class="card"><h3>Respaldo</h3>
-    <div class="muted" style="font-size:12.5px">Tus datos se guardan solo en este teléfono. Copia un respaldo de vez en cuando y guárdalo en tus notas o en WhatsApp; con él puedes pasar tus datos a otro equipo, como tu reloj.</div>
+    <div class="muted" style="font-size:12.5px">Tus datos se guardan solo en este teléfono. Copia un respaldo de vez en cuando y guárdalo en tus notas o en WhatsApp; con él puedes pasar tus datos a otro equipo, como tu reloj. Los videos guardados no se incluyen.</div>
     <div class="grid2"><button class="btn" data-act="bk-copy">Copiar respaldo</button><button class="btn" data-act="bk-imp">Restaurar</button></div></div>
   <div class="card"><h3>Actualizaciones</h3>
     <div class="row"><div class="grow">Versión instalada<div class="muted num" style="font-size:12px">${upd.current ? upd.current.name : (CAP ? '…' : 'Vista previa web')}</div></div>
