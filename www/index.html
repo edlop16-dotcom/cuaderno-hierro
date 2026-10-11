@@ -40,6 +40,7 @@ input,textarea{-webkit-user-select:text;user-select:text}
   --f-body:"Figtree",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   --f-num:"JetBrains Mono",ui-monospace,"Roboto Mono",monospace;
   --r:12px;
+  --core:#c98bf0;
   --flame:#ff7a1a; --flame2:#ffa62b; --flame-core:#ffe08a;
   color-scheme:dark;
 }
@@ -76,7 +77,7 @@ h3{font-size:19px;font-weight:700}
 .top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:4px 10px;border-radius:99px;background:var(--surface2);border:1px solid var(--line);white-space:nowrap}
 .dot{width:9px;height:9px;border-radius:50%;flex:none;background:var(--muted)}
-.t-Piernas{--tc:var(--legs)} .t-Empuje{--tc:var(--push)} .t-Tracción{--tc:var(--pull)}
+.t-Piernas{--tc:var(--legs)} .t-Empuje{--tc:var(--push)} .t-Tracción{--tc:var(--pull)} .t-Core{--tc:var(--core)}
 .dot[class*="t-"]{background:var(--tc)}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 16px;border-radius:10px;font-weight:700;background:var(--surface2);border:1px solid var(--line);min-height:42px}
@@ -148,6 +149,28 @@ a.btn{color:var(--fg);text-decoration:none}
 .speeds{display:flex;gap:6px;flex-wrap:wrap}
 .spd{padding:6px 10px;border-radius:99px;border:1px solid var(--line);background:var(--surface2);font-size:12.5px;font-weight:700;font-family:var(--f-num)}
 .spd.on{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+.coach{font-size:13px;padding:9px 11px;border-radius:9px;background:var(--surface2);display:flex;flex-direction:column;gap:6px;border-left:3px solid var(--muted)}
+.coach.up{background:color-mix(in srgb,var(--ok) 14%,var(--surface));border-left-color:var(--ok)}
+.coach.down,.coach.pain{background:color-mix(in srgb,var(--bad) 12%,var(--surface));border-left-color:var(--bad)}
+.coach.back{border-left-color:var(--pull)}
+.coach-h{display:flex;gap:8px;align-items:flex-start}
+.coach ul{margin:0;padding-left:30px;display:flex;flex-direction:column;gap:4px;color:var(--muted)}
+.coach ul b{color:var(--fg)}
+.coach-card{gap:10px}
+.coach-rows{display:flex;flex-direction:column}
+.crow{display:flex;align-items:center;gap:10px;padding-block:7px;border-top:1px solid var(--line)}
+.crow:first-child{border-top:0}
+.crow b{display:block;font-size:13.5px}
+.crow small{display:block;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.crow .num{font-weight:700;white-space:nowrap}
+.cic{width:26px;height:26px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-weight:800;background:var(--surface2);color:var(--muted)}
+.crow.up .cic{background:color-mix(in srgb,var(--ok) 22%,var(--surface));color:var(--ok)}
+.crow.down .cic,.crow.pain .cic{background:color-mix(in srgb,var(--bad) 22%,var(--surface));color:var(--bad)}
+.picklist{display:flex;flex-direction:column;gap:6px}
+.pick{display:flex;align-items:center;gap:10px;padding:6px;border-radius:10px;border:1px solid var(--line);background:var(--surface2)}
+.pick b{display:block;font-size:14px}
+.pick small{display:block;font-size:12px}
+.pfig{width:84px;flex:none;padding:0!important;background:var(--surface)!important}
 .rest-chip{gap:4px;padding:2px 4px}
 .rest-chip button{width:26px;height:26px;border-radius:50%;background:var(--surface);border:1px solid var(--line);font-weight:800;line-height:1}
 .note-prev{display:flex;gap:8px;font-size:13px;padding:8px 10px;border-radius:8px;background:color-mix(in srgb,var(--accent) 12%,var(--surface));border-left:3px solid var(--accent)}
@@ -188,7 +211,7 @@ a.btn{color:var(--fg);text-decoration:none}
 @keyframes flame-pop{from{transform:scale(.2) translateY(30px);opacity:0}to{transform:none;opacity:1}}
 @keyframes flame-flick{50%{transform:scale(1.05) rotate(-2deg)}}
 @keyframes num-up{from{transform:translateY(16px);opacity:0}to{transform:none;opacity:1}}
-.gymbar{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.gymbar{display:flex;flex-shrink:0;gap:8px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
 .gymbar::-webkit-scrollbar{display:none}
 .gchip{flex:none;padding:8px 14px;border-radius:99px;border:1px solid var(--line);background:var(--surface);font-weight:700;font-size:13.5px;white-space:nowrap}
 .gchip.on{background:var(--fg);color:var(--bg);border-color:transparent}
@@ -541,6 +564,7 @@ function libFind(name) {
   return LIB.find(x => normName(x.name) === n) || LIB.find(x => x.re.test(n)) || null;
 }
 </script>
+<script src="library.js"></script>
 <script>
 /* ================== Datos base (tus 2 planes) ================== */
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
@@ -682,7 +706,7 @@ const state = {
 };
 const WD = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const WDL = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-const TYPES = [P, EM, TR];
+const TYPES = [P, EM, TR, 'Core'];
 
 function saveLocal() {
   LS.set('plans', state.plans); LS.set('settings', state.settings);
@@ -1115,7 +1139,7 @@ function vSession() {
       <div class="ex-top">${typeof miniFig === 'function' ? miniFig(e.name) : ''}<div class="target" style="align-content:flex-start"><span class="chip">${e.target} × ${reps(e)} reps</span><span class="chip rest-chip"><button data-act="rest-step" data-ex="${i}" data-d="-10" aria-label="Menos 10 segundos">−</button><span>Descanso <b class="num">${clock(e.rest)}</b></span><button data-act="rest-step" data-ex="${i}" data-d="10" aria-label="Más 10 segundos">+</button></span></div></div>
       ${e.prevNote ? `<div class="note-prev"><span aria-hidden="true">📝</span><span><b>Tu nota</b> <span class="muted">(${ago(e.prevNote.date)}${e.prevNote.gym !== (d.gymName || gymName(d.gymId)) ? ' · ' + esc(e.prevNote.gym) : ''})</span><br>${esc(e.prevNote.text)}</span></div>` : ''}
       <div class="muted" style="font-size:12.5px">${e.lastDate ? `Anterior en ${esc(d.gymName || gymName(d.gymId))}: ${fmtDate(e.lastDate, true)} (${ago(e.lastDate)}). Toca una serie anterior para copiarla.` : (e.last ? `Última vez: <span class="num">${esc(e.last)}</span>` : `Primera vez en ${esc(d.gymName || gymName(d.gymId))} con este ejercicio.`)}</div>
-      <div class="sugg ${e.sugg.up ? 'up' : ''}"><span>${e.sugg.up ? '⬆' : '→'}</span><span>${e.sugg.msg}</span></div>
+      ${typeof coachBox === 'function' && e.coach ? coachBox(e, i) : `<div class="sugg ${e.sugg.up ? 'up' : ''}"><span>${e.sugg.up ? '⬆' : '→'}</span><span>${e.sugg.msg}</span></div>`}
       ${e.rest >= 90 ? `<div class="muted" style="font-size:12.5px">Calentamiento: 10 reps con <span class="num">${fmtKg(Math.round(e.sugg.w * 0.5 / 2.5) * 2.5)} kg</span> y 5 reps con <span class="num">${fmtKg(Math.round(e.sugg.w * 0.75 / 2.5) * 2.5)} kg</span></div>` : ''}
       <div class="sets"><span class="h" style="text-align:center">Serie</span><span class="h">Antes</span><span class="h">Kg</span><span class="h">Reps</span><span></span>
       ${e.log.map((s, j) => { const pv = (e.prev || [])[j]; return `<span class="n">${j + 1}<small class="rir">RIR ${Math.max(0, 2 - j)}</small></span>
@@ -1347,16 +1371,20 @@ function vWatchHome() {
 /* ================== Técnica ================== */
 function vGuide() {
   const plan = activePlan();
-  const inPlan = [...new Set(plan.days.flatMap(d => d.exercises.map(e => e.name)))].map(n => libFind(n)).filter(Boolean);
+  const inPlan = plan ? [...new Set(plan.days.flatMap(d => d.exercises.map(e => e.name)))].map(n => libFind(n)).filter(Boolean) : [];
   const mine = [...new Map(inPlan.map(x => [x.key, x])).values()];
   const others = LIB.filter(x => !mine.includes(x));
   const card = x => `<button class="card" data-act="how" data-name="${esc(x.name)}"><div class="fig">${figSVG(x, 1)}</div>
     <div class="row" style="gap:6px"><span class="dot t-${x.type}"></span><span class="nm">${esc(x.name)}</span></div>
     <div class="muted" style="font-size:12px">${x.musc.join(', ')}</div></button>`;
-  return `${header('Técnica', 'Cómo hacer cada ejercicio')}
-  <div class="muted" style="font-size:13.5px">Toca un ejercicio para ver la figura en movimiento y los pasos. La silueta tenue es la posición inicial y el color marca el músculo que trabajas.</div>
-  <h3>En tu plan activo</h3><div class="guide">${mine.map(card).join('')}</div>
-  ${others.length ? `<h3>Otros ejercicios${others.some(x => x.extra) ? ' y recomendados' : ''}</h3><div class="guide">${others.map(card).join('')}</div>` : ''}`;
+  const gsel = state.guideGroup || 'plan', q = normName(state.guideQ || '');
+  const pool = gsel === 'plan' ? mine : LIB.filter(x => gsel === 'all' || x.group === gsel);
+  const list = q ? LIB.filter(x => normName(x.name + ' ' + x.musc.join(' ') + ' ' + (x.group || '')).includes(q)) : pool;
+  return `${header('Técnica', LIB.length + ' ejercicios')}
+  <input id="guide-q" type="search" placeholder="Buscar ejercicio o músculo…" value="${esc(state.guideQ || '')}" autocomplete="off">
+  <div class="gymbar">${[['plan', 'Mi plan'], ['all', 'Todos'], ...GROUPS.map(g => [g, g])].map(([v, l]) => `<button class="gchip ${gsel === v && !q ? 'on' : ''}" data-act="guide-g" data-g="${v}">${l}</button>`).join('')}</div>
+  <div class="muted" style="font-size:13px">Toca un ejercicio para ver la figura en movimiento, los pasos y tus videos. La silueta tenue es la posición inicial y el color marca el músculo que trabajas.</div>
+  ${list.length ? `<div class="guide">${list.map(card).join('')}</div>` : '<div class="card empty">No encontré ese ejercicio.</div>'}`;
 }
 const figAnim = { item: null, t0: 0, playing: true, fixed: null };
 const reduceMotion = () => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } };
@@ -1396,10 +1424,27 @@ function howSheet(name) {
 function openSheet(html) { const s = $('#sheet'); s.innerHTML = `<div class="sheet-card" role="dialog" aria-modal="true">${html}</div>`; s.hidden = false; const f = s.querySelector('input'); f && f.focus(); }
 function closeSheet() { $('#sheet').hidden = true; $('#sheet').innerHTML = ''; }
 function findDay(pid, did) { const p = state.plans.find(x => x.id === pid); return { p, d: p && p.days.find(x => x.id === did) }; }
-function exSheet(pid, did, k) {
-  const { d } = findDay(pid, did); const e = k != null ? d.exercises[k] : { name: '', type: P, weight: 20, sets: 3, repsMin: 8, repsMax: 12, rest: 90 };
+function libPicker(pid, did, k) {
+  state.pickCtx = { pid, did, k }; state.pickG = state.pickG || 'all'; state.pickQ = '';
+  openSheet(`<div class="row"><h2 class="grow">Biblioteca</h2><button class="icon-btn" data-act="sheet-close" aria-label="Cerrar">✕</button></div>
+    <input id="pick-q" type="search" placeholder="Buscar: press, dominadas, glúteo…" autocomplete="off">
+    <div class="gymbar" id="pick-g"></div><div class="picklist" id="pick-list"></div>`);
+  renderPicker();
+}
+function renderPicker() {
+  const g = state.pickG || 'all', q = normName(state.pickQ || '');
+  const bar = document.getElementById('pick-g'), box = document.getElementById('pick-list'); if (!box) return;
+  bar.innerHTML = [['all', 'Todos'], ...GROUPS.map(x => [x, x])].map(([v, l]) => `<button class="gchip ${g === v ? 'on' : ''}" data-act="lib-g" data-g="${v}">${l}</button>`).join('');
+  const list = LIB.filter(x => (g === 'all' || x.group === g) && (!q || normName(x.name + ' ' + x.musc.join(' ')).includes(q)));
+  box.innerHTML = list.map(x => `<button class="pick" data-act="lib-choose" data-key="${x.key}"><span class="fig pfig">${figSVG(x, 1, false)}</span>
+    <span class="grow" style="min-width:0;text-align:left"><b>${esc(x.name)}</b><small class="muted">${esc(x.group)} · ${esc(x.musc.slice(0, 2).join(', '))}</small></span><span class="muted num" style="font-size:12px">${esc(x.reps || '')}</span></button>`).join('') || '<div class="muted">Sin resultados.</div>';
+}
+function exSheet(pid, did, k, preset) {
+  const { d } = findDay(pid, did); const e = Object.assign({}, k != null ? d.exercises[k] : { name: '', type: P, weight: 20, sets: 3, repsMin: 8, repsMax: 12, rest: 90 }); if (preset) Object.keys(preset).forEach(x => { if (preset[x] !== undefined) e[x] = preset[x]; });
   const known = [...new Set(state.plans.flatMap(p => p.days.flatMap(x => x.exercises.map(y => y.name))).concat(LIB.map(x => x.name)))].sort();
   openSheet(`<h2>${k != null ? 'Editar ejercicio' : 'Nuevo ejercicio'}</h2>
+  ${libFind(e.name) ? `<div class="row" style="gap:12px"><div class="fig" style="width:120px;padding:2px">${figSVG(libFind(e.name), 1)}</div><div class="muted" style="font-size:12.5px">${esc(libFind(e.name).musc.join(', '))}</div></div>` : ''}
+  <button type="button" class="btn block" data-act="lib-pick" data-plan="${pid}" data-day="${did}" data-k="${k ?? ''}">📚 Elegir de la biblioteca (${LIB.length} ejercicios)</button>
   <form id="f-ex" class="grid2" style="grid-template-columns:1fr" data-plan="${pid}" data-day="${did}" data-k="${k ?? ''}">
     <div class="field"><label class="label" for="fx-name">Nombre</label><input id="fx-name" name="name" list="dl-ex" required value="${esc(e.name)}" placeholder="Ej. Curl Femoral Tumbado"><datalist id="dl-ex">${known.map(n => `<option value="${esc(n)}">`).join('')}</datalist></div>
     <div class="grid2"><div class="field"><label class="label" for="fx-type">Tipo</label><select id="fx-type" name="type">${TYPES.map(t => `<option ${t === e.type ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
@@ -1501,6 +1546,13 @@ document.addEventListener('click', ev => {
     case 'sess-del': { const id = b.dataset.id; if (prevConfirm === 'sdel-' + id) { state.sessions = state.sessions.filter(s => s.id !== id); state.confirm = null; saveLocal(); cloud.delSession(id); render(); } else { state.confirm = 'sdel-' + id; b.textContent = '¿Borrar? Toca otra vez'; ev.preventDefault(); } break; }
     case 'sheet-close': state.confirm = null; figAnim.item = null; closeSheet(); break;
     case 'how': howSheet(b.dataset.name); break;
+    case 'guide-g': state.guideGroup = b.dataset.g; state.guideQ = ''; render(); break;
+    case 'lib-pick': libPicker(b.dataset.plan, b.dataset.day, b.dataset.k === '' ? null : +b.dataset.k); break;
+    case 'lib-g': state.pickG = b.dataset.g; renderPicker(); break;
+    case 'lib-choose': { const x = LIB.find(l => l.key === b.dataset.key); const ctx = state.pickCtx; if (!x || !ctx) break;
+      const [a, bb] = String(x.reps || '10-12').split('-').map(n => parseInt(n)); const isTime = /s$/.test(String(x.reps || ''));
+      exSheet(ctx.pid, ctx.did, ctx.k, { name: x.name, type: x.type, repsMin: a || 10, repsMax: bb || a || 12, rest: x.rest || 90, weight: isTime || x.type === 'Core' ? 0 : (ctx.k != null ? undefined : 10) });
+      break; }
     case 'fx-step': { const inp = document.getElementById('fx-r'); const v = Math.min(600, Math.max(10, (Math.round((+inp.value || 60) / 10) * 10) + +b.dataset.d)); inp.value = v; document.getElementById('fx-r-txt').textContent = clock(v); break; }
     case 'sup': { const t = today(); t[b.dataset.k] = !t[b.dataset.k]; t.edited = Date.now(); saveDaily(); render(); if (t[b.dataset.k] && b.dataset.k === 'crea') toast(`Creatina registrada · ${creaStreak()} días seguidos`); break; }
     case 'water': { const t = today(); t.water = Math.max(0, (t.water || 0) + +b.dataset.ml); t.edited = Date.now(); saveDaily(); render(); if (+b.dataset.ml > 0 && t.water >= WATER_MIN && t.water - +b.dataset.ml < WATER_MIN) toast('¡Meta de agua cumplida! 💧'); break; }
@@ -1524,6 +1576,8 @@ document.addEventListener('submit', ev => {
 });
 document.addEventListener('input', ev => {
   const t = ev.target;
+  if (t.id === 'pick-q') { state.pickQ = t.value; renderPicker(); return; }
+  if (t.id === 'guide-q') { state.guideQ = t.value; const pos = t.selectionStart; render(); const n = document.getElementById('guide-q'); if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (e) {} } return; }
   if (t.id === 'calc-w' || t.id === 'calc-r') { state[t.id === 'calc-w' ? 'calcW' : 'calcR'] = t.value; $('#calc-out').innerHTML = calcOut(); return; }
   if (t.dataset.f && t.dataset.ex != null && state.draft) {
     if (t.dataset.f === 'note') { state.draft.exercises[+t.dataset.ex].note = t.value; saveDraft(); return; }
@@ -1544,6 +1598,7 @@ if (hadPlans && !hadGyms) setTimeout(() => toast("Nuevo: elige tu gimnasio arrib
 render();
 cloud.init();
 </script>
+<script src="coach.js"></script>
 <script src="media.js"></script>
 <script src="native.js"></script>
 </body>
