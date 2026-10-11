@@ -194,7 +194,7 @@ function saveRoutine(f) {
 document.addEventListener('click', ev => {
   const b = ev.target.closest('[data-act]'); if (!b) return;
   const a = b.dataset.act;
-  const mine = ['gym-pick', 'gym-set', 'ex-g', 'ex-e', 'ex-tap', 'ex-new1', 'ex-add1', 'ex-sel', 'ex-fav', 'sel-clear', 'sel-new', 'sel-add', 'rt-addto', 'rt-from-ex', 'live-open'];
+  const mine = ['gym-pick', 'gym-set', 'ex-g', 'ex-e', 'ex-tap', 'ex-new1', 'ex-add1', 'ex-sel', 'ex-fav', 'sel-clear', 'sel-new', 'sel-add', 'rt-addto', 'rt-from-ex'];
   if (!mine.includes(a)) return;
   ev.stopPropagation(); ev.preventDefault();
   const k = b.dataset.key;
@@ -223,7 +223,6 @@ document.addEventListener('click', ev => {
     toast(add.length ? `Agregado a "${d.name}".` : 'Ya estaba en esa rutina.');
   }
   if (a === 'rt-from-ex') { state.tab = 'guide'; state.sel = []; render(); scrollTo(0, 0); toast('Elige un ejercicio y toca "Crear rutina nueva", o "Elegir varios".'); }
-  if (a === 'live-open') { state.tab = 'train'; render(); scrollTo(0, 0); }
 }, true);
 document.addEventListener('submit', ev => {
   if (ev.target.id !== 'f-rt') return;
@@ -234,7 +233,8 @@ document.addEventListener('submit', ev => {
 /* ---------- Barra "Entrenando" ---------- */
 function liveInfo() {
   const d = state.draft; if (!d) return null;
-  for (const e of d.exercises) {
+  const order = d.exercises.slice(d.cur || 0).concat(d.exercises.slice(0, d.cur || 0));
+  for (const e of order) {
     const j = e.log.findIndex(s => !s.done);
     if (j >= 0) { const s = e.log[j]; return { name: e.name, w: s.w != null && s.w !== '' ? +s.w : (e.sugg ? e.sugg.w : 0), r: s.r != null && s.r !== '' ? s.r : e.repsMax, set: j + 1, of: e.log.length }; }
   }
@@ -242,16 +242,16 @@ function liveInfo() {
 }
 function liveBar() {
   let el = document.getElementById('livebar');
-  const show = state.draft && !isWatch() && state.tab !== 'train';
+  const show = state.draft && !isWatch() && (state.tab !== 'train' || state.sessMin);
   document.body.classList.toggle('has-live', !!show);
   if (!show) { if (el) el.hidden = true; return; }
-  if (!el) { el = document.createElement('button'); el.id = 'livebar'; el.className = 'livebar'; el.dataset.act = 'live-open'; el.setAttribute('aria-label', 'Volver al entrenamiento'); document.body.appendChild(el); }
+  if (!el) { el = document.createElement('div'); el.id = 'livebar'; el.className = 'livebar'; document.body.appendChild(el); }
   const i = liveInfo(), d = state.draft;
   el.hidden = false;
-  el.innerHTML = `<span class="lv-ic">${ic('timer', 18)}</span>
-    <span class="grow" style="min-width:0;text-align:left"><small><span class="lv-dot"></span>Entrenando · <span class="num" id="lv-time">${clock(Math.floor((Date.now() - new Date(d.start)) / 1000))}</span></small>
+  el.innerHTML = `<button class="lv-del ${state.confirm === 'live-discard' ? 'arm' : ''}" data-act="live-discard" aria-label="Descartar entrenamiento">${ic('trash-2', 18)}</button>
+    <button class="lv-main" data-act="live-open" aria-label="Volver al entrenamiento"><span class="grow" style="min-width:0;text-align:left"><small><span class="lv-dot"></span>Entrenando · <span class="num" id="lv-time">${clock(Math.floor((Date.now() - new Date(d.start)) / 1000))}</span></small>
       <b>${esc(i.name)}</b>${i.w != null ? `<span class="num">${fmtKg(i.w)} kg × ${esc(i.r)} · serie ${i.set}/${i.of}</span>` : ''}</span>
-    <span class="lv-up">${ic('chevron-up', 20)}</span>`;
+    <span class="lv-up">${ic('chevron-up', 20)}</span></button>`;
 }
 setInterval(() => { const t = document.getElementById('lv-time'); if (t && state.draft) t.textContent = clock(Math.floor((Date.now() - new Date(state.draft.start)) / 1000)); }, 1000);
 

@@ -312,3 +312,63 @@ body.has-live .undo-bar{bottom:calc(166px + env(safe-area-inset-bottom,0px))}
 .pagehead h1{margin:2px 0 0}
 .gympill{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:transparent;border:1px solid var(--line2);color:var(--muted);font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;margin-top:-6px}
 .pick.on{border-color:var(--accent)}
+
+/* ===== Entrenamiento a pantalla completa ===== */
+body.sx-open{overflow:hidden}
+body.sx-open .app{animation:none!important}
+body.sx-open .nav{visibility:hidden}
+.sx{position:fixed;top:0;right:0;bottom:0;left:0;z-index:23;display:flex;flex-direction:column;background:radial-gradient(120% 60% at 50% 100%,rgba(var(--tc),.16),transparent 60%),radial-gradient(90% 40% at 50% 18%,rgba(var(--tc),.10),transparent 70%),#07080c;transition:background .5s var(--ease);padding-top:env(safe-area-inset-top,0px)}
+.sx.sx-in{animation:sx-up .34s var(--ease)}
+.sx.sx-out{animation:sx-down .26s var(--ease) forwards}
+@keyframes sx-up{from{transform:translateY(100%)}to{transform:none}}
+@keyframes sx-down{to{transform:translateY(100%);opacity:.6}}
+.sx-top{display:flex;align-items:center;gap:10px;padding:10px 14px 6px}
+.sx-ic{width:42px;height:42px;border-radius:14px;border:0;background:rgba(255,255,255,.06);color:var(--fg);display:flex;align-items:center;justify-content:center}
+.sx-clock{font-size:22px;font-weight:800;line-height:1}
+.sx-sub{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.sx-fin{padding-inline:18px}
+.sx-prog{height:3px;margin:0 14px;border-radius:2px;background:rgba(255,255,255,.07);overflow:hidden}
+.sx-prog i{display:block;height:100%;background:var(--grad);transition:width .4s var(--ease)}
+.sx-strip{display:flex;gap:10px;overflow-x:auto;padding:12px 14px 8px;scrollbar-width:none;flex:none}
+.sx-strip::-webkit-scrollbar{display:none}
+.sx-th{position:relative;flex:none;width:58px;height:58px;border-radius:50%;padding:4px;background:rgba(255,255,255,.05);border:2px solid transparent;transition:transform .2s var(--ease),border-color .2s}
+.sx-th svg{width:100%;height:100%}
+.sx-th.on{border-color:rgb(var(--tc));transform:scale(1.06);box-shadow:0 0 0 4px rgba(var(--tc),.15)}
+.sx-th.done{opacity:.75}
+.sx-th .ok{position:absolute;right:-2px;bottom:-2px;width:20px;height:20px;border-radius:50%;background:var(--ok);color:#00261a;display:flex;align-items:center;justify-content:center;border:2px solid #07080c}
+.th-l{font-weight:800;font-size:20px;color:var(--muted)}
+.sx-pager{flex:1;display:flex;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scrollbar-width:none;overscroll-behavior-x:contain}
+.sx-pager::-webkit-scrollbar{display:none}
+.sx-page{flex:0 0 100%;width:100%;scroll-snap-align:start;scroll-snap-stop:always;overflow-y:auto;padding:4px 14px calc(120px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px;-webkit-overflow-scrolling:touch}
+.sx-hero{position:relative;display:flex;justify-content:center;flex:none}
+.sx-fig{width:min(68vw,280px);aspect-ratio:1;border-radius:28px;border:0;padding:6px;background:radial-gradient(circle at 50% 60%,rgba(var(--tc),.22),transparent 65%)}
+.sx-fig svg{width:100%;height:100%}
+.sx-nofig{width:160px;height:160px;display:flex;align-items:center;justify-content:center;color:var(--muted)}
+.sx-n{position:absolute;right:4px;top:4px;font-size:12px;color:var(--muted);padding:3px 8px;border-radius:999px;background:rgba(255,255,255,.06)}
+.sx-page .card.ex{border-left-color:rgb(var(--tc))}
+.sx-page .ex-top .fig-mini{display:none}
+.sx-page .ex-top{grid-template-columns:1fr}
+.sx-next{display:flex;align-items:center;justify-content:center;gap:6px;padding:14px;border-radius:16px;border:1px dashed rgba(255,255,255,.14);background:transparent;color:var(--muted);font:inherit;font-size:13.5px}
+.sx-next b{color:var(--fg)}
+/* Vista previa */
+.sheet-card.pv{max-height:92vh;overflow-y:auto}
+.pv-hero{position:relative;margin:-6px -6px 0;border-radius:22px;display:flex;justify-content:center;background:radial-gradient(80% 90% at 50% 70%,rgba(var(--tc),.25),transparent 70%),#0b0d12;padding:10px 0}
+.pv-fig{width:190px;aspect-ratio:1;border:0;background:transparent;padding:0}
+.pv-fig svg{width:100%;height:100%}
+.pv-x{position:absolute;right:10px;top:10px}
+.pv-t{font-size:26px;margin:0}
+.pv-meta{gap:16px;font-size:13px}
+.pv-meta span{display:inline-flex;align-items:center;gap:6px}
+.pv-list{display:flex;flex-direction:column;gap:8px}
+.pv-row{display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:14px;background:var(--surface2)}
+.pv-row b{display:block;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pv-row small{display:block;font-size:11.5px}
+.pv-th{width:46px;height:46px;flex:none;border-radius:12px;background:#f3f5f9;padding:3px;display:flex;align-items:center;justify-content:center}
+.pv-th svg{width:100%;height:100%}
+.pv-go{position:sticky;bottom:0;box-shadow:0 -10px 30px 10px var(--surface)}
+/* Barra Entrenando con papelera */
+.livebar{padding:8px 8px 8px 8px;gap:8px;cursor:default}
+.lv-del{width:42px;height:42px;flex:none;border-radius:50%;border:1px solid rgba(255,77,109,.5);background:rgba(255,77,109,.1);color:#ff4d6d;display:flex;align-items:center;justify-content:center}
+.lv-del.arm{background:#ff4d6d;color:#fff}
+.lv-main{flex:1;min-width:0;display:flex;align-items:center;gap:10px;border:0;background:transparent;color:inherit;font:inherit;text-align:left;padding:0}
+.sx-page>*{flex-shrink:0}
