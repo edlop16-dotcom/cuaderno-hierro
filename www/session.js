@@ -146,5 +146,70 @@ let pvT0 = performance.now();
   const x = LIB.find(l => l.key === el.dataset.fig); if (x) el.innerHTML = figSVG(x, figT(now - pvT0), false);
 })(performance.now());
 
+
+/* ---------- Entrenamiento olvidado: preguntar y ajustar la duración ---------- */
+const STALE_MIN = 45;             // sin registrar series durante 45 min → preguntar
+const LONG_MIN = 150;             // sesiones de más de 2 h 30 → confirmar duración al terminar
+const lastAct = d => d.lastAct || new Date(d.start).getTime();
+const hm = mins => { mins = Math.max(1, Math.round(mins)); const h = Math.floor(mins / 60), m = mins % 60; return h ? `${h} h ${m ? m + ' min' : ''}`.trim() : `${m} min`; };
+const hhmm = t => new Date(t).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
+function suggestedMin(d) {
+  const any = d.exercises.some(e => e.log.some(x => x.done));
+  return any ? (lastAct(d) - new Date(d.start).getTime()) / 60000 + 2 : (Date.now() - new Date(d.start).getTime()) / 60000;
+}
+function staleSheet(reason) {
+  const d = state.draft; if (!d) return;
+  const any = d.exercises.some(e => e.log.some(x => x.done));
+  const gap = (Date.now() - lastAct(d)) / 60000, total = (Date.now() - new Date(d.start).getTime()) / 60000;
+  const sug = Math.max(1, Math.round(suggestedMin(d)));
+  openSheet(`<div class="row"><span class="stale-ic">${ic('alarm-clock', 22)}</span><h2 class="grow">${reason === 'finish' ? '¿Cuánto duró tu entrenamiento?' : '¿Sigues entrenando?'}</h2></div>
+    <div class="muted" style="font-size:13.5px">${any ? `Tu última serie fue hace <b>${hm(gap)}</b> (a las ${hhmm(lastAct(d))}). El cronómetro lleva <b>${hm(total)}</b>.` : `Empezaste hace <b>${hm(total)}</b> y aún no marcas ninguna serie.`}</div>
+    ${any ? `<button class="btn primary block" data-act="stale-end" data-min="${sug}">${ic('check', 16)} Terminar con ${hm(sug)} <small style="opacity:.75">(hasta tu última serie)</small></button>` : ''}
+    <div class="field"><span class="label">O escribe la duración real</span>
+      <div class="dur-row"><input id="dur-h" type="number" inputmode="numeric" min="0" max="6" value="${Math.floor(sug / 60)}" aria-label="Horas"><span>h</span><input id="dur-m" type="number" inputmode="numeric" min="0" max="59" value="${sug % 60}" aria-label="Minutos"><span>min</span>
+      <button class="btn" data-act="stale-custom">Guardar</button></div></div>
+    <div class="grid2">${reason === 'finish' ? `<button class="btn" data-act="stale-real">Dejar ${hm(total)}</button>` : `<button class="btn" data-act="stale-keep">Sigo entrenando</button>`}
+      <button class="btn danger" data-act="stale-discard">${state.confirm === 'stale-discard' ? '¿Seguro? Toca otra vez' : 'Descartar'}</button></div>`);
+}
+function finishWith(mins) {
+  const d = state.draft; if (!d) return;
+  const id = d.id; state.durOK = true; closeSheet();
+  try { finishSession(); } finally { state.durOK = false; }
+  const s = state.sessions.find(x => x.id === id);
+  if (s && mins) { s.durationSec = Math.round(mins * 60); saveLocal(); render(); }
+}
+const _finishSx = finishSession;
+finishSession = function () {
+  const d = state.draft;
+  if (d && !state.durOK && !isWatch()) {
+    const total = (Date.now() - new Date(d.start).getTime()) / 60000, gap = (Date.now() - lastAct(d)) / 60000;
+    if (total > LONG_MIN || (gap > 25 && d.exercises.some(e => e.log.some(x => x.done)))) { state.confirm = null; staleSheet('finish'); return; }
+  }
+  _finishSx();
+};
+function checkStale() {
+  const d = state.draft; if (!d || isWatch() || !$('#sheet').hidden) return;
+  if ((Date.now() - lastAct(d)) / 60000 < STALE_MIN) return;
+  if (d.staleAsk && Date.now() - d.staleAsk < STALE_MIN * 60000) return;
+  d.staleAsk = Date.now(); saveDraft(); staleSheet('stale');
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') setTimeout(checkStale, 700); });
+setInterval(checkStale, 5 * 60000);
+setTimeout(checkStale, 1500);
+/* Cada serie marcada o dato escrito cuenta como actividad */
+const _markSetStale = markSet;
+markSet = function (i, j, v, k) { if (state.draft) state.draft.lastAct = Date.now(); _markSetStale(i, j, v, k); };
+document.addEventListener('input', ev => { if (state.draft && ev.target.closest && ev.target.closest('.sx-page')) state.draft.lastAct = Date.now(); }, true);
+document.addEventListener('click', ev => {
+  const b = ev.target.closest('[data-act^="stale-"]'); if (!b) return;
+  ev.stopPropagation();
+  const a = b.dataset.act;
+  if (a === 'stale-end') finishWith(+b.dataset.min);
+  if (a === 'stale-custom') { const h = +document.getElementById('dur-h').value || 0, m = +document.getElementById('dur-m').value || 0; if (h * 60 + m < 1) { toast('Escribe una duración.'); return; } finishWith(h * 60 + m); }
+  if (a === 'stale-real') finishWith(0);
+  if (a === 'stale-keep') { closeSheet(); toast('¡Dale! Seguimos.'); }
+  if (a === 'stale-discard') { if (state.confirm === 'stale-discard') { closeSheet(); discardSession(); toast('Entrenamiento descartado.'); } else { state.confirm = 'stale-discard'; b.textContent = '¿Seguro? Toca otra vez'; } }
+}, true);
+
 if (state.draft && !isWatch()) state.sessMin = state.tab !== 'train';
 render();

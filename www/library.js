@@ -251,3 +251,32 @@ libFind = function (name) {
   const k = Object.keys(ALIAS).find(a => n.includes(a));
   return k ? LIB.find(x => x.key === ALIAS[k]) : null;
 };
+
+/* ================== Correcciones de figuras (revisión de técnica) ==================
+   Postura segura: cuerpo recto en flexiones y plancha, piernas rectas en talones,
+   codo fijo en curls y extensiones de tríceps, rodilla fija en extensión/curl femoral. */
+const FIGFIX = {
+  pushup: { k: 1, e: -1, A: { hip: [102.3, 106.3], torso: -159.7, ankle: [171.6, 132], hand: [61, 141], foot: 100 },
+                        B: { hip: [97.7, 128.2], torso: -177.1, ankle: [171.6, 132], hand: [61, 141], foot: 100 } },
+  plank: { k: 1, e: 1, A: { hip: [103.4, 120.1], torso: -170.7, ankle: [176.5, 132], hand: [36, 139], foot: 100 },
+                      B: { hip: [103.4, 120.1], torso: -170.7, ankle: [176.5, 132], hand: [36, 139], foot: 100 } },
+  calfstand: { k: -1, e: 1, vb: '-20 -24 240 180', A: { hip: [100, 59], torso: -90, ankle: [100, 133], hand: [101, 65], foot: -15 },
+                                                   B: { hip: [100, 49], torso: -90, ankle: [100, 123], hand: [101, 55], foot: 45 } },
+  hangraise: { k: 1, e: 1, vb: '-20 -2 240 180', A: { hip: [96, 100], torso: -90, ankle: [98, 174], hand: [96, 8], foot: 80 },
+                                                 B: { hip: [96, 100], torso: -90, ankle: [170, 100], hand: [96, 8], foot: -70 } },
+  abwheel: { k: 1, e: 1, A: { hip: [58, 99], torso: -40, ankle: [14, 138], hand: [96, 124], foot: 0 },
+                        B: { hip: [84.4, 119.9], torso: -15, ankle: [14, 138], hand: [174, 124], foot: 0 },
+             front: p => fC([p.hand[0], 133], 8) },
+  squat: { e: -1, A: { hip: [95, 68], torso: -86, ankle: [100, 141], handRel: [-6, -3], foot: 0 }, B: { hip: [78, 102], torso: -58, ankle: [100, 141], handRel: [-6, -3], foot: 0 } },
+  preacher: { arc: ['hand'], A: { hip: [72, 112], torso: -84, ankle: [104, 140], hand: [110.4, 105], foot: 0 }, B: { hip: [72, 112], torso: -84, ankle: [104, 140], hand: [90.8, 63], foot: 0 } },
+  dbfly: { e: -1, A: { hip: [100, 106], torso: 180, ankle: [142, 140], hand: [58, 56], foot: 0 }, B: { hip: [100, 106], torso: 180, ankle: [142, 140], hand: [57, 99], foot: 0 } },
+  hyperext: { A: { hip: [104, 88], torso: 116, ankle: [152, 126], handRel: [8, -2], foot: -60 }, B: { hip: [104, 88], torso: -142, ankle: [152, 126], handRel: [8, 6], foot: -60 },
+    back: () => fFloor() + fL([92, 96], [160, 134], 8) + fC([108, 96], 7) },
+};
+LIB.forEach(x => {
+  const f = FIGFIX[x.key]; if (!f) return;
+  for (const k in f) x.fig[k] = (k === 'A' || k === 'B') ? Object.assign({}, x.fig[k], f[k]) : f[k];
+});
+/* Codo/rodilla fijos: el antebrazo o la pierna giran en arco */
+['curl', 'hammer', 'bbcurl', 'concentration', 'triceps', 'ropepush', 'skull', 'ohtri'].forEach(k => { const x = LIB.find(y => y.key === k); if (x && !x.fig.rig) x.fig.arc = x.fig.arc || ['hand']; });
+['legext', 'legcurl', 'seatedlegcurl'].forEach(k => { const x = LIB.find(y => y.key === k); if (x && !x.fig.rig) x.fig.arc = x.fig.arc || ['ankle']; });

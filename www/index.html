@@ -403,10 +403,27 @@ function fSolve(def, q) {
   const [elbow, hand] = fik(sh, tgt, FIGLEN.uarm, FIGLEN.farm, def.e);
   return { rig: 'side', hip, sh, head, knee, ankle, toe, elbow, hand };
 }
+const FIG_ANG = { torso: 1, foot: 1, uL: 1, fL: 1, uR: 1, fR: 1, tL: 1, sL: 1, tR: 1, sR: 1 };
 function fLerp(A, B, t) {
   const o = {};
-  for (const k in A) o[k] = Array.isArray(A[k]) ? A[k].map((v, i) => v + (B[k][i] - v) * t) : (typeof A[k] === 'number' ? A[k] + (B[k] - A[k]) * t : A[k]);
+  for (const k in A) {
+    if (Array.isArray(A[k])) o[k] = A[k].map((v, i) => v + (B[k][i] - v) * t);
+    else if (typeof A[k] === 'number') { let d = B[k] - A[k]; if (FIG_ANG[k]) d = ((d % 360) + 540) % 360 - 180; o[k] = A[k] + d * t; }  /* ángulos: por el camino corto */
+    else o[k] = A[k];
+  }
   return o;
+}
+/* Movimiento en arco alrededor de una articulación fija (codo en curls, rodilla en extensiones) */
+function fArc(d, q, t) {
+  const p0 = fSolve(d, d.A);
+  (d.arc || []).forEach(part => {
+    const c = part === 'hand' ? p0.elbow : p0.knee, A = d.A[part], B = d.B[part]; if (!A || !B) return;
+    const a0 = Math.atan2(A[1] - c[1], A[0] - c[0]), a1 = Math.atan2(B[1] - c[1], B[0] - c[0]);
+    let da = a1 - a0; while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI;
+    const r0 = Math.hypot(A[0] - c[0], A[1] - c[1]), r1 = Math.hypot(B[0] - c[0], B[1] - c[1]), a = a0 + da * t, r = r0 + (r1 - r0) * t;
+    q[part] = [c[0] + Math.cos(a) * r, c[1] + Math.sin(a) * r];
+  });
+  return q;
 }
 function fBody(p, hi, ghost) {
   const col = s => (!ghost && hi.includes(s)) ? 'var(--hl)' : 'var(--fg)';
@@ -429,9 +446,9 @@ function fBody(p, hi, ghost) {
   return ghost ? `<g opacity=".2">${s}</g>` : s;
 }
 function figSVG(item, t, ghost = true) {
-  const d = item.fig, p = fSolve(d, fLerp(d.A, d.B, t));
+  const d = item.fig, p = fSolve(d, fArc(d, fLerp(d.A, d.B, t), t));
   const g = ghost ? fBody(fSolve(d, d.A), [], true) : '';
-  return `<svg viewBox="0 0 200 150" class="fig-svg t-${item.type}" role="img" aria-label="Figura: ${item.name}">${d.back ? d.back(p) : ''}${g}${fBody(p, d.hi || [], false)}${d.front ? d.front(p) : ''}</svg>`;
+  return `<svg viewBox="${d.vb || '0 0 200 150'}" class="fig-svg t-${item.type}" role="img" aria-label="Figura: ${item.name}">${d.back ? d.back(p) : ''}${g}${fBody(p, d.hi || [], false)}${d.front ? d.front(p) : ''}</svg>`;
 }
 
 const ROW_FIG = {
@@ -1483,6 +1500,7 @@ function howSheet(name) {
   <div><div class="label" style="margin-bottom:6px">Paso a paso</div><ol class="how-list">${x.steps.map(s => `<li>${esc(s)}</li>`).join('')}</ol></div>
   <div><div class="label" style="margin-bottom:6px">Errores comunes</div><ul class="how-list bad">${x.errs.map(s => `<li>${esc(s)}</li>`).join('')}</ul></div>
   <div class="muted" style="font-size:12.5px">Si sientes dolor en una articulación (no el ardor normal del músculo), detén el ejercicio y baja el peso.</div>
+  <div class="safety">⚠️ La figura es una guía simplificada del movimiento, no reemplaza a un entrenador. Mira también un video del ejercicio y, las primeras veces, pide al instructor del gym que revise tu postura.</div>
   <button class="btn" data-act="sheet-close">Cerrar</button>`);
   figCtrl();
   if (figAnim.playing) requestAnimationFrame(figLoop);

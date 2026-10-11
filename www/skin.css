@@ -372,3 +372,10 @@ body.sx-open .nav{visibility:hidden}
 .lv-del.arm{background:#ff4d6d;color:#fff}
 .lv-main{flex:1;min-width:0;display:flex;align-items:center;gap:10px;border:0;background:transparent;color:inherit;font:inherit;text-align:left;padding:0}
 .sx-page>*{flex-shrink:0}
+/* Duración del entrenamiento */
+.stale-ic{width:42px;height:42px;border-radius:14px;flex:none;display:flex;align-items:center;justify-content:center;background:rgba(255,197,61,.14);color:#ffc53d}
+.dur-row{display:flex;align-items:center;gap:8px}
+.dur-row input{width:64px;text-align:center;font-size:18px;font-weight:700}
+.dur-row span{color:var(--muted);font-weight:600}
+.dur-row .btn{margin-left:auto}
+.safety{font-size:12.5px;line-height:1.45;padding:10px 12px;border-radius:12px;background:rgba(255,197,61,.08);border:1px solid rgba(255,197,61,.3);color:#ffd98a}
