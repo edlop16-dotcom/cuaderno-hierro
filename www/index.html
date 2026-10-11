@@ -166,6 +166,8 @@ a.btn{color:var(--fg);text-decoration:none}
 .note-hint{font-size:12.5px;margin-top:6px}
 .h-ok{color:var(--ok)} .h-warn{color:var(--warn)} .h-bad{color:var(--bad)}
 .refg{color:var(--pull)}
+.barinfo{font-size:12.5px;padding:8px 10px;border-radius:10px;background:rgba(77,163,255,.08);border:1px solid rgba(77,163,255,.22);color:var(--muted)}
+.barinfo b{color:var(--pull)}
 .rest-chip{gap:4px;padding:2px 4px}
 .rest-chip button{width:26px;height:26px;border-radius:50%;background:var(--surface);border:1px solid var(--line);font-weight:800;line-height:1}
 .note-prev{display:flex;gap:8px;font-size:13px;padding:8px 10px;border-radius:8px;background:color-mix(in srgb,var(--accent) 12%,var(--surface));border-left:3px solid var(--accent)}
@@ -567,7 +569,8 @@ function libFind(name) {
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
 function E(name, type, weight, sets, reps, restMin) {
   const [a, b] = String(reps).split('-').map(Number);
-  return { id: uid(), name, type, weight, sets, repsMin: a, repsMax: b || a, rest: Math.round(restMin * 60) };
+  const bar = { 'Press Banca Inclinado (Barra)': 20, 'Press Banca Plano (Barra)': 20, 'Remo con Barra': 20, 'Hip Thrust': 20 }[name];
+  return Object.assign({ id: uid(), name, type, weight, sets, repsMin: a, repsMax: b || a, rest: Math.round(restMin * 60) }, bar ? { bar } : {});
 }
 const P = 'Piernas', EM = 'Empuje', TR = 'Tracción';
 function defaultPlans() {
@@ -575,26 +578,26 @@ function defaultPlans() {
     { id: 'plan1', name: 'Full Body · 3 días', days: [
       { id: 'p1-lun', name: 'Piernas + Torso (Pesado)', weekday: 1, exercises: [
         E('Prensa 45°', P, 170, 3, '15-18', 2), E('Sentadilla Hack', P, 60, 3, '10-12', 2), E('Hip Thrust', P, 30, 3, '12-15', 1.5),
-        E('Press Banca Inclinado (Barra)', EM, 40, 3, '6-8', 2), E('Remo Sentado con Cable', TR, 40, 3, '8-10', 2), E('Extensión de Pierna', P, 45, 3, '12-14', 1.5)] },
+        E('Press Banca Inclinado (Barra)', EM, 20, 3, '6-8', 2), E('Remo Sentado con Cable', TR, 40, 3, '8-10', 2), E('Extensión de Pierna', P, 45, 3, '12-14', 1.5)] },
       { id: 'p1-mie', name: 'Full Body (Bombeo)', weekday: 3, exercises: [
-        E('Prensa 45°', P, 120, 3, '15-18', 1), E('Press Banca Plano (Barra)', EM, 30, 3, '12-15', 1), E('Jalón al Pecho', TR, 30, 3, '12-15', 1),
+        E('Prensa 45°', P, 120, 3, '15-18', 1), E('Press Banca Plano (Barra)', EM, 10, 3, '12-15', 1), E('Jalón al Pecho', TR, 30, 3, '12-15', 1),
         E('Remo en Polea Baja', TR, 30, 3, '12-15', 1), E('Elevaciones Laterales', EM, 8, 3, '15-20', 1), E('Curl Bíceps', TR, 10, 3, '15', 1), E('Tríceps Polea', EM, 10, 3, '15', 1)] },
       { id: 'p1-vie', name: 'Piernas + Torso (Pesado)', weekday: 5, exercises: [
         E('Prensa 45°', P, 170, 3, '15-18', 2), E('Sentadilla Hack', P, 60, 3, '10-12', 2), E('Hip Thrust', P, 30, 3, '12-15', 1.5),
-        E('Press Banca Plano (Barra)', EM, 35, 3, '6-8', 2), E('Remo con Barra', TR, 35, 3, '8-10', 2), E('Extensión de Pierna', P, 45, 3, '12-14', 1.5)] },
+        E('Press Banca Plano (Barra)', EM, 15, 3, '6-8', 2), E('Remo con Barra', TR, 15, 3, '8-10', 2), E('Extensión de Pierna', P, 45, 3, '12-14', 1.5)] },
     ]},
     { id: 'plan2', name: 'Torso / Pierna · 4 días', days: [
       { id: 'p2-lun', name: 'Piernas (Pesado)', weekday: 1, exercises: [
         E('Prensa 45°', P, 170, 3, '15-18', 2), E('Sentadilla Hack', P, 60, 3, '10-12', 2), E('Hip Thrust', P, 30, 3, '12-15', 1.5),
         E('Extensión de Pierna', P, 45, 3, '12-14', 1.5), E('Abducción de Cadera', P, 20, 3, '10-12', 1)] },
       { id: 'p2-mar', name: 'Torso (Pesado)', weekday: 2, exercises: [
-        E('Press Banca Inclinado (Barra)', EM, 40, 3, '6-8', 2), E('Remo Sentado con Cable', TR, 40, 3, '8-10', 2), E('Press Militar (Mancuernas)', EM, 12, 3, '8-10', 1.5),
+        E('Press Banca Inclinado (Barra)', EM, 20, 3, '6-8', 2), E('Remo Sentado con Cable', TR, 40, 3, '8-10', 2), E('Press Militar (Mancuernas)', EM, 12, 3, '8-10', 1.5),
         E('Jalón al Pecho', TR, 35, 3, '8-10', 1.5), E('Curl Bíceps', TR, 15, 3, '8-10', 1), E('Tríceps Polea', EM, 15, 3, '8-10', 1)] },
       { id: 'p2-jue', name: 'Piernas (Bombeo)', weekday: 4, exercises: [
         E('Prensa 45°', P, 120, 3, '15-18', 1), E('Sentadilla Hack', P, 45, 3, '12-15', 1), E('Hip Thrust', P, 25, 3, '18-20', 1),
         E('Extensión de Pierna', P, 35, 3, '15-18', 1), E('Abducción de Cadera', P, 15, 3, '15-20', 1)] },
       { id: 'p2-vie', name: 'Torso (Bombeo)', weekday: 5, exercises: [
-        E('Press Banca Plano (Barra)', EM, 30, 3, '12-15', 1), E('Jalón al Pecho', TR, 30, 3, '12-15', 1), E('Elevaciones Laterales', EM, 8, 3, '15-20', 1),
+        E('Press Banca Plano (Barra)', EM, 10, 3, '12-15', 1), E('Jalón al Pecho', TR, 30, 3, '12-15', 1), E('Elevaciones Laterales', EM, 8, 3, '15-20', 1),
         E('Remo en Polea Baja', TR, 30, 3, '12-15', 1), E('Curl Bíceps', TR, 10, 3, '15', 1), E('Tríceps Polea', EM, 10, 3, '15', 1)] },
     ]},
   ];
@@ -608,7 +611,7 @@ const HISTORY = {
     { name: 'Prensa 45°', w: 170, r: 18, start: 70 },
     { name: 'Sentadilla Hack', w: 80, r: 6, start: 50 },
     { name: 'Hip Thrust', w: 35, r: 18, start: 25 },
-    { name: 'Press Banca Plano (Barra)', w: 40, r: 7, start: 10 },
+    { name: 'Press Banca Plano (Barra)', w: 20, r: 7, start: 10 },
     { name: 'Remo Sentado con Cable', w: 50, r: 8, start: 25 },
     { name: 'Extensión de Pierna', w: 65, r: 15, start: 30 },
     { name: 'Curl Bíceps', w: 20, r: 6 },
@@ -855,6 +858,10 @@ function lastPerf(name, gymId, kind, noRef) {
   return null;
 }
 const BASE_GYM = 'raydac';
+/* Ejercicios con barra: anotas la SUMA DE LOS DISCOS; la barra se muestra aparte */
+const BAR_DEFAULT = { 'Press Banca Inclinado (Barra)': 20, 'Press Banca Plano (Barra)': 20, 'Remo con Barra': 20, 'Press Militar con Barra': 20, 'Sentadilla con Barra': 20, 'Peso Muerto Convencional': 20, 'Peso Muerto Rumano': 20, 'Hip Thrust': 20, 'Curl con Barra': 10, 'Press Francés': 10 };
+const barOf = ex => ex && ex.bar != null ? +ex.bar : 0;
+const barTxt = (w, bar) => bar ? `${fmtKg(+w || 0)} kg en discos + barra ${fmtKg(bar)} = ${fmtKg((+w || 0) + bar)} kg` : '';
 function suggest(gymId, kind, ex) {
   const last = lastPerf(ex.name, gymId, kind);
   if (last && last.ref) {
@@ -1006,7 +1013,7 @@ function startSession(planId, dayId) {
       const sg = suggest(gymId, kind, ex); const last = lastPerf(ex.name, gymId, kind); const ln = lastNote(ex.name, gymId);
       return {
         name: ex.name, type: ex.type, target: ex.sets, repsMin: ex.repsMin, repsMax: ex.repsMax, rest: ex.rest, inc: increment(ex, sg.w),
-        exId: ex.id, dropLast: !!ex.dropLast, note: '', prevNote: ln,
+        exId: ex.id, dropLast: !!ex.dropLast, bar: barOf(ex), note: '', prevNote: ln,
         sugg: sg, lastDate: last ? (last.date || 'base') : null, refGym: last && last.ref ? gymName(last.gymId) + (last.base ? ' · tu récord' : '') : null, prev: last ? last.sets.map(s => ({ w: s.w, r: s.r, drops: (s.drops || []).map(x => ({ w: x.w, r: x.r })) })) : [],
         log: Array.from({ length: ex.sets }, (_, j) => ({ w: sg.w, r: null, done: false, drops: ex.dropLast && j === ex.sets - 1 ? [newDrop(sg.w, ex)] : [] })),
       };
@@ -1173,8 +1180,8 @@ function vSession() {
       ${e.prevNote ? `<div class="note-prev"><span aria-hidden="true">📝</span><span><b>Tu nota</b> <span class="muted">(${ago(e.prevNote.date)}${e.prevNote.gym !== (d.gymName || gymName(d.gymId)) ? ' · ' + esc(e.prevNote.gym) : ''})</span><br>${esc(e.prevNote.text)}</span></div>` : ''}
       <div class="muted" style="font-size:12.5px">${e.lastDate ? (e.refGym ? `<b class="refg">Referencia de ${esc(e.refGym)}</b>${e.lastDate !== 'base' ? `: ${fmtDate(e.lastDate, true)} (${ago(e.lastDate)})` : ''}. Aún no haces este ejercicio en ${esc(d.gymName || gymName(d.gymId))}.` : `Anterior en ${esc(d.gymName || gymName(d.gymId))}: ${fmtDate(e.lastDate, true)} (${ago(e.lastDate)}). Toca una serie anterior para copiarla.`) : (e.last ? `Última vez: <span class="num">${esc(e.last)}</span>` : `Primera vez en ${esc(d.gymName || gymName(d.gymId))} con este ejercicio.`)}</div>
       ${typeof coachBox === 'function' && e.coach ? coachBox(e, i) : `<div class="sugg ${e.sugg.up ? 'up' : ''}"><span>${e.sugg.up ? '⬆' : '→'}</span><span>${e.sugg.msg}</span></div>`}
-      ${e.rest >= 90 ? `<div class="muted" style="font-size:12.5px">Calentamiento: 10 reps con <span class="num">${fmtKg(Math.round(e.sugg.w * 0.5 / 2.5) * 2.5)} kg</span> y 5 reps con <span class="num">${fmtKg(Math.round(e.sugg.w * 0.75 / 2.5) * 2.5)} kg</span></div>` : ''}
-      <div class="sets"><span class="h" style="text-align:center">Serie</span><span class="h">Antes</span><span class="h">Kg</span><span class="h">Reps</span><span></span>
+      ${e.bar ? `<div class="barinfo"><b>Barra ${fmtKg(e.bar)} kg</b> · anota solo la suma de los discos. Hoy: ${barTxt(e.sugg.w, e.bar)}.${e.rest >= 90 ? ` Calentamiento: 10 reps solo con la barra y 5 reps con ${fmtKg(Math.round(e.sugg.w * 0.5 / 2.5) * 2.5)} kg en discos.` : ''}</div>` : (e.rest >= 90 ? `<div class="muted" style="font-size:12.5px">Calentamiento: 10 reps con <span class="num">${fmtKg(Math.round(e.sugg.w * 0.5 / 2.5) * 2.5)} kg</span> y 5 reps con <span class="num">${fmtKg(Math.round(e.sugg.w * 0.75 / 2.5) * 2.5)} kg</span></div>` : '')}
+      <div class="sets"><span class="h" style="text-align:center">Serie</span><span class="h">Antes</span><span class="h">${e.bar ? 'Discos' : 'Kg'}</span><span class="h">Reps</span><span></span>
       ${e.log.map((s, j) => { const pv = (e.prev || [])[j]; return `<span class="n">${j + 1}<small class="rir">RIR ${Math.max(0, 2 - j)}</small></span>
         ${pv ? `<button class="prev" data-act="use-prev" data-ex="${i}" data-set="${j}" aria-label="Copiar serie anterior ${fmtKg(pv.w)} kg por ${pv.r}"><span class="num">${fmtKg(pv.w)}</span><small>× ${pv.r}</small></button>` : '<span class="prev none">—</span>'}
         <input class="${s.done ? 'done-row' : ''}" id="w-${i}-${j}" inputmode="decimal" data-ex="${i}" data-set="${j}" data-f="w" value="${s.w ?? ''}" aria-label="Kilos serie ${j + 1}">
@@ -1232,7 +1239,7 @@ function vPlans() {
         ${edit ? `<button class="icon-btn" data-act="edit-day" data-plan="${p.id}" data-day="${d.id}" aria-label="Editar día">✎</button>` : `<button class="btn small" data-act="start" data-plan="${p.id}" data-day="${d.id}">Entrenar</button>`}</div>
       ${d.exercises.map((e, k) => `<div class="ex-line"><span class="o">${k + 1}</span>
         <div style="min-width:0"><div class="row" style="gap:6px"><span class="dot t-${e.type}"></span><span style="font-weight:600">${esc(e.name)}</span></div>
-        <div class="meta num">${fmtKg(e.weight)} kg · ${e.sets}×${reps(e)} · ${restTxt(e.rest)}</div></div>
+        <div class="meta num">${fmtKg(e.weight)} kg${e.bar ? ` discos (+${fmtKg(e.bar)} barra)` : ''} · ${e.sets}×${reps(e)} · ${restTxt(e.rest)}</div></div>
         ${edit ? `<div class="edit-tools"><button class="icon-btn" data-act="ex-up" data-plan="${p.id}" data-day="${d.id}" data-k="${k}" aria-label="Subir" ${k === 0 ? 'disabled' : ''}>↑</button><button class="icon-btn" data-act="ex-edit" data-plan="${p.id}" data-day="${d.id}" data-k="${k}" aria-label="Editar">✎</button></div>` : (libFind(e.name) ? `<button class="icon-btn how-btn" data-act="how" data-name="${esc(e.name)}" aria-label="Cómo se hace ${esc(e.name)}">?</button>` : '<span></span>')}</div>`).join('')}
       ${edit ? `<button class="btn small" data-act="ex-new" data-plan="${p.id}" data-day="${d.id}" style="align-self:flex-start;margin-top:6px">+ Ejercicio</button>` : ''}
     </div>`;
@@ -1489,6 +1496,7 @@ function exSheet(pid, did, k, preset) {
       <div class="field"><label class="label" for="fx-a">Reps mín</label><input id="fx-a" name="repsMin" inputmode="numeric" value="${e.repsMin}"></div>
       <div class="field"><label class="label" for="fx-b">Reps máx</label><input id="fx-b" name="repsMax" inputmode="numeric" value="${e.repsMax}"></div></div>
     <div class="field"><label class="label" for="fx-r">Descanso (segundos, de 10 en 10)</label><div class="stepper"><button type="button" data-act="fx-step" data-d="-10" aria-label="Menos 10 segundos">−10</button><input id="fx-r" name="rest" type="number" inputmode="numeric" min="10" max="600" step="10" value="${e.rest}"><span class="muted num" id="fx-r-txt">${clock(e.rest)}</span><button type="button" data-act="fx-step" data-d="10" aria-label="Más 10 segundos">+10</button></div></div>
+    <div class="field"><label class="label" for="fx-bar">Barra (kg) · 0 si no usa barra</label><input id="fx-bar" name="bar" inputmode="decimal" value="${e.bar != null ? e.bar : (BAR_DEFAULT[e.name] || 0)}"><div class="muted" style="font-size:12px">Con barra, en "Peso" pon solo la suma de los discos (ej. 10 kg por lado = 20).</div></div>
     <label class="row" style="gap:10px"><input type="checkbox" id="fx-drop" name="dropLast" ${e.dropLast ? 'checked' : ''} style="width:20px;height:20px"><span><b>Drop set en la última serie</b><br><span class="muted" style="font-size:12.5px">Al entrenar, la última serie trae una fila extra con ~25% menos peso.</span></span></label>
     <div class="grid2"><button type="button" class="btn" data-act="sheet-close">Cancelar</button><button class="btn primary" type="submit">Guardar</button></div>
     ${k != null ? `<button type="button" class="btn danger" data-act="ex-del" data-plan="${pid}" data-day="${did}" data-k="${k}">${state.confirm === 'exdel' ? '¿Quitar? Toca otra vez' : 'Quitar del día'}</button>` : ''}
@@ -1592,7 +1600,7 @@ document.addEventListener('click', ev => {
     case 'lib-g': state.pickG = b.dataset.g; renderPicker(); break;
     case 'lib-choose': { const x = LIB.find(l => l.key === b.dataset.key); const ctx = state.pickCtx; if (!x || !ctx) break;
       const [a, bb] = String(x.reps || '10-12').split('-').map(n => parseInt(n)); const isTime = /s$/.test(String(x.reps || ''));
-      exSheet(ctx.pid, ctx.did, ctx.k, { name: x.name, type: x.type, repsMin: a || 10, repsMax: bb || a || 12, rest: x.rest || 90, weight: isTime || x.type === 'Core' ? 0 : (ctx.k != null ? undefined : 10) });
+      exSheet(ctx.pid, ctx.did, ctx.k, { name: x.name, type: x.type, repsMin: a || 10, repsMax: bb || a || 12, rest: x.rest || 90, bar: BAR_DEFAULT[x.name] || 0, weight: isTime || x.type === 'Core' ? 0 : (ctx.k != null ? undefined : 10) });
       break; }
     case 'fx-step': { const inp = document.getElementById('fx-r'); const v = Math.min(600, Math.max(10, (Math.round((+inp.value || 60) / 10) * 10) + +b.dataset.d)); inp.value = v; document.getElementById('fx-r-txt').textContent = clock(v); break; }
     case 'sup': { const t = today(); t[b.dataset.k] = !t[b.dataset.k]; t.edited = Date.now(); saveDaily(); render(); if (t[b.dataset.k] && b.dataset.k === 'crea') toast(`Creatina registrada · ${creaStreak()} días seguidos`); break; }
@@ -1609,7 +1617,7 @@ document.addEventListener('submit', ev => {
     const fd = new FormData(f); const { d } = findDay(f.dataset.plan, f.dataset.day);
     const num = (k, def) => { const v = parseFloat(String(fd.get(k)).replace(',', '.')); return isFinite(v) ? v : def; };
     let a = Math.round(num('repsMin', 8)), bb = Math.round(num('repsMax', a)); if (bb < a) [a, bb] = [bb, a];
-    const e = { name: String(fd.get('name')).trim(), type: fd.get('type'), weight: num('weight', 0), sets: Math.max(1, Math.round(num('sets', 3))), repsMin: a, repsMax: bb, rest: Math.min(600, Math.max(10, Math.round(num('rest', 60) / 10) * 10)), dropLast: !!fd.get('dropLast') };
+    const e = { name: String(fd.get('name')).trim(), type: fd.get('type'), weight: num('weight', 0), sets: Math.max(1, Math.round(num('sets', 3))), repsMin: a, repsMax: bb, rest: Math.min(600, Math.max(10, Math.round(num('rest', 60) / 10) * 10)), dropLast: !!fd.get('dropLast'), bar: Math.max(0, num('bar', 0)) };
     if (f.dataset.k !== '') Object.assign(d.exercises[+f.dataset.k], e); else d.exercises.push(Object.assign({ id: uid() }, e));
     savePlans(); closeSheet(); render(); toast('Ejercicio guardado.');
   }
@@ -1641,6 +1649,19 @@ const hadGyms = !!LS.get('gyms', null);
 if (migratePlans() && hadPlans) toast('Planes actualizados: Curl Femoral y Face Pull agregados.');
 migrateGyms();
 if (!state.settings.dropRev) { state.plans.forEach(p => p.days.forEach(d => d.exercises.forEach(e => { if (e.name === 'Extensión de Pierna') e.dropLast = true; }))); state.settings.dropRev = 1; savePlans(); }
+/* Convención de barra: en ejercicios con barra se anota la suma de discos (antes el plan traía el total con barra de 20 kg) */
+if (!state.settings.barRev) {
+  const fix = ['Press Banca Inclinado (Barra)', 'Press Banca Plano (Barra)', 'Remo con Barra'];
+  state.plans.forEach(p => p.days.forEach(d => d.exercises.forEach(e => {
+    if (BAR_DEFAULT[e.name] != null && e.bar == null) e.bar = BAR_DEFAULT[e.name];
+    if (fix.includes(e.name) && e.weight > 20) e.weight = e.weight - 20;
+  })));
+  if (state.draft) state.draft.exercises.forEach(e => {
+    if (BAR_DEFAULT[e.name] != null && e.bar == null) e.bar = BAR_DEFAULT[e.name];
+    if (fix.includes(e.name)) { if (e.sugg && e.sugg.w > 20) e.sugg.w -= 20; e.log.forEach(x => { if (!x.done && x.w > 20) x.w -= 20; }); if (e.coach && e.coach.w > 20) { e.coach.w -= 20; e.coach.head = e.coach.head.replace(/(\d+(?:,\d+)?) kg/, m => fmtKg(parseFloat(m.replace(',', '.')) - 20) + ' kg'); } }
+  });
+  state.settings.barRev = 1; saveLocal(); saveDraft();
+}
 /* Sesión registrada en Symmetry: primera semana en Roka'z (piernas pesado, lunes 5 de octubre) */
 if (!state.settings.importSym1) {
   if (!state.sessions.some(s => s.id === 'sym-rokaz-2026-10-05')) {
