@@ -6,6 +6,7 @@ const HAP = CAP && CAP.Haptics;
 const REM_KINDS = {
   crea: { label: 'Creatina', hint: 'No suena si ya marcaste la creatina ese día.' },
   prot: { label: 'Proteína', hint: 'No suena si ya marcaste la proteína ese día.' },
+  omega: { label: 'Omega 3', hint: 'No suena si ya marcaste el omega 3 ese día.' },
   water: { label: 'Agua', hint: 'No suena si ya llegaste a 2,5 L ese día.' },
   train: { label: 'Entrenamiento', hint: 'Solo en los días de tu plan activo y si aún no entrenaste.' },
   custom: { label: 'Personalizado', hint: 'Suena siempre en los días elegidos.' },
@@ -29,6 +30,7 @@ function remText(r, dayOffset, date) {
   const t = state.daily[dk(date)] || {};
   if (r.kind === 'crea') { const st = creaStreak(); return { title: r.label, body: st ? `Llevas ${st} días seguidos. ¡No cortes la racha!` : 'La creatina funciona por acumulación: tómala todos los días.' }; }
   if (r.kind === 'prot') return { title: r.label, body: 'Meta: 145-150 g de proteína al día.' };
+  if (r.kind === 'omega') return { title: r.label, body: 'Una cápsula con una comida.' };
   if (r.kind === 'water') return { title: r.label, body: isToday ? `Llevas ${fmtKg((t.water || 0) / 1000)} L de 2,5–3 L. Toma un vaso ahora.` : 'Meta de hoy: 2,5–3 L. Toma un vaso ahora.' };
   if (r.kind === 'train') { const p = activePlan(); const d = p.days.find(x => x.weekday === date.getDay()); return { title: r.label, body: d ? `${d.name} en ${HISTORY.gym}.` : 'Revisa tu plan.' }; }
   return { title: r.label, body: 'Recordatorio de Forja' };
@@ -42,6 +44,7 @@ function remSkip(r, dayOffset, date) {
   if (dayOffset !== 0) return false;
   if (r.kind === 'crea' && t.crea) return true;
   if (r.kind === 'prot' && t.prot) return true;
+  if (r.kind === 'omega' && t.omega) return true;
   if (r.kind === 'water' && (t.water || 0) >= WATER_MIN) return true;
   return false;
 }

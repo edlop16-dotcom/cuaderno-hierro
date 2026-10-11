@@ -53,7 +53,7 @@ vSession = function () {
     <div class="sx-prog"><i style="width:${all ? Math.round(done / all * 100) : 0}%"></i></div>
     <div class="sx-strip" id="sx-strip">${d.exercises.map((e, i) => `<button class="sx-th ${i === cur ? 'on' : ''} ${exComplete(e) ? 'done' : ''}" data-act="sx-go" data-i="${i}" aria-label="${esc(e.name)}" style="--tc:${typeRgb(e.type)}">${thumb(e.name)}${exComplete(e) ? `<span class="ok">${ic('check', 12)}</span>` : ''}</button>`).join('')}</div>
     <div class="sx-pager" id="sx-pager">${cards.map((c, i) => { const e = d.exercises[i]; return `<section class="sx-page" data-i="${i}" style="--tc:${typeRgb(e.type)}">
-      <div class="sx-hero">${bigFig(e.name, 'sx-fig')}<span class="sx-n num">${i + 1}/${d.exercises.length}</span></div>
+      <div class="sx-hero">${bigFig(e.name, 'sx-fig')}<span class="sx-n num">${i + 1}/${d.exercises.length}</span><button class="sx-st" data-act="ex-stats" data-name="${esc(e.name)}">${ic('trending-up', 14)} Progreso</button></div>
       ${c}
       ${i < last ? `<button class="sx-next" data-act="sx-go" data-i="${i + 1}">Siguiente: <b>${esc(d.exercises[i + 1].name)}</b> ${ic('chevron-right', 16)}</button>` : tail}
     </section>`; }).join('')}</div>
