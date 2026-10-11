@@ -236,6 +236,36 @@ function liveBar() {
 }
 setInterval(() => { const t = document.getElementById('lv-time'); if (t && state.draft) t.textContent = clock(Math.floor((Date.now() - new Date(state.draft.start)) / 1000)); }, 1000);
 
+/* "Antes" en todas las series: si la vez anterior tuvo menos series (o es un récord de una sola), se repite la última */
+function padPrev() {
+  const d = state.draft; if (!d) return;
+  d.exercises.forEach(e => {
+    if (!e.prev || !e.prev.length) return;
+    while (e.prev.length < e.log.length) { const l = e.prev[e.prev.length - 1]; e.prev.push({ w: l.w, r: l.r, drops: [] }); }
+  });
+}
+
 const _renderL = render;
-render = function () { _renderL(); liveBar(); };
+render = function () { padPrev(); _renderL(); liveBar(); };
+
+/* Tu sesión de piernas del 5 de octubre en Roka'z (Symmetry): se repone si falta */
+if (!state.settings.importSym2) {
+  const SID = 'sym-rokaz-2026-10-05';
+  if (!state.sessions.some(s => s.id === SID)) {
+    state.sessions.push({ id: SID, date: new Date('2026-10-05T19:00:00-05:00').toISOString(), planId: 'plan2', planName: 'Torso / Pierna · 4 días', dayId: 'p2-lun', dayName: 'Piernas (Pesado)', gymId: 'rokaz', gymName: gymName('rokaz'), kind: 'fuerza', durationSec: 7080, source: 'Symmetry',
+      exercises: [
+        { name: 'Prensa 45°', type: P, sets: [{ w: 160, r: 18 }, { w: 170, r: 18 }, { w: 170, r: 18 }] },
+        { name: 'Sentadilla Hack', type: P, note: 'Con mala técnica, dominar 60', sets: [{ w: 60, r: 12 }, { w: 60, r: 12 }, { w: 60, r: 12 }] },
+        { name: 'Hip Thrust', type: P, sets: [{ w: 30, r: 15 }, { w: 30, r: 10 }, { w: 30, r: 11 }] },
+        { name: 'Extensión de Pierna', type: P, sets: [{ w: 45, r: 14 }, { w: 45, r: 12 }, { w: 45, r: 12 }] },
+        { name: 'Abducción de Cadera', type: P, sets: [{ w: 20, r: 10 }, { w: 20, r: 10 }, { w: 20, r: 10 }] },
+      ] });
+    state.sessions.sort((a, b) => b.date.localeCompare(a.date));
+    if (typeof sync !== 'undefined') sync.revive([SID]);
+    /* Si había una sesión recién empezada (sin series marcadas), se rehace con tus datos de Roka'z */
+    const d = state.draft;
+    if (d && !d.exercises.some(e => e.log.some(x => x.done)) && findDay(d.planId, d.dayId).d) { state.draft = null; startSession(d.planId, d.dayId); }
+  }
+  state.settings.importSym2 = 1; saveLocal();
+}
 render();
