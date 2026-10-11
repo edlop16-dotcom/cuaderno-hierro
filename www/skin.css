@@ -237,3 +237,21 @@ body.watch .undo-bar{bottom:8px;left:6px;right:6px;font-size:12px;padding:6px 6p
 .syncst{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:var(--muted);padding:6px 12px;border-radius:999px;background:var(--surface2);border:1px solid var(--line);align-self:flex-start}
 .syncst .dot{width:8px;height:8px;border-radius:50%;background:var(--warn)}
 .syncst.cloud .dot{background:var(--ok);box-shadow:0 0 0 3px rgba(46,229,157,.18)}
+
+/* Cuenta */
+.avatar.sm{width:38px;height:38px;border-radius:13px;font-size:16px}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;border-radius:14px;background:var(--surface2);border:1px solid var(--line)}
+.seg button{border:0;background:transparent;color:var(--muted);font:inherit;font-weight:700;font-size:13.5px;padding:9px;border-radius:10px;cursor:pointer}
+.seg button.on{background:var(--surface3);color:var(--fg);box-shadow:0 4px 12px -6px rgba(0,0,0,.6)}
+.divider{display:flex;align-items:center;gap:10px;color:var(--dim);font-size:12px;font-weight:600}
+.divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--line)}
+.pair-code{display:flex;justify-content:center;align-items:center;gap:6px;font-size:40px;font-weight:800;letter-spacing:.12em;color:var(--fg);padding:14px 8px;border-radius:18px;background:var(--surface2);border:1px solid rgba(255,106,31,.45);box-shadow:0 0 0 4px rgba(255,106,31,.08)}
+.pair-code i{width:10px}
+body.watch .pair-code{font-size:30px;padding:8px 4px}
+.pair-wait{display:flex;align-items:center;justify-content:center;gap:6px;color:var(--accent2);font-size:12.5px;font-weight:600}
+.pair-wait svg{animation:spin 1.4s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.code-in{font-size:30px;font-weight:800;letter-spacing:.25em;text-align:center;text-transform:uppercase;padding:14px;border-radius:16px}
+.sheet-card .err{color:var(--bad);font-size:13px;font-weight:600}
+.nudge{border-color:rgba(255,106,31,.35)}
+.nudge .hi{width:36px;height:36px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:rgba(255,106,31,.14);color:var(--accent);flex:none}
