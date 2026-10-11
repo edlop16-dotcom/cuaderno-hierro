@@ -1,9 +1,12 @@
 /* ================== Coach de sobrecarga progresiva (funciona sin internet) ==================
    Analiza tus últimas sesiones de cada ejercicio (mismo gym y mismo tipo de día) y tus notas,
    y te dice qué peso y cuántas reps buscar en la próxima sesión, y por qué. */
-const HARD = /(sufr|dur[oa]|dificil|no pude|cost[oó]|pesad|al fallo|reventad|agotad|no llegu)/;
-const EASY = /(facil|sobr[oó]|liger|suave|me qued[oó] corto|podia mas|pude mas)/;
-const PAIN = /(dolor|duele|molest|lesi|tiron|punzad|crujid)/;
+const TAG = k => NOTE_TAGS.find(t => t.k === k).re;
+const HARD = { test: n => TAG('hard').test(n) || TAG('fail').test(n) };
+const EASY = { test: n => TAG('easy').test(n) || TAG('up').test(n) };
+const PAIN = { test: n => TAG('pain').test(n) };
+const TECH = { test: n => TAG('tech').test(n) };
+const DOWN = { test: n => TAG('down').test(n) };
 
 function exHistory(name, gymId, kind, n = 6) {
   const out = [];
@@ -25,6 +28,14 @@ function coachFor(ex, gymId, kind) {
   const sg = suggest(gymId, kind, ex);
   let w = sg.w, mode = sg.up ? 'up' : 'hold';
   if (!H.length) {
+    const ref = lastPerf(ex.name, gymId, kind);
+    if (ref && ref.ref) {
+      const rw = Math.max(...ref.sets.map(x => x.w)), rr = ref.sets.filter(x => x.w === rw).map(x => x.r);
+      const rn = ref.base ? null : (state.sessions.find(s => s.date === ref.date) || { exercises: [] }).exercises.find(e => e.name === ex.name);
+      const t = [ref.base ? `Tu récord en ${esc(gymName(ref.gymId))} (Hevy / Symmetry): ${fmtKg(rw)} kg × ${rr.join(' · ')}.` : `Tu última vez fue en ${esc(gymName(ref.gymId))} (${ago(ref.date)}): ${fmtKg(rw)} kg × ${rr.join(' · ')}.`, 'Las máquinas de cada gym pesan distinto: en la 1ª serie confirma que el peso se sienta igual y ajusta.'];
+      if (rn && rn.note) t.push(`Tu nota de allá: “${esc(rn.note)}”.`);
+      return { w: rw, mode: 'hold', head: `<b>Referencia de ${esc(gymName(ref.gymId))}: ${fmtKg(rw)} kg</b>. Busca ${reps(ex)} reps.`, goal: rr, tips: t };
+    }
     return { w, mode: 'first', head: sg.up ? sg.msg : `Primera vez aquí: empieza con <b>${fmtKg(w)} kg</b> y busca ${reps(ex)} reps.`, goal: null,
       tips: ['Serie 1 con 2 reps en reserva, serie 2 con 1 y la última al límite con buena técnica. Así la app aprende tu nivel.'] };
   }
@@ -37,6 +48,12 @@ function coachFor(ex, gymId, kind) {
   if (PAIN.test(note)) {
     mode = 'pain'; w = Math.max(0, Math.round(topW * 0.85 / increment(ex, topW)) * increment(ex, topW));
     tips.push(`Tu nota menciona dolor o molestia. Baja a <b>${fmtKg(w)} kg</b>, cuida la técnica y si el dolor es en la articulación, para y consúltalo.`);
+  } else if (DOWN.test(note)) {
+    const inc = increment(ex, topW); mode = 'down'; w = Math.max(0, Math.round(topW * 0.9 / inc) * inc);
+    tips.push(`Tu nota pide bajar el peso: usa <b>${fmtKg(w)} kg</b> y busca el rango completo de reps.`);
+  } else if (TECH.test(note)) {
+    mode = 'hold'; w = topW;
+    tips.push(`Tu nota habla de técnica: domina <b>${fmtKg(topW)} kg</b> con buena forma (bajada en 2-3 s, recorrido completo) antes de subir.`);
   } else if (HARD.test(note) && mode === 'up') {
     mode = 'hold'; w = topW;
     tips.push(`Completaste el rango, pero tu nota dice que costó mucho. Consolida <b>${fmtKg(topW)} kg</b> una sesión más antes de subir.`);

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
 <meta name="theme-color" content="#0b0d12">
-<title>Cuaderno de Hierro</title>
+<title>Forja</title>
 <style>
 @font-face{font-family:'Poppins';font-weight:500;font-style:normal;font-display:swap;src:url(fonts/poppins-latin-500-normal.woff2) format('woff2')}
 @font-face{font-family:'Poppins';font-weight:600;font-style:normal;font-display:swap;src:url(fonts/poppins-latin-600-normal.woff2) format('woff2')}
@@ -157,6 +157,15 @@ a.btn{color:var(--fg);text-decoration:none}
 .pick b{display:block;font-size:14px}
 .pick small{display:block;font-size:12px}
 .pfig{width:84px;flex:none;padding:0!important;background:var(--surface)!important}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.tag{padding:6px 10px;border-radius:10px;font-size:12.5px;font-weight:700;background:rgba(255,255,255,.04);border:1px solid var(--line);color:var(--muted)}
+.tag.on{color:#0b0d12;border-color:transparent}
+.tag-easy.on,.tag-up.on{background:var(--ok)}
+.tag-hard.on,.tag-fail.on,.tag-tech.on{background:var(--warn)}
+.tag-down.on,.tag-pain.on{background:var(--bad);color:#fff}
+.note-hint{font-size:12.5px;margin-top:6px}
+.h-ok{color:var(--ok)} .h-warn{color:var(--warn)} .h-bad{color:var(--bad)}
+.refg{color:var(--pull)}
 .rest-chip{gap:4px;padding:2px 4px}
 .rest-chip button{width:26px;height:26px;border-radius:50%;background:var(--surface);border:1px solid var(--line);font-weight:800;line-height:1}
 .note-prev{display:flex;gap:8px;font-size:13px;padding:8px 10px;border-radius:8px;background:color-mix(in srgb,var(--accent) 12%,var(--surface));border-left:3px solid var(--accent)}
@@ -827,18 +836,33 @@ function increment(ex, w) {
   return 2.5;
 }
 /* Última vez que hiciste este ejercicio en este gym y con este tipo de día (Fuerza o Bombeo) */
-function lastPerf(name, gymId, kind) {
+function lastPerf(name, gymId, kind, noRef) {
   for (const s of state.sessions) {
     if (sGym(s) !== gymId || sKind(s) !== kind) continue;
     const x = s.exercises.find(e => e.name === name);
-    if (x && x.sets.length) return { date: s.date, sets: x.sets };
+    if (x && x.sets.length) return { date: s.date, sets: x.sets, gymId };
   }
+  if (noRef) return null;
+  /* Aún no lo haces en este gym: usa como referencia el último gym donde lo hiciste */
+  for (const s of state.sessions) {
+    if (sGym(s) === gymId || sKind(s) !== kind) continue;
+    const x = s.exercises.find(e => e.name === name);
+    if (x && x.sets.length) return { date: s.date, sets: x.sets, gymId: sGym(s), ref: true };
+  }
+  /* Sin sesiones en la app: tu récord previo (Raydac, registrado en Hevy / Symmetry) */
+  const rec = baseRec(name);
+  if (rec && gymId !== BASE_GYM) return { date: null, sets: [{ w: rec.w, r: rec.r }], gymId: BASE_GYM, ref: true, base: true };
   return null;
 }
+const BASE_GYM = 'raydac';
 function suggest(gymId, kind, ex) {
   const last = lastPerf(ex.name, gymId, kind);
+  if (last && last.ref) {
+    const w = Math.max(...last.sets.map(s => s.w)), rr = last.sets.filter(s => s.w === w).map(s => s.r).join('·');
+    return { w, ref: true, msg: `Referencia de <b>${esc(gymName(last.gymId))}</b>${last.base ? ' (tu récord)' : ''}: ${fmtKg(w)} kg × ${rr}. Aún no lo haces aquí; las máquinas cambian, empieza con <b>${fmtKg(w)} kg</b> y ajusta.` };
+  }
   if (!last) {
-    const rec = gymId === 'rokaz' ? baseRec(ex.name) : null;
+    const rec = gymId === BASE_GYM ? baseRec(ex.name) : null;
     if (rec) {
       const inc0 = increment(ex, ex.weight);
       const w = Math.floor(Math.min(e1rm(rec.w, rec.r) / (1 + (ex.repsMax + 2) / 30), ex.weight * 1.25) / inc0) * inc0;
@@ -937,6 +961,27 @@ function nextDay(plan) {
 }
 const dropW = (w, ex) => { const inc = increment(ex || {}, w); return Math.max(0, Math.round(w * 0.75 / inc) * inc); };
 const newDrop = (w, ex) => ({ w: dropW(+w || 0, ex), r: null, done: false });
+/* Palabras clave que el coach entiende en tus notas */
+const NOTE_TAGS = [
+  { k: 'easy', label: 'Fácil', text: 'fácil', re: /(facil|sobr[oó]|liger|suave|pude mas|podia mas)/ },
+  { k: 'up', label: 'Subir peso', text: 'subir peso', re: /(subir peso|subir el peso|sube peso)/ },
+  { k: 'hard', label: 'Costó mucho', text: 'costó mucho', re: /(sufr|dur[oa]|dificil|no pude|cost[oó]|pesad|reventad|agotad|no llegu)/ },
+  { k: 'fail', label: 'Al fallo', text: 'al fallo', re: /(al fallo|fallo)/ },
+  { k: 'tech', label: 'Mala técnica', text: 'mala técnica', re: /(mala tecnica|tecnica|dominar)/ },
+  { k: 'down', label: 'Bajar peso', text: 'bajar peso', re: /(bajar peso|bajar el peso|baja peso)/ },
+  { k: 'pain', label: 'Dolor', text: 'dolor', re: /(dolor|duele|molest|lesi|tiron|punzad)/ },
+];
+const noteHas = (note, t) => t.re.test(normName(note || ''));
+function noteHint(note) {
+  const n = normName(note || ''); if (!n.trim()) return '<span class="muted">Toca una etiqueta o escribe: la app lee palabras como <b>fácil</b>, <b>costó</b>, <b>al fallo</b>, <b>mala técnica</b>, <b>dolor</b>, <b>subir peso</b> o <b>bajar peso</b>.</span>';
+  const has = k => NOTE_TAGS.find(t => t.k === k).re.test(n);
+  if (has('pain')) return '<b class="h-bad">Coach:</b> la próxima vez bajará el peso ~15% y te recordará cuidar la técnica.';
+  if (has('down')) return '<b class="h-bad">Coach:</b> la próxima vez bajará el peso ~10%.';
+  if (has('tech')) return '<b class="h-warn">Coach:</b> mantendrá el peso hasta que domines la técnica.';
+  if (has('hard') || has('fail')) return '<b class="h-warn">Coach:</b> no subirá el peso la próxima vez; buscarás las mismas reps con mejor control.';
+  if (has('up') || has('easy')) return '<b class="h-ok">Coach:</b> la próxima vez te propondrá subir el peso.';
+  return '<span class="muted">Nota guardada. Agrega una etiqueta si quieres que el coach ajuste el peso.</span>';
+}
 /* Tu última nota de este ejercicio: primero en este gym, si no en cualquiera */
 function lastNote(name, gymId) {
   let any = null;
@@ -962,7 +1007,7 @@ function startSession(planId, dayId) {
       return {
         name: ex.name, type: ex.type, target: ex.sets, repsMin: ex.repsMin, repsMax: ex.repsMax, rest: ex.rest, inc: increment(ex, sg.w),
         exId: ex.id, dropLast: !!ex.dropLast, note: '', prevNote: ln,
-        sugg: sg, lastDate: last ? last.date : null, prev: last ? last.sets.map(s => ({ w: s.w, r: s.r, drops: (s.drops || []).map(x => ({ w: x.w, r: x.r })) })) : [],
+        sugg: sg, lastDate: last ? (last.date || 'base') : null, refGym: last && last.ref ? gymName(last.gymId) + (last.base ? ' · tu récord' : '') : null, prev: last ? last.sets.map(s => ({ w: s.w, r: s.r, drops: (s.drops || []).map(x => ({ w: x.w, r: x.r })) })) : [],
         log: Array.from({ length: ex.sets }, (_, j) => ({ w: sg.w, r: null, done: false, drops: ex.dropLast && j === ex.sets - 1 ? [newDrop(sg.w, ex)] : [] })),
       };
     }),
@@ -1007,7 +1052,7 @@ function finishSession() {
 }
 function discardSession() { state.draft = null; state.rest = null; state.confirm = null; saveDraft(); unwake(); render(); }
 function bestE1rm(name, gymId) {
-  const rec = gymId === 'rokaz' ? baseRec(name) : null;
+  const rec = gymId === BASE_GYM ? baseRec(name) : null;
   let b = rec ? e1rm(rec.w, rec.r) : 0;
   for (const s of state.sessions) if (sGym(s) === gymId) for (const e of s.exercises) if (e.name === name) for (const x of e.sets) b = Math.max(b, e1rm(x.w, x.r));
   return b;
@@ -1126,7 +1171,7 @@ function vSession() {
       <div class="row"><span class="dot t-${e.type}"></span><h3 class="grow">${esc(e.name)}</h3><button class="btn small how-btn" data-act="how" data-name="${esc(e.name)}">${typeof VID !== 'undefined' && VID.index.has(exKey(e.name)) ? '🎬 ' : ''}${libFind(e.name) ? 'Cómo se hace' : 'Videos'}</button></div>
       <div class="ex-top">${typeof miniFig === 'function' ? miniFig(e.name) : ''}<div class="target" style="align-content:flex-start"><span class="chip">${e.target} × ${reps(e)} reps</span><span class="chip rest-chip"><button data-act="rest-step" data-ex="${i}" data-d="-10" aria-label="Menos 10 segundos">−</button><span>Descanso <b class="num">${clock(e.rest)}</b></span><button data-act="rest-step" data-ex="${i}" data-d="10" aria-label="Más 10 segundos">+</button></span></div></div>
       ${e.prevNote ? `<div class="note-prev"><span aria-hidden="true">📝</span><span><b>Tu nota</b> <span class="muted">(${ago(e.prevNote.date)}${e.prevNote.gym !== (d.gymName || gymName(d.gymId)) ? ' · ' + esc(e.prevNote.gym) : ''})</span><br>${esc(e.prevNote.text)}</span></div>` : ''}
-      <div class="muted" style="font-size:12.5px">${e.lastDate ? `Anterior en ${esc(d.gymName || gymName(d.gymId))}: ${fmtDate(e.lastDate, true)} (${ago(e.lastDate)}). Toca una serie anterior para copiarla.` : (e.last ? `Última vez: <span class="num">${esc(e.last)}</span>` : `Primera vez en ${esc(d.gymName || gymName(d.gymId))} con este ejercicio.`)}</div>
+      <div class="muted" style="font-size:12.5px">${e.lastDate ? (e.refGym ? `<b class="refg">Referencia de ${esc(e.refGym)}</b>${e.lastDate !== 'base' ? `: ${fmtDate(e.lastDate, true)} (${ago(e.lastDate)})` : ''}. Aún no haces este ejercicio en ${esc(d.gymName || gymName(d.gymId))}.` : `Anterior en ${esc(d.gymName || gymName(d.gymId))}: ${fmtDate(e.lastDate, true)} (${ago(e.lastDate)}). Toca una serie anterior para copiarla.`) : (e.last ? `Última vez: <span class="num">${esc(e.last)}</span>` : `Primera vez en ${esc(d.gymName || gymName(d.gymId))} con este ejercicio.`)}</div>
       ${typeof coachBox === 'function' && e.coach ? coachBox(e, i) : `<div class="sugg ${e.sugg.up ? 'up' : ''}"><span>${e.sugg.up ? '⬆' : '→'}</span><span>${e.sugg.msg}</span></div>`}
       ${e.rest >= 90 ? `<div class="muted" style="font-size:12.5px">Calentamiento: 10 reps con <span class="num">${fmtKg(Math.round(e.sugg.w * 0.5 / 2.5) * 2.5)} kg</span> y 5 reps con <span class="num">${fmtKg(Math.round(e.sugg.w * 0.75 / 2.5) * 2.5)} kg</span></div>` : ''}
       <div class="sets"><span class="h" style="text-align:center">Serie</span><span class="h">Antes</span><span class="h">Kg</span><span class="h">Reps</span><span></span>
@@ -1142,7 +1187,9 @@ function vSession() {
         <button class="check drop-c ${dr.done ? 'on' : ''}" data-act="set" data-ex="${i}" data-set="${j}" data-k="${k}" aria-label="Drop set hecho" aria-pressed="${dr.done}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button>`; }).join('')}`; }).join('')}
       </div>
       <div class="row" style="flex-wrap:wrap"><button class="btn small" data-act="add-set" data-ex="${i}">+ Serie</button>${e.log.length > 1 ? `<button class="btn small" data-act="rm-set" data-ex="${i}">− Serie</button>` : ''}<button class="btn small drop-btn" data-act="drop-add" data-ex="${i}">+ Drop set</button></div>
-      <div class="field"><label class="label" for="note-${i}">Nota para la próxima vez</label><textarea id="note-${i}" class="note-in" rows="2" data-ex="${i}" data-f="note" placeholder="Ej. Solo pude 12 reps con mucho esfuerzo; mantener el peso">${esc(e.note || '')}</textarea></div>
+      <div class="field"><label class="label" for="note-${i}">Nota para la próxima vez</label><textarea id="note-${i}" class="note-in" rows="2" data-ex="${i}" data-f="note" placeholder="Ej. Solo pude 12 reps con mucho esfuerzo; mantener el peso">${esc(e.note || '')}</textarea>
+        <div class="tags">${NOTE_TAGS.map(t => `<button type="button" class="tag tag-${t.k} ${noteHas(e.note, t) ? 'on' : ''}" data-act="note-tag" data-ex="${i}" data-tag="${t.k}">${t.label}</button>`).join('')}</div>
+        <div class="note-hint" id="note-hint-${i}">${noteHint(e.note)}</div></div>
     </div>`; }).join('')}
   <div class="grid2">
     <button class="btn danger" data-act="discard" id="btn-discard">${state.confirm === 'discard' ? '¿Descartar? Toca otra vez' : 'Descartar'}</button>
@@ -1255,7 +1302,7 @@ function vProgress() {
 }
 function recordsCard() {
   const best = {};
-  if (gf() === 'all' || gf() === 'rokaz') HISTORY.records.forEach(r => best[r.name] = { w: r.w, r: r.r, e: e1rm(r.w, r.r), when: "Roka'z · Hevy / Symmetry", start: r.start });
+  if (gf() === 'all' || gf() === BASE_GYM) HISTORY.records.forEach(r => best[r.name] = { w: r.w, r: r.r, e: e1rm(r.w, r.r), when: 'Raydac · Hevy / Symmetry', start: r.start });
   [...state.sessions].filter(inGf).reverse().forEach(s => s.exercises.forEach(e => e.sets.forEach(x => {
     const v = e1rm(x.w, x.r); const b = best[e.name];
     if (!b || v > b.e + 0.01) best[e.name] = { w: x.w, r: x.r, e: v, when: fmtDate(s.date) + ' · ' + gymName(sGym(s)).replace(/ Gym$/, ''), start: b ? b.start : undefined, isNew: !!b };
@@ -1330,10 +1377,11 @@ function vHistory() {
   ${list.length ? '' : `<div class="card empty"><div>No hay sesiones en ${esc(gymName(gf()))} todavía.</div></div>`}
   ${list.map(s => { const vol = s.exercises.reduce((a, e) => a + e.sets.reduce((b, x) => b + x.w * x.r, 0), 0); const ns = s.exercises.reduce((a, e) => a + e.sets.length, 0); const k = sKind(s);
     return `<details class="card hist"><summary><div class="grow"><div class="label">${fmtDate(s.date, true)}</div><div style="font-weight:700">${esc(s.dayName)}</div>
-      <div class="row" style="gap:6px;margin-top:3px;flex-wrap:wrap"><span class="gtag">${esc(s.gymName || gymName(sGym(s)))}</span><span class="kind k-${k}">${KINDS[k]}</span></div>
+      <div class="row" style="gap:6px;margin-top:3px;flex-wrap:wrap"><span class="gtag">${esc(s.gymName || gymName(sGym(s)))}</span><span class="kind k-${k}">${KINDS[k]}</span>${s.source ? `<span class="gtag">${esc(s.source)}</span>` : ''}</div>
       <div class="muted num" style="font-size:12.5px;margin-top:3px">${ns} series · ${fmtKg(vol)} kg · ${Math.round(s.durationSec / 60)} min</div></div>
       <div class="bars" style="width:60px">${s.exercises.map(e => `<i class="t-${e.type}"></i>`).join('')}</div></summary>
       <table>${s.exercises.map(e => `<tr><td><span class="dot t-${e.type}" style="display:inline-block;margin-right:6px"></span>${esc(e.name)}</td><td>${e.sets.map(x => `${fmtKg(x.w)}×${x.r}${(x.drops || []).map(dd => ` <span class="dropt">↓${fmtKg(dd.w)}×${dd.r}</span>`).join('')}`).join('  ')}</td></tr>${e.note ? `<tr><td colspan="2" class="note-h">📝 ${esc(e.note)}</td></tr>` : ''}`).join('')}</table>
+      <div class="row" style="gap:8px"><label class="label" for="sd-${s.id}" style="margin:0">Fecha</label><input type="date" id="sd-${s.id}" class="sess-date" data-id="${s.id}" value="${dk(s.date)}" style="max-width:170px"></div>
       <button class="btn small danger" data-act="sess-del" data-id="${s.id}" style="align-self:flex-start">${state.confirm === 'sdel-' + s.id ? '¿Borrar? Toca otra vez' : 'Borrar sesión'}</button>
     </details>`; }).join('')}`;
 }
@@ -1534,6 +1582,11 @@ document.addEventListener('click', ev => {
     case 'sess-del': { const id = b.dataset.id; if (prevConfirm === 'sdel-' + id) { state.sessions = state.sessions.filter(s => s.id !== id); state.confirm = null; saveLocal(); cloud.delSession(id); render(); } else { state.confirm = 'sdel-' + id; b.textContent = '¿Borrar? Toca otra vez'; ev.preventDefault(); } break; }
     case 'sheet-close': state.confirm = null; figAnim.item = null; closeSheet(); break;
     case 'how': howSheet(b.dataset.name); break;
+    case 'note-tag': { const e = state.draft.exercises[+b.dataset.ex], t = NOTE_TAGS.find(x => x.k === b.dataset.tag); if (!t) break;
+      const cur = String(e.note || '').trim();
+      if (noteHas(cur, t)) e.note = cur.replace(new RegExp('\\s*' + t.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\.?', 'i'), '').trim();
+      else e.note = (cur ? cur.replace(/[.\s]*$/, '') + '. ' : '') + t.text.charAt(0).toUpperCase() + t.text.slice(1) + '.';
+      saveDraft(); render(); break; }
     case 'guide-g': state.guideGroup = b.dataset.g; state.guideQ = ''; render(); break;
     case 'lib-pick': libPicker(b.dataset.plan, b.dataset.day, b.dataset.k === '' ? null : +b.dataset.k); break;
     case 'lib-g': state.pickG = b.dataset.g; renderPicker(); break;
@@ -1568,13 +1621,19 @@ document.addEventListener('input', ev => {
   if (t.id === 'guide-q') { state.guideQ = t.value; const pos = t.selectionStart; render(); const n = document.getElementById('guide-q'); if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (e) {} } return; }
   if (t.id === 'calc-w' || t.id === 'calc-r') { state[t.id === 'calc-w' ? 'calcW' : 'calcR'] = t.value; $('#calc-out').innerHTML = calcOut(); return; }
   if (t.dataset.f && t.dataset.ex != null && state.draft) {
-    if (t.dataset.f === 'note') { state.draft.exercises[+t.dataset.ex].note = t.value; saveDraft(); return; }
+    if (t.dataset.f === 'note') { state.draft.exercises[+t.dataset.ex].note = t.value; saveDraft(); const h = document.getElementById('note-hint-' + t.dataset.ex); if (h) h.innerHTML = noteHint(t.value); return; }
     const m = state.draft.exercises[+t.dataset.ex].log[+t.dataset.set];
     const s = t.dataset.k != null ? (m.drops || [])[+t.dataset.k] : m; if (!s) return;
     const v = t.value.replace(',', '.'); s[t.dataset.f] = v === '' ? null : (isFinite(+v) ? +v : s[t.dataset.f]); saveDraft();
   }
 });
-document.addEventListener('change', ev => { if (ev.target.id === 'sel-ex') { state.progEx = ev.target.value; render(); } });
+document.addEventListener('change', ev => {
+  if (ev.target.classList && ev.target.classList.contains('sess-date')) {
+    const s = state.sessions.find(x => x.id === ev.target.dataset.id), v = ev.target.value;
+    if (s && /^\d{4}-\d{2}-\d{2}$/.test(v)) { const old = new Date(s.date), [y, m, dd] = v.split('-').map(Number); const nd = new Date(old); nd.setFullYear(y, m - 1, dd); s.date = nd.toISOString(); state.sessions.sort((a, b) => b.date.localeCompare(a.date)); saveLocal(); toast('Fecha actualizada.'); render(); }
+    return;
+  }
+  if (ev.target.id === 'sel-ex') { state.progEx = ev.target.value; render(); } });
 addEventListener('resize', () => { if (state.settings.watch === null) safeRender(); });
 
 const hadPlans = !!LS.get('plans', null);
@@ -1582,6 +1641,21 @@ const hadGyms = !!LS.get('gyms', null);
 if (migratePlans() && hadPlans) toast('Planes actualizados: Curl Femoral y Face Pull agregados.');
 migrateGyms();
 if (!state.settings.dropRev) { state.plans.forEach(p => p.days.forEach(d => d.exercises.forEach(e => { if (e.name === 'Extensión de Pierna') e.dropLast = true; }))); state.settings.dropRev = 1; savePlans(); }
+/* Sesión registrada en Symmetry: primera semana en Roka'z (piernas pesado, lunes 5 de octubre) */
+if (!state.settings.importSym1) {
+  if (!state.sessions.some(s => s.id === 'sym-rokaz-2026-10-05')) {
+    state.sessions.push({ id: 'sym-rokaz-2026-10-05', date: new Date('2026-10-05T19:00:00-05:00').toISOString(), planId: 'plan2', planName: 'Torso / Pierna · 4 días', dayId: 'p2-lun', dayName: 'Piernas (Pesado)', gymId: 'rokaz', gymName: gymName('rokaz'), kind: 'fuerza', durationSec: 7080, source: 'Symmetry',
+      exercises: [
+        { name: 'Prensa 45°', type: P, sets: [{ w: 160, r: 18 }, { w: 170, r: 18 }, { w: 170, r: 18 }] },
+        { name: 'Sentadilla Hack', type: P, note: 'Con mala técnica, dominar 60', sets: [{ w: 60, r: 12 }, { w: 60, r: 12 }, { w: 60, r: 12 }] },
+        { name: 'Hip Thrust', type: P, sets: [{ w: 30, r: 15 }, { w: 30, r: 10 }, { w: 30, r: 11 }] },
+        { name: 'Extensión de Pierna', type: P, sets: [{ w: 45, r: 14 }, { w: 45, r: 12 }, { w: 45, r: 12 }] },
+        { name: 'Abducción de Cadera', type: P, sets: [{ w: 20, r: 10 }, { w: 20, r: 10 }, { w: 20, r: 10 }] },
+      ] });
+    state.sessions.sort((a, b) => b.date.localeCompare(a.date));
+  }
+  state.settings.importSym1 = 1; saveLocal();
+}
 if (hadPlans && !hadGyms) setTimeout(() => toast("Nuevo: elige tu gimnasio arriba. Raydac tiene una copia de tus rutinas."), 400);
 render();
 cloud.init();

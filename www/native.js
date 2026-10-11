@@ -31,7 +31,7 @@ function remText(r, dayOffset, date) {
   if (r.kind === 'prot') return { title: r.label, body: 'Meta: 145-150 g de proteína al día.' };
   if (r.kind === 'water') return { title: r.label, body: isToday ? `Llevas ${fmtKg((t.water || 0) / 1000)} L de 2,5–3 L. Toma un vaso ahora.` : 'Meta de hoy: 2,5–3 L. Toma un vaso ahora.' };
   if (r.kind === 'train') { const p = activePlan(); const d = p.days.find(x => x.weekday === date.getDay()); return { title: r.label, body: d ? `${d.name} en ${HISTORY.gym}.` : 'Revisa tu plan.' }; }
-  return { title: r.label, body: 'Recordatorio de Cuaderno de Hierro' };
+  return { title: r.label, body: 'Recordatorio de Forja' };
 }
 function remSkip(r, dayOffset, date) {
   const t = state.daily[dk(date)] || {};
@@ -156,7 +156,7 @@ function vSettings() {
     ${CAP ? `<button class="btn small" data-act="upd-check" ${upd.checking ? 'disabled' : ''}>${upd.checking ? 'Buscando…' : 'Buscar ahora'}</button>` : ''}</div>
     ${upd.latest && upd.latest.build > (upd.current ? upd.current.build : 0) ? updBanner(true) : (upd.checked && CAP ? `<div class="muted" style="font-size:12.5px">${upd.error ? 'No se pudo revisar: ' + esc(upd.error) : 'Tienes la versión más reciente.'}</div>` : '')}
   </div>
-  <div class="muted" style="font-size:12px;text-align:center">Cuaderno de Hierro</div>`;
+  <div class="muted" style="font-size:12px;text-align:center">Forja</div>`;
 }
 function remSheet(i) {
   const r = i != null ? state.reminders[i] : { kind: 'custom', label: '', time: '09:00', days: [0, 1, 2, 3, 4, 5, 6], on: true };
@@ -191,7 +191,7 @@ document.addEventListener('click', async ev => {
   if (a === 'r-edit') { state.confirm = null; remSheet(i); }
   if (a === 'r-new') remSheet(null);
   if (a === 'r-del') { if (state.confirm === 'rdel') { state.reminders.splice(i, 1); state.confirm = null; saveReminders(); closeSheet(); render(); } else { state.confirm = 'rdel'; b.textContent = '¿Borrar? Toca otra vez'; } }
-  if (a === 'n-perm' && LN) { try { const p = await LN.requestPermissions(); state.notifPerm = p.display; } catch (e) {} if (state.notifPerm !== 'granted') toast('Actívalas en Ajustes de Android → Apps → Cuaderno de Hierro → Notificaciones.'); scheduleAll(); render(); }
+  if (a === 'n-perm' && LN) { try { const p = await LN.requestPermissions(); state.notifPerm = p.display; } catch (e) {} if (state.notifPerm !== 'granted') toast('Actívalas en Ajustes de Android → Apps → Forja → Notificaciones.'); scheduleAll(); render(); }
   if (a === 'n-test' && LN) { LN.schedule({ notifications: [{ id: 9002, title: 'Así se verán tus recordatorios', body: 'Llegó en 5 segundos. ¡Todo listo! 💪', channelId: 'recordatorios', smallIcon: 'ic_stat_notify', schedule: { at: new Date(Date.now() + 5000), allowWhileIdle: true } }] }).then(() => toast('Te llegará en 5 segundos.')).catch(() => toast('No se pudo programar la prueba.')); }
   if (a === 'bk-copy') { const ok = await copyText(backupJSON()); toast(ok ? 'Respaldo copiado. Pégalo en tus notas o WhatsApp.' : 'No se pudo copiar.'); }
   if (a === 'bk-imp') importSheet();

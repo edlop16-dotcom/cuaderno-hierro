@@ -13,4 +13,4 @@ cp ci/cuaderno.keystore android/app/
 python3 ci/patch_gradle.py
 npx cap sync android
 cd android && chmod +x gradlew && ./gradlew assembleRelease --no-daemon
-cp app/build/outputs/apk/release/app-release.apk ../CuadernoDeHierro.apk
+cp app/build/outputs/apk/release/app-release.apk ../Forja.apk
