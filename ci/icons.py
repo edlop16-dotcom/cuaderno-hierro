@@ -8,7 +8,7 @@ def dumbbell(d, S, col, cx, cy, scale):
         for (off, h, w) in ((1.05, 0.95, 0.26), (1.38, 0.66, 0.22)):
             x = cx + sgn*off*u
             d.rounded_rectangle([x-w*u/2, cy-h*u/2, x+w*u/2, cy+h*u/2], radius=0.07*u, fill=col)
-S = 1024; bg = (18, 21, 25, 255); yel = (242, 194, 48, 255)
+S = 1024; bg = (11, 13, 18, 255); yel = (255, 122, 26, 255)
 im = Image.new('RGBA', (S, S), bg); dumbbell(ImageDraw.Draw(im), S, yel, S/2, S/2, 0.2); im.save('assets/icon-only.png')
 fg = Image.new('RGBA', (S, S), (0, 0, 0, 0)); dumbbell(ImageDraw.Draw(fg), S, yel, S/2, S/2, 0.15); fg.save('assets/icon-foreground.png')
 Image.new('RGBA', (S, S), bg).save('assets/icon-background.png')

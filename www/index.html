@@ -3,16 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
-<meta name="theme-color" content="#121519">
+<meta name="theme-color" content="#0b0d12">
 <title>Cuaderno de Hierro</title>
 <style>
-@font-face{font-family:'Big Shoulders Display';font-weight:700;font-style:normal;font-display:swap;src:url(fonts/big-shoulders-display-latin-700-normal.woff2) format('woff2')}
-@font-face{font-family:'Big Shoulders Display';font-weight:800;font-style:normal;font-display:swap;src:url(fonts/big-shoulders-display-latin-800-normal.woff2) format('woff2')}
-@font-face{font-family:'Figtree';font-weight:400;font-style:normal;font-display:swap;src:url(fonts/figtree-latin-400-normal.woff2) format('woff2')}
-@font-face{font-family:'Figtree';font-weight:600;font-style:normal;font-display:swap;src:url(fonts/figtree-latin-600-normal.woff2) format('woff2')}
-@font-face{font-family:'Figtree';font-weight:700;font-style:normal;font-display:swap;src:url(fonts/figtree-latin-700-normal.woff2) format('woff2')}
-@font-face{font-family:'JetBrains Mono';font-weight:500;font-style:normal;font-display:swap;src:url(fonts/jetbrains-mono-latin-500-normal.woff2) format('woff2')}
-@font-face{font-family:'JetBrains Mono';font-weight:700;font-style:normal;font-display:swap;src:url(fonts/jetbrains-mono-latin-700-normal.woff2) format('woff2')}
+@font-face{font-family:'Poppins';font-weight:500;font-style:normal;font-display:swap;src:url(fonts/poppins-latin-500-normal.woff2) format('woff2')}
+@font-face{font-family:'Poppins';font-weight:600;font-style:normal;font-display:swap;src:url(fonts/poppins-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'Poppins';font-weight:700;font-style:normal;font-display:swap;src:url(fonts/poppins-latin-700-normal.woff2) format('woff2')}
+@font-face{font-family:'Poppins';font-weight:800;font-style:normal;font-display:swap;src:url(fonts/poppins-latin-800-normal.woff2) format('woff2')}
+@font-face{font-family:'Inter';font-weight:400;font-style:normal;font-display:swap;src:url(fonts/inter-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:'Inter';font-weight:500;font-style:normal;font-display:swap;src:url(fonts/inter-latin-500-normal.woff2) format('woff2')}
+@font-face{font-family:'Inter';font-weight:600;font-style:normal;font-display:swap;src:url(fonts/inter-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'Inter';font-weight:700;font-style:normal;font-display:swap;src:url(fonts/inter-latin-700-normal.woff2) format('woff2')}
+@font-face{font-family:'Inter';font-weight:800;font-style:normal;font-display:swap;src:url(fonts/inter-latin-800-normal.woff2) format('woff2')}
 html,body{margin:0}img{max-width:100%}[hidden]{display:none!important}
 :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 body{-webkit-user-select:none;user-select:none;overscroll-behavior-y:none}
@@ -43,20 +45,6 @@ input,textarea{-webkit-user-select:text;user-select:text}
   --core:#c98bf0;
   --flame:#ff7a1a; --flame2:#ffa62b; --flame-core:#ffe08a;
   color-scheme:dark;
-}
-@media (prefers-color-scheme: light){
-  :root:not([data-theme="dark"]){
-    --bg:#eceef1; --surface:#ffffff; --surface2:#f2f4f6; --line:#d5dae0;
-    --fg:#14181d; --muted:#5b6570; --accent:#efb81d; --accent-ink:#1d1700;
-    --legs:#23834b; --push:#c3362e; --pull:#2a6ec1; --ok:#23834b; --bad:#c3362e;
-    color-scheme:light;
-  }
-}
-:root[data-theme="light"]{
-  --bg:#eceef1; --surface:#ffffff; --surface2:#f2f4f6; --line:#d5dae0;
-  --fg:#14181d; --muted:#5b6570; --accent:#efb81d; --accent-ink:#1d1700;
-  --legs:#23834b; --push:#c3362e; --pull:#2a6ec1; --ok:#23834b; --bad:#c3362e;
-  color-scheme:light;
 }
 *{box-sizing:border-box}
 html,body{height:100%}
@@ -94,8 +82,6 @@ h3{font-size:19px;font-weight:700}
 .nav-in{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr)}
 /* figuras de técnica */
 :root{--eq:#6d7783;--eq2:#2a3038}
-@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){--eq:#8a939d;--eq2:#e3e7eb}}
-:root[data-theme="light"]{--eq:#8a939d;--eq2:#e3e7eb}
 .fig-svg{width:100%;height:auto;display:block;--hl:var(--tc)}
 .fig{background:var(--surface2);border-radius:12px;padding:8px;border:1px solid var(--line)}
 .fig-ctrl{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
@@ -324,6 +310,7 @@ body.watch .rest-in{border-radius:0;flex-direction:column;gap:6px;min-height:100
 @media (max-width:330px){ .tiles{grid-template-columns:1fr} }
 @media (prefers-reduced-motion:no-preference){ .check,.btn,.nav button{transition:background .15s,color .15s} }
 </style>
+<link rel="stylesheet" href="skin.css">
 </head>
 <body>
 <div class="app" id="app"></div>
@@ -565,6 +552,7 @@ function libFind(name) {
 }
 </script>
 <script src="library.js"></script>
+<script src="icons.js"></script>
 <script>
 /* ================== Datos base (tus 2 planes) ================== */
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
@@ -1601,5 +1589,6 @@ cloud.init();
 <script src="coach.js"></script>
 <script src="media.js"></script>
 <script src="native.js"></script>
+<script src="skin.js"></script>
 </body>
 </html>

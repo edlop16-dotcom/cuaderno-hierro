@@ -2,13 +2,12 @@
 set -euo pipefail
 npm install --no-audit --no-fund
 mkdir -p www/fonts
-for f in big-shoulders-display/files/big-shoulders-display-latin-700-normal big-shoulders-display/files/big-shoulders-display-latin-800-normal figtree/files/figtree-latin-400-normal figtree/files/figtree-latin-600-normal figtree/files/figtree-latin-700-normal jetbrains-mono/files/jetbrains-mono-latin-500-normal jetbrains-mono/files/jetbrains-mono-latin-700-normal; do
-  cp "node_modules/@fontsource/$f.woff2" www/fonts/
-done
+for w in 500 600 700 800; do cp "node_modules/@fontsource/poppins/files/poppins-latin-$w-normal.woff2" www/fonts/; done
+for w in 400 500 600 700 800; do cp "node_modules/@fontsource/inter/files/inter-latin-$w-normal.woff2" www/fonts/; done
 pip install --quiet pillow
 python3 ci/icons.py
 npx cap add android
-npx capacitor-assets generate --android --iconBackgroundColor '#121519' --iconBackgroundColorDark '#121519' --splashBackgroundColor '#121519' --splashBackgroundColorDark '#121519'
+npx capacitor-assets generate --android --iconBackgroundColor '#0b0d12' --iconBackgroundColorDark '#0b0d12' --splashBackgroundColor '#0b0d12' --splashBackgroundColorDark '#0b0d12'
 cp ci/ic_stat_notify.xml android/app/src/main/res/drawable/
 cp ci/cuaderno.keystore android/app/
 python3 ci/patch_gradle.py
