@@ -255,3 +255,4 @@ body.watch .pair-code{font-size:30px;padding:8px 4px}
 .sheet-card .err{color:var(--bad);font-size:13px;font-weight:600}
 .nudge{border-color:rgba(255,106,31,.35)}
 .nudge .hi{width:36px;height:36px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:rgba(255,106,31,.14);color:var(--accent);flex:none}
+.gbtn{background:#fff;color:#1f1f1f;border-color:#fff;display:flex;align-items:center;justify-content:center;gap:10px;font-weight:700}
