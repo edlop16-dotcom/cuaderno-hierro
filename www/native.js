@@ -145,7 +145,7 @@ function remSheet(i) {
   </form>`);
 }
 function backupJSON() {
-  return JSON.stringify({ app: 'cuaderno-hierro', v: 1, at: new Date().toISOString(), plans: state.plans, settings: state.settings, sessions: state.sessions, daily: state.daily, reminders: state.reminders });
+  return JSON.stringify({ app: 'cuaderno-hierro', v: 2, at: new Date().toISOString(), gyms: state.gyms, plans: state.plans, settings: state.settings, sessions: state.sessions, daily: state.daily, reminders: state.reminders });
 }
 async function copyText(txt) {
   try { await navigator.clipboard.writeText(txt); return true; } catch (e) { return false; }
@@ -185,9 +185,9 @@ document.addEventListener('submit', ev => {
     try {
       const d = JSON.parse(document.getElementById('imp-txt').value.trim());
       if (d.app !== 'cuaderno-hierro' || !Array.isArray(d.plans)) throw 0;
-      state.plans = d.plans; state.settings = Object.assign(state.settings, d.settings || {}); state.sessions = d.sessions || []; state.daily = d.daily || {};
+      state.plans = d.plans; if (Array.isArray(d.gyms)) { state.gyms = d.gyms; LS.set('gyms', d.gyms); } state.settings = Object.assign(state.settings, d.settings || {}); state.sessions = d.sessions || []; state.daily = d.daily || {};
       if (Array.isArray(d.reminders)) state.reminders = d.reminders;
-      saveLocal(); LS.set('daily', state.daily); saveReminders(); closeSheet(); render(); toast('Datos restaurados.');
+      migrateGyms(); saveLocal(); LS.set('daily', state.daily); saveReminders(); closeSheet(); render(); toast('Datos restaurados.');
     } catch (e) { toast('Ese texto no es un respaldo válido.'); }
   }
 }, true);
