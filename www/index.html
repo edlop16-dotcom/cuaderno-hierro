@@ -353,10 +353,9 @@ body.watch .rest-in{border-radius:0;flex-direction:column;gap:6px;min-height:100
 <div class="rest" id="rest" hidden></div>
 <nav class="nav" id="nav" aria-label="Secciones"><div class="nav-in">
   <button data-act="tab" data-tab="train" id="nav-train"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 7v10M3 9v6M18 7v10M21 9v6M6 12h12"/></svg>Entrenar</button>
-  <button data-act="tab" data-tab="plans" id="nav-plans"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="4" width="16" height="17" rx="2"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>Planes</button>
-  <button data-act="tab" data-tab="guide" id="nav-guide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4.5" r="2"/><path d="M12 7v7M12 9l-5 3M12 9l5-3M12 14l-3 7M12 14l3 7"/></svg>Técnica</button>
-  <button data-act="tab" data-tab="progress" id="nav-progress"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 19h18M5 15l4-5 4 3 6-7"/></svg>Progreso</button>
-  <button data-act="tab" data-tab="history" id="nav-history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>Historial</button>
+  <button data-act="tab" data-tab="plans" id="nav-plans"><svg viewBox="0 0 24 24"></svg>Rutinas</button>
+  <button data-act="tab" data-tab="guide" id="nav-guide"><svg viewBox="0 0 24 24"></svg>Ejercicios</button>
+  <button data-act="tab" data-tab="profile" id="nav-profile"><svg viewBox="0 0 24 24"></svg>Perfil</button>
 </div></nav>
 <div class="sheet" id="sheet" hidden></div>
 <div class="toast" id="toast" hidden></div>
@@ -1030,7 +1029,7 @@ const stepDone = s => s.done && (s.drops || []).every(d => d.done);
 function startSession(planId, dayId) {
   const plan = state.plans.find(p => p.id === planId); const day = plan.days.find(d => d.id === dayId);
   const gymId = plan.gymId || 'rokaz', kind = day.kind || kindOfName(day.name);
-  if (!day.exercises.length) { toast('Este día no tiene ejercicios. Agrégalos en Planes → Editar.'); return; }
+  if (!day.exercises.length) { toast('Este día no tiene ejercicios. Agrégalos en Rutinas → Editar.'); return; }
   state.draft = {
     id: uid(), planId, planName: plan.name, dayId, dayName: day.name, gymId, gymName: gymName(gymId), kind,
     start: new Date().toISOString(), cur: 0,
@@ -1420,9 +1419,10 @@ function vHistory() {
 
 function render() {
   const w = isWatch(); document.body.classList.toggle('watch', w);
-  const v = { train: vTrain, plans: vPlans, guide: vGuide, progress: vProgress, history: vHistory, settings: () => vSettings() }[state.tab] || vTrain;
+  const v = { train: vTrain, plans: vPlans, guide: vGuide, progress: () => vProfile('progress'), history: () => vProfile('history'), settings: () => vProfile('settings'), profile: () => vProfile(state.profSub || 'progress') }[state.tab] || vTrain;
   $('#app').innerHTML = w && state.draft ? vWatchSession() : (w && state.tab === 'train' && !state.draft ? vWatchHome() : v());
-  document.querySelectorAll('.nav button').forEach(b => b.setAttribute('aria-current', b.dataset.tab === state.tab ? 'page' : 'false'));
+  const navT = ['progress', 'history', 'settings'].includes(state.tab) ? 'profile' : state.tab;
+  document.querySelectorAll('.nav button').forEach(b => b.setAttribute('aria-current', b.dataset.tab === navT ? 'page' : 'false'));
   tick();
 }
 function vWatchHome() {
@@ -1538,7 +1538,7 @@ function gymSheet() {
     state.gyms.push({ id, name: v });
     gymPlans(src).forEach(p => { const c = JSON.parse(JSON.stringify(p)); c.id = uid(); c.gymId = id; c.days.forEach(d => { d.id = uid(); d.exercises.forEach(e => e.id = uid()); }); state.plans.push(c); });
     state.settings.activeGymId = id; LS.set('gyms', state.gyms);
-    setTimeout(() => toast(src ? `Rutinas copiadas a ${v}. Ajusta los pesos en Planes.` : `${v} creado. Agrega un plan en Planes.`), 50);
+    setTimeout(() => toast(src ? `Rutinas copiadas a ${v}. Ajusta los pesos en Rutinas.` : `${v} creado. Agrega un plan en Rutinas.`), 50);
   }, `<div class="field"><label class="label" for="ft-src">Empezar con las rutinas de</label><select id="ft-src">${state.gyms.map(g => `<option value="${g.id}" ${g.id === activeGym().id ? 'selected' : ''}>${esc(g.name)}</option>`).join('')}<option value="">Ninguno (vacío)</option></select></div>
   <div class="muted" style="font-size:12.5px">Se copian los ejercicios y pesos como punto de partida. Luego cada gym guarda sus propios pesos e historial.</div>`);
   const i = document.getElementById('ft-v'); if (i) i.placeholder = 'Ej. Smart Fit Miraflores';
@@ -1713,5 +1713,6 @@ cloud.init();
 <script src="config.js"></script>
 <script src="sync.js"></script>
 <script src="undo.js"></script>
+<script src="layout.js"></script>
 </body>
 </html>

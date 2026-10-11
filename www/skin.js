@@ -5,7 +5,7 @@
    ========================================================================== */
 
 /* Iconos de la barra inferior */
-const NAV_IC = { train: 'dumbbell', plans: 'clipboard-list', guide: 'person-standing', progress: 'trending-up', history: 'history' };
+const NAV_IC = { train: 'dumbbell', plans: 'clipboard-list', guide: 'book-open', profile: 'user' };
 document.querySelectorAll('.nav button').forEach(b => { const s = b.querySelector('svg'); if (s) s.outerHTML = ic(NAV_IC[b.dataset.tab] || 'dumbbell', 22); });
 
 /* Encabezado con avatar */
