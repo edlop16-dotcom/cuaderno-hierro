@@ -13,6 +13,19 @@ const _headerL = header;
 const TITLE_MAP = { Planes: 'Rutinas', 'Técnica': 'Ejercicios' };
 header = function (t, s) { return header.skip ? '' : _headerL(TITLE_MAP[t] || t, s); };
 
+
+/* ---------- Marca: logo + nombre de la app + tu usuario ---------- */
+const LOGO_INNER = '<defs><linearGradient id="lgA" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff4d1f"/><stop offset=".55" stop-color="#ff7a1a"/><stop offset="1" stop-color="#ffb020"/></linearGradient><linearGradient id="lgB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe9a8"/><stop offset="1" stop-color="#ffb020"/></linearGradient></defs><rect width="64" height="64" rx="16" fill="url(#lgA)"/><g transform="translate(0 -2.5)"><path fill="#160a02" d="M32 7c2.2 7.6 11.5 11.6 11.5 22.4a11.5 11.5 0 0 1-23 0c0-5.6 3.4-8.8 4.6-13.4 1.4 3.6 3 5.2 4.6 6.2C30.9 18 32.4 13 32 7z"/><path fill="url(#lgB)" d="M32.2 21.5c1 4.8 5.6 6.8 5.6 11.4a5.8 5.8 0 0 1-11.6 0c0-2.9 1.8-4.8 2.6-7.4.9 1.9 1.9 2.9 2.9 3.3.4-2.4.6-4.8.5-7.3z"/></g><path fill="#160a02" d="M7 41h48v6h-7l-3.5 3.5V52l5.5 4.5V58H20v-1.5l5.5-4.5v-1.5L22 47c-7 0-11.5-2-15-6z"/>';
+const LOGO = (s = 34) => `<svg class="logo" width="${s}" height="${s}" viewBox="0 0 64 64" aria-hidden="true">${LOGO_INNER}</svg>`;
+header = function (t, s) {
+  if (header.skip) return '';
+  const name = HISTORY.name || 'Atleta';
+  return `<div class="brandbar"><div class="brand">${LOGO(34)}<span class="wordmark">FORJA</span></div>
+    <div class="row" style="gap:8px"><button class="userchip" data-act="tab" data-tab="profile" aria-label="Perfil de ${esc(name)}"><span class="avatar xs" aria-hidden="true">${esc(name[0])}</span><span class="un">${esc(name)}</span></button>
+    <button class="icon-btn" data-act="tab" data-tab="settings" id="btn-settings" aria-label="Ajustes">${ic('settings', 19)}</button></div></div>
+    <div class="pagehead"><div class="label">${s}</div><h1>${TITLE_MAP[t] || t}</h1></div>`;
+};
+
 /* ---------- Perfil ---------- */
 function vProfile(sub) {
   sub = ['progress', 'history', 'settings'].includes(sub) ? sub : 'progress';
@@ -26,7 +39,7 @@ function vProfile(sub) {
   header.skip = true;
   try { body = (sub === 'progress' ? vProgress : sub === 'history' ? vHistory : vSettings)(); }
   finally { header.skip = false; }
-  return `${_headerL('Perfil', a && a.email ? esc(a.email) : 'Tu cuenta y tu progreso')}
+  return `${header('Perfil', a && a.email ? esc(a.email) : 'Tu cuenta y tu progreso')}
   <div class="card pcard">
     <div class="row" style="gap:14px"><div class="avatar lg" aria-hidden="true">${esc((HISTORY.name || 'E')[0])}</div>
       <div class="grow" style="min-width:0"><h2>${esc(HISTORY.name || 'Atleta')}</h2>
@@ -47,6 +60,8 @@ const _vTrainL = vTrain;
 vTrain = function () {
   let h = _vTrainL();
   if (state.draft || isWatch()) return h;
+  h = h.replace(`<div class="label">${WDL[new Date().getDay()]} · ${esc(activeGym().name)}</div>`, `<div class="label">${WDL[new Date().getDay()]}</div>`);
+  h = h.replace(/<div class="gymbar" role="group" aria-label="Gimnasio">[\s\S]*?<\/div>/, `<button class="gympill" data-act="gym-pick" aria-label="Cambiar de gimnasio">${ic('map-pin', 14)} ${esc(activeGym().name)} ${ic('chevron-down', 14)}</button>`);
   h = h.replace(/<div class="row" style="justify-content:space-between"><h3>([^<]*)<\/h3><button class="btn small" data-act="tab" data-tab="plans">Cambiar plan<\/button><\/div>/,
     (m, name) => `<div class="row" style="justify-content:space-between;align-items:flex-end"><div><h3>Tus rutinas</h3><div class="muted" style="font-size:12.5px">${name}</div></div><button class="btn small" data-act="tab" data-tab="plans">Ver todas</button></div>`);
   const act = activePlan(), lastOf = id => state.sessions.find(s => s.dayId === id);
@@ -179,10 +194,14 @@ function saveRoutine(f) {
 document.addEventListener('click', ev => {
   const b = ev.target.closest('[data-act]'); if (!b) return;
   const a = b.dataset.act;
-  const mine = ['ex-g', 'ex-e', 'ex-tap', 'ex-new1', 'ex-add1', 'ex-sel', 'ex-fav', 'sel-clear', 'sel-new', 'sel-add', 'rt-addto', 'rt-from-ex', 'live-open'];
+  const mine = ['gym-pick', 'gym-set', 'ex-g', 'ex-e', 'ex-tap', 'ex-new1', 'ex-add1', 'ex-sel', 'ex-fav', 'sel-clear', 'sel-new', 'sel-add', 'rt-addto', 'rt-from-ex', 'live-open'];
   if (!mine.includes(a)) return;
   ev.stopPropagation(); ev.preventDefault();
   const k = b.dataset.key;
+  if (a === 'gym-pick') openSheet(`<div class="row"><h2 class="grow">¿Dónde entrenas hoy?</h2><button class="icon-btn" data-act="sheet-close" aria-label="Cerrar">${ic('x', 18)}</button></div>
+    ${state.gyms.map(g => `<button class="pick ${g.id === activeGym().id ? 'on' : ''}" data-act="gym-set" data-gym="${g.id}">${ic('map-pin', 18)}<span class="grow" style="text-align:left"><b>${esc(g.name)}</b><small class="muted">${gymPlans(g.id).length} planes</small></span>${g.id === activeGym().id ? ic('check', 18) : ''}</button>`).join('')}
+    <button class="btn block" data-act="gym-new">+ Agregar gimnasio</button>`);
+  if (a === 'gym-set') { state.settings.activeGymId = b.dataset.gym; state.editPlan = null; saveLocal(); closeSheet(); render(); toast('Entrenando en ' + activeGym().name); }
   if (a === 'ex-g') { state.exG = b.dataset.v; state.guideQ = ''; render(); }
   if (a === 'ex-e') { state.exE = b.dataset.v; render(); }
   if (a === 'ex-tap') {

@@ -7,7 +7,7 @@ for w in 400 500 600 700 800; do cp "node_modules/@fontsource/inter/files/inter-
 # Compatibilidad con WebView antiguos (reloj): baja la sintaxis JS y resuelve CSS moderno
 node ci/legacy.mjs www
 pip install --quiet pillow
-python3 ci/icons.py
+mkdir -p assets && cp ci/assets/*.png assets/
 npx cap add android
 npx capacitor-assets generate --android --iconBackgroundColor '#0b0d12' --iconBackgroundColorDark '#0b0d12' --splashBackgroundColor '#0b0d12' --splashBackgroundColorDark '#0b0d12'
 cp ci/ic_stat_notify.xml android/app/src/main/res/drawable/
