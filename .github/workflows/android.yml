@@ -1,1 +1,32 @@
-{"name":"Compilar app Android","on":{"push":{"branches":["main"]},"workflow_dispatch":null},"permissions":{"contents":"write"},"jobs":{"build":{"runs-on":"ubuntu-latest","steps":[{"uses":"actions/checkout@v4"},{"uses":"actions/setup-node@v4","with":{"node-version":20}},{"uses":"actions/setup-java@v4","with":{"distribution":"temurin","java-version":17}},{"name":"Compilar APK","env":{"BUILD_NUMBER":"${{ github.run_number }}"},"run":"bash ci/build.sh"},{"name":"Publicar version","uses":"softprops/action-gh-release@v2","with":{"tag_name":"v1.0.${{ github.run_number }}","name":"Cuaderno de Hierro 1.0.${{ github.run_number }}","body":"Descarga CuadernoDeHierro.apk desde tu celular Android e instalala.","files":"CuadernoDeHierro.apk","make_latest":true}}]}}}
+name: Compilar app Android
+on:
+  push:
+    branches:
+    - main
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 20
+    - uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: 17
+    - name: Compilar APK
+      env:
+        BUILD_NUMBER: ${{ github.run_number }}
+      run: bash ci/build.sh
+    - name: Publicar version
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: v1.0.${{ github.run_number }}
+        name: Cuaderno de Hierro 1.0.${{ github.run_number }}
+        body: ${{ github.event.head_commit.message }}
+        files: CuadernoDeHierro.apk
+        make_latest: true

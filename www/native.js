@@ -124,7 +124,12 @@ function vSettings() {
   <div class="card"><h3>Respaldo</h3>
     <div class="muted" style="font-size:12.5px">Tus datos se guardan solo en este teléfono. Copia un respaldo de vez en cuando y guárdalo en tus notas o en WhatsApp; con él puedes pasar tus datos a otro equipo, como tu reloj.</div>
     <div class="grid2"><button class="btn" data-act="bk-copy">Copiar respaldo</button><button class="btn" data-act="bk-imp">Restaurar</button></div></div>
-  <div class="muted" style="font-size:12px;text-align:center">Cuaderno de Hierro · versión 1.0</div>`;
+  <div class="card"><h3>Actualizaciones</h3>
+    <div class="row"><div class="grow">Versión instalada<div class="muted num" style="font-size:12px">${upd.current ? upd.current.name : (CAP ? '…' : 'Vista previa web')}</div></div>
+    ${CAP ? `<button class="btn small" data-act="upd-check" ${upd.checking ? 'disabled' : ''}>${upd.checking ? 'Buscando…' : 'Buscar ahora'}</button>` : ''}</div>
+    ${upd.latest && upd.latest.build > (upd.current ? upd.current.build : 0) ? updBanner(true) : (upd.checked && CAP ? `<div class="muted" style="font-size:12.5px">${upd.error ? 'No se pudo revisar: ' + esc(upd.error) : 'Tienes la versión más reciente.'}</div>` : '')}
+  </div>
+  <div class="muted" style="font-size:12px;text-align:center">Cuaderno de Hierro</div>`;
 }
 function remSheet(i) {
   const r = i != null ? state.reminders[i] : { kind: 'custom', label: '', time: '09:00', days: [0, 1, 2, 3, 4, 5, 6], on: true };
@@ -195,5 +200,60 @@ if (CAP && CAP.App) CAP.App.addListener('backButton', () => {
   CAP.App.minimizeApp ? CAP.App.minimizeApp() : CAP.App.exitApp();
 });
 
+/* ================== Actualizaciones (GitHub Releases) ================== */
+const REPO = 'edlop16-dotcom/cuaderno-hierro';
+const upd = { current: null, latest: null, checking: false, checked: false, error: '' };
+const buildOf = tag => { const m = String(tag || '').match(/(\d+)\s*$/); return m ? +m[1] : 0; };
+function updBanner(inSettings) {
+  const l = upd.latest; if (!l) return '';
+  return `<div class="remind upd" ${inSettings ? '' : 'id="upd-banner"'}><span aria-hidden="true">⬇️</span>
+    <span class="grow"><b>Nueva versión ${esc(l.name)}</b> disponible.${l.notes ? `<br><span class="muted" style="font-size:12.5px">${esc(l.notes)}</span>` : ''}
+    <span class="row" style="margin-top:8px;gap:8px;flex-wrap:wrap"><button class="btn small primary" data-act="upd-go">Actualizar</button>${inSettings ? '' : '<button class="btn small" data-act="upd-later">Más tarde</button>'}</span></span></div>`;
+}
+async function checkUpdates(manual) {
+  if (!CAP || upd.checking) return;
+  const last = LS.get('updCheckedAt', 0);
+  if (!manual && Date.now() - last < 3 * 3600e3 && LS.get('updLatest', null)) { upd.latest = LS.get('updLatest', null); upd.checked = true; safeRender(); return; }
+  upd.checking = true; upd.error = ''; if (manual) render();
+  try {
+    const r = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`, { headers: { Accept: 'application/vnd.github+json' }, cache: 'no-store' });
+    if (!r.ok) throw new Error(r.status === 403 ? 'demasiadas consultas, intenta en una hora' : 'error ' + r.status);
+    const j = await r.json();
+    const apk = (j.assets || []).find(a => /\.apk$/i.test(a.name));
+    upd.latest = apk ? { name: String(j.tag_name || '').replace(/^v/, ''), build: buildOf(j.tag_name), url: apk.browser_download_url, notes: String(j.body || '').split('\n').filter(x => x.trim() && !/Descarga .*apk|Co-Authored-By|Claude-Session|^Merge /i.test(x)).slice(0, 3).join(' · ') } : null;
+    LS.set('updLatest', upd.latest); LS.set('updCheckedAt', Date.now());
+  } catch (e) { upd.error = e.message || 'sin conexión'; }
+  upd.checking = false; upd.checked = true;
+  render();
+  if (manual && !upd.error) toast(upd.latest && upd.current && upd.latest.build > upd.current.build ? 'Hay una versión nueva.' : 'Ya tienes la versión más reciente.');
+}
+async function initUpdates() {
+  if (!CAP || !CAP.App) return;
+  try { const i = await CAP.App.getInfo(); upd.current = { name: i.version, build: +i.build || buildOf(i.version) }; } catch (e) {}
+  checkUpdates(false);
+}
+document.addEventListener('click', ev => {
+  const b = ev.target.closest('[data-act]'); if (!b) return;
+  const a = b.dataset.act;
+  if (a === 'upd-check') { ev.stopPropagation(); checkUpdates(true); }
+  if (a === 'upd-later') { ev.stopPropagation(); LS.set('updSnooze', upd.latest ? upd.latest.build : 0); render(); }
+  if (a === 'upd-go' && upd.latest) {
+    ev.stopPropagation();
+    toast('Descargando… al terminar, abre el archivo y toca Instalar. Tus datos se conservan.');
+    setTimeout(() => { location.href = upd.latest.url; }, 600);
+  }
+}, true);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkUpdates(false); });
+/* Banner en la pantalla de inicio */
+const _vTrain = vTrain;
+vTrain = function () {
+  const html = _vTrain();
+  const show = !state.draft && upd.latest && upd.current && upd.latest.build > upd.current.build && LS.get('updSnooze', 0) !== upd.latest.build;
+  if (!show) return html;
+  const i = html.indexOf('<div class="hero">');
+  return i < 0 ? updBanner(false) + html : html.slice(0, i) + updBanner(false) + html.slice(i);
+};
+
 render();
 initNotifications();
+initUpdates();
