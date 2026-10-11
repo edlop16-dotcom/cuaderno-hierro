@@ -4,6 +4,8 @@ npm install --no-audit --no-fund
 mkdir -p www/fonts
 for w in 500 600 700 800; do cp "node_modules/@fontsource/poppins/files/poppins-latin-$w-normal.woff2" www/fonts/; done
 for w in 400 500 600 700 800; do cp "node_modules/@fontsource/inter/files/inter-latin-$w-normal.woff2" www/fonts/; done
+# Compatibilidad con WebView antiguos (reloj): baja la sintaxis JS y resuelve CSS moderno
+node ci/legacy.mjs www
 pip install --quiet pillow
 python3 ci/icons.py
 npx cap add android

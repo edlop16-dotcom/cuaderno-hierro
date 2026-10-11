@@ -5,6 +5,31 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
 <meta name="theme-color" content="#0b0d12">
 <title>Forja</title>
+<script>
+/* Compatibilidad con WebView antiguos (reloj) y aviso de error en pantalla. Solo ES5 aquí. */
+(function () {
+  var AP = Array.prototype, SP = String.prototype;
+  if (!AP.flat) AP.flat = function (d) { d = d === undefined ? 1 : d; var o = []; (function f(a, n) { for (var i = 0; i < a.length; i++) { if (Array.isArray(a[i]) && n > 0) f(a[i], n - 1); else o.push(a[i]); } })(this, d); return o; };
+  if (!AP.flatMap) AP.flatMap = function (fn, t) { return AP.map.call(this, fn, t).flat(1); };
+  if (!SP.padStart) SP.padStart = function (n, s) { var r = String(this); s = s === undefined ? ' ' : String(s); while (r.length < n) r = s + r; return r.slice(r.length - Math.max(n, String(this).length)); };
+  if (!SP.padEnd) SP.padEnd = function (n, s) { var r = String(this); s = s === undefined ? ' ' : String(s); while (r.length < n) r += s; return r.slice(0, Math.max(n, String(this).length)); };
+  if (!Object.entries) Object.entries = function (o) { return Object.keys(o).map(function (k) { return [k, o[k]]; }); };
+  if (!Object.values) Object.values = function (o) { return Object.keys(o).map(function (k) { return o[k]; }); };
+  if (!Object.fromEntries) Object.fromEntries = function (a) { var o = {}; Array.from(a).forEach(function (p) { o[p[0]] = p[1]; }); return o; };
+  if (window.Promise && !Promise.prototype.finally) Promise.prototype.finally = function (f) { return this.then(function (v) { f(); return v; }, function (e) { f(); throw e; }); };
+  var shown = 0;
+  function show(msg) {
+    if (shown++ > 2 || !document.body) return;
+    var d = document.createElement('div');
+    d.setAttribute('style', 'position:fixed;left:8px;right:8px;top:8px;z-index:99999;background:#3a0d14;color:#ffd6dc;border:1px solid #ff4d6d;border-radius:12px;padding:10px 12px;font:12px/1.35 sans-serif;word-break:break-word');
+    d.textContent = 'Forja tuvo un error: ' + msg + ' — toca para cerrar y envía una captura.';
+    d.onclick = function () { d.parentNode && d.parentNode.removeChild(d); };
+    document.body.appendChild(d);
+  }
+  window.addEventListener('error', function (e) { show((e.message || 'desconocido') + (e.lineno ? ' (línea ' + e.lineno + ')' : '')); });
+  window.addEventListener('unhandledrejection', function (e) { var r = e.reason; show('promesa: ' + (r && r.message || r)); });
+})();
+</script>
 <style>
 @font-face{font-family:'Poppins';font-weight:500;font-style:normal;font-display:swap;src:url(fonts/poppins-latin-500-normal.woff2) format('woff2')}
 @font-face{font-family:'Poppins';font-weight:600;font-style:normal;font-display:swap;src:url(fonts/poppins-latin-600-normal.woff2) format('woff2')}
