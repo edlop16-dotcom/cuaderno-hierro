@@ -100,8 +100,30 @@ document.addEventListener('visibilitychange', () => {
 const _saveDaily = saveDaily; saveDaily = function () { _saveDaily(); scheduleSoon(); };
 const _finish = finishSession; finishSession = function () { _finish(); scheduleSoon(); };
 const _savePlans = savePlans; savePlans = function () { _savePlans(); scheduleSoon(); };
-const _markSet = markSet; markSet = function (i, j, v) { try { HAP && HAP.impact({ style: 'MEDIUM' }); } catch (e) {} _markSet(i, j, v); };
+const _markSet = markSet; markSet = function (i, j, v, k) { try { HAP && HAP.impact({ style: 'MEDIUM' }); } catch (e) {} _markSet(i, j, v, k); };
 if (HAP) window.nativeVibrate = n => { for (let i = 0; i < n; i++) setTimeout(() => { try { HAP.vibrate({ duration: 400 }); } catch (e) {} }, i * 650); };
+
+/* ================== Pantalla siempre encendida ================== */
+const KA = CAP && CAP.KeepAwake;
+const AWAKE = { app: 'Mientras la app está abierta', train: 'Solo durante el entrenamiento', off: 'Nunca (usa el ajuste del teléfono)' };
+const awakeMode = () => state.settings.awake || 'app';
+let webLock = null, awakeOn = null;
+async function applyAwake() {
+  const want = document.visibilityState === 'visible' && (awakeMode() === 'app' || (awakeMode() === 'train' && !!state.draft));
+  if (KA) {
+    if (want === awakeOn) return; awakeOn = want;
+    try { want ? await KA.keepAwake() : await KA.allowSleep(); } catch (e) {}
+    return;
+  }
+  try {
+    if (want && !webLock && navigator.wakeLock) { webLock = await navigator.wakeLock.request('screen'); webLock.addEventListener('release', () => { webLock = null; }); }
+    if (!want && webLock) { await webLock.release(); webLock = null; }
+  } catch (e) {}
+}
+wake = () => applyAwake();
+unwake = () => applyAwake();
+document.addEventListener('visibilitychange', () => { awakeOn = null; applyAwake(); });
+document.addEventListener('change', ev => { if (ev.target.id === 'awake-mode') { state.settings.awake = ev.target.value; saveLocal(); awakeOn = null; applyAwake(); toast(ev.target.value === 'off' ? 'La pantalla se apagará según el ajuste de tu teléfono.' : 'Listo: la pantalla no se bloqueará.'); } });
 
 /* ================== Vista de Ajustes ================== */
 const WD1 = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
@@ -120,6 +142,8 @@ function vSettings() {
     <button class="btn block" data-act="r-new">+ Nuevo recordatorio</button></div>
   ${typeof alertSettingsCard === 'function' ? alertSettingsCard() : ''}
   <div class="card"><h3>Pantalla</h3>
+    <div class="field"><label class="label" for="awake-mode">No bloquear la pantalla</label><select id="awake-mode">${Object.entries(AWAKE).map(([k, v]) => `<option value="${k}" ${k === awakeMode() ? 'selected' : ''}>${v}</option>`).join('')}</select>
+    <div class="muted" style="font-size:12px">Evita que el teléfono se bloquee y te pida la clave entre series. Gasta un poco más de batería.</div></div>
     <div class="row"><div class="grow">Figura animada al entrenar<div class="muted" style="font-size:12px">Muestra el muñequito de cada ejercicio dentro de la sesión. Tócalo para ver la técnica y tus videos.</div></div>
     <button class="switch ${typeof alertCfg === 'function' && alertCfg().fig ? 'on' : ''}" data-act="fig-tog" role="switch" aria-checked="${typeof alertCfg === 'function' && alertCfg().fig}" aria-label="Figura animada al entrenar"><i></i></button></div>
     <div class="row"><div class="grow">Modo reloj<div class="muted" style="font-size:12px">Una serie por pantalla con botones grandes. En pantallas pequeñas se activa solo.</div></div>
@@ -258,5 +282,6 @@ vTrain = function () {
 };
 
 render();
+applyAwake();
 initNotifications();
 initUpdates();

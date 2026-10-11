@@ -40,6 +40,7 @@ input,textarea{-webkit-user-select:text;user-select:text}
   --f-body:"Figtree",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   --f-num:"JetBrains Mono",ui-monospace,"Roboto Mono",monospace;
   --r:12px;
+  --flame:#ff7a1a; --flame2:#ffa62b; --flame-core:#ffe08a;
   color-scheme:dark;
 }
 @media (prefers-color-scheme: light){
@@ -147,6 +148,46 @@ a.btn{color:var(--fg);text-decoration:none}
 .speeds{display:flex;gap:6px;flex-wrap:wrap}
 .spd{padding:6px 10px;border-radius:99px;border:1px solid var(--line);background:var(--surface2);font-size:12.5px;font-weight:700;font-family:var(--f-num)}
 .spd.on{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+.rest-chip{gap:4px;padding:2px 4px}
+.rest-chip button{width:26px;height:26px;border-radius:50%;background:var(--surface);border:1px solid var(--line);font-weight:800;line-height:1}
+.note-prev{display:flex;gap:8px;font-size:13px;padding:8px 10px;border-radius:8px;background:color-mix(in srgb,var(--accent) 12%,var(--surface));border-left:3px solid var(--accent)}
+.note-in{font:inherit;font-size:14px;color:var(--fg);background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;resize:vertical;min-height:44px;-webkit-user-select:text;user-select:text}
+.drop-n{display:flex;flex-direction:column;align-items:center;gap:2px}
+.drop-n .rir{color:var(--push);font-weight:800}
+.drop-x{width:22px;height:22px;border-radius:50%;font-size:11px;color:var(--muted);border:1px solid var(--line)}
+.drop-in{border-style:dashed!important;border-color:color-mix(in srgb,var(--push) 55%,var(--line))!important}
+.drop-btn{color:var(--push)}
+.dropt{color:var(--push);font-weight:600}
+.note-h{color:var(--muted);font-size:12.5px;text-align:left!important;font-family:var(--f-body)!important;border-top:0!important;padding-top:0!important}
+.stepper{display:grid;grid-template-columns:52px 1fr auto 52px;gap:8px;align-items:center}
+.stepper button{height:40px;border-radius:8px;border:1px solid var(--line);background:var(--surface2);font-weight:800}
+.stepper input{text-align:center;font-family:var(--f-num)}
+.streak-card{gap:12px;background:linear-gradient(135deg,color-mix(in srgb,var(--flame) 16%,var(--surface)),var(--surface) 60%);border-color:color-mix(in srgb,var(--flame) 35%,var(--line))}
+.streak-card.cold{background:var(--surface);border-color:var(--line)}
+.flame{width:44px;height:55px;flex:none;filter:drop-shadow(0 4px 10px color-mix(in srgb,var(--flame) 45%,transparent))}
+.flame.off{filter:grayscale(1);opacity:.4}
+.flame.mini{width:16px;height:20px;filter:none}
+.flame.big{width:110px;height:138px}
+.streak-n{font-size:40px;font-weight:700;line-height:1;color:var(--flame)}
+.cold .streak-n{color:var(--muted)}
+.frz{font-size:12.5px;margin-top:4px}
+.wk{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.wkd{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;font-weight:700;color:var(--muted)}
+.wkd i{width:30px;height:30px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;border:2px solid transparent}
+.wkd.plan i{border:2px dashed var(--line)}
+.wkd.on i{background:color-mix(in srgb,var(--flame) 22%,var(--surface));border-color:var(--flame)}
+.wkd.today span{color:var(--fg)}
+.wkd.today i{box-shadow:0 0 0 2px var(--fg)}
+.celebrate{position:fixed;inset:0;z-index:60;background:color-mix(in srgb,var(--bg) 90%,transparent);display:flex;align-items:center;justify-content:center;padding-inline:16px;backdrop-filter:blur(6px)}
+.cel-in{width:100%;max-width:380px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px}
+.cel-n{font-size:72px;font-weight:700;line-height:1;color:var(--flame)}
+.cel-t{font-family:var(--f-display);font-size:30px;font-weight:800;text-transform:uppercase;line-height:1.05}
+.cel-s{color:var(--muted);font-size:14px}
+.cel-in .wk{width:100%;margin-block:8px}
+@media (prefers-reduced-motion:no-preference){.flame.big{animation:flame-pop .9s cubic-bezier(.2,1.6,.4,1) both,flame-flick 1.6s ease-in-out .9s infinite}.cel-n{animation:num-up .7s .25s both}}
+@keyframes flame-pop{from{transform:scale(.2) translateY(30px);opacity:0}to{transform:none;opacity:1}}
+@keyframes flame-flick{50%{transform:scale(1.05) rotate(-2deg)}}
+@keyframes num-up{from{transform:translateY(16px);opacity:0}to{transform:none;opacity:1}}
 .gymbar{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
 .gymbar::-webkit-scrollbar{display:none}
 .gchip{flex:none;padding:8px 14px;border-radius:99px;border:1px solid var(--line);background:var(--surface);font-weight:700;font-size:13.5px;white-space:nowrap}
@@ -803,6 +844,74 @@ function suggest(gymId, kind, ex) {
   return { w, msg: `Mantén <b>${fmtKg(w)} kg</b> y suma 1 rep por serie hasta ${ex.repsMax}.` };
 }
 
+
+/* ================== Racha (estilo Duolingo, por semanas del plan) ==================
+   Cada semana (lunes a domingo) debes cumplir los días de tu plan (3 o 4).
+   La racha cuenta tus entrenamientos seguidos mientras cumplas cada semana.
+   Cada 4 semanas cumplidas ganas un protector (máx. 2) que salva una semana fallada. */
+function weekStartOf(d) { const x = new Date(d); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; }
+const wkKey = d => dk(weekStartOf(d));
+function streakInfo() {
+  const plan = activePlan();
+  const target = Math.max(1, plan ? plan.days.length : 3);
+  const byWeek = {};
+  state.sessions.forEach(s => { const k = wkKey(s.date); byWeek[k] = (byWeek[k] || 0) + 1; });
+  const cur = weekStartOf(new Date());
+  const first = state.sessions.length ? weekStartOf(state.sessions.reduce((a, s) => s.date < a ? s.date : a, state.sessions[0].date)) : cur;
+  let count = 0, weeks = 0, freezes = 0, done = 0, best = 0;
+  for (let w = new Date(first); w < cur; w.setDate(w.getDate() + 7)) {
+    const n = byWeek[dk(w)] || 0;
+    if (n >= target) { count += n; weeks++; done++; if (done % 4 === 0) freezes = Math.min(2, freezes + 1); }
+    else if (freezes > 0 && count > 0) { freezes--; count += n; }
+    else { count = n; weeks = 0; }
+    best = Math.max(best, count);
+  }
+  const thisWeek = byWeek[dk(cur)] || 0;
+  count += thisWeek; best = Math.max(best, count);
+  const trained = new Set(state.sessions.map(s => dk(s.date)));
+  const planned = new Set(plan ? plan.days.map(d => d.weekday) : []);
+  const todayK = dk(new Date());
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(cur); d.setDate(d.getDate() + i); const k = dk(d);
+    days.push({ label: 'LMMJVSD'[i], trained: trained.has(k), today: k === todayK, planned: planned.has(d.getDay()) });
+  }
+  const daysLeft = 7 - ((new Date().getDay() + 6) % 7);
+  return { count, weeks, best, freezes, target, thisWeek, days, daysLeft, safe: thisWeek >= target };
+}
+const FLAME = (cls = '') => `<svg class="flame ${cls}" viewBox="0 0 32 40" aria-hidden="true"><path d="M16 1c2 7 9 10 9 20a9 9 0 1 1-18 0c0-5 3-8 4-12 1 4 3 5 4 6 2-4 2-9 1-14z" fill="var(--flame)"/><path d="M16 9c1 6 6 8 6 14a6 6 0 1 1-12 0c0-3 2-5 3-8 1 3 2 3 3 4 1-3 1-6 0-10z" fill="var(--flame2)"/><path d="M16 22c1 3 4 4 4 8a4 4 0 1 1-8 0c0-2 1-3 2-5 0 2 1 2 2 3 1-2 0-4 0-6z" fill="var(--flame-core)"/></svg>`;
+const wkStrip = days => `<div class="wk">${days.map(d => `<div class="wkd ${d.trained ? 'on' : ''} ${d.today ? 'today' : ''} ${d.planned && !d.trained ? 'plan' : ''}"><span>${d.label}</span><i>${d.trained ? FLAME('mini') : ''}</i></div>`).join('')}</div>`;
+function streakCard() {
+  const st = streakInfo(), left = st.target - st.thisWeek;
+  const msg = st.safe ? '¡Semana cumplida! Tu racha está a salvo hasta el domingo.'
+    : `Te ${left === 1 ? 'falta 1 entrenamiento' : 'faltan ' + left + ' entrenamientos'} esta semana para mantener tu racha${st.daysLeft <= left + 1 ? ` · ¡quedan ${st.daysLeft} ${st.daysLeft === 1 ? 'día' : 'días'}!` : '.'}`;
+  return `<div class="card streak-card ${st.count ? '' : 'cold'}">
+    <div class="row" style="gap:14px">
+      ${FLAME(st.count ? '' : 'off')}
+      <div class="grow"><div class="streak-n num">${st.count}</div><div class="label" style="color:inherit">${st.count === 1 ? 'entrenamiento' : 'entrenamientos'} en racha</div></div>
+      <div style="text-align:right"><div class="num" style="font-size:20px;font-weight:700">${st.thisWeek}/${st.target}</div><div class="muted" style="font-size:12px">esta semana</div>
+        ${st.freezes ? `<div class="frz" title="Protectores de racha">🛡️ ×${st.freezes}</div>` : ''}</div>
+    </div>
+    ${wkStrip(st.days)}
+    <div class="muted" style="font-size:12.5px">${msg}${st.best > st.count ? ` Tu mejor racha: <b>${st.best}</b>.` : ''}</div>
+  </div>`;
+}
+const MILESTONES = [3, 5, 7, 10, 15, 20, 25, 30, 40, 50, 75, 100, 150, 200, 365];
+function celebrateStreak(before, after) {
+  if (after.count <= before.count) return;
+  const ms = MILESTONES.find(m => before.count < m && after.count >= m);
+  const weekNow = !before.safe && after.safe;
+  const ov = document.createElement('div'); ov.className = 'celebrate'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-label', 'Racha');
+  ov.innerHTML = `<div class="cel-in">${FLAME('big')}<div class="cel-n num">${after.count}</div>
+    <div class="cel-t">${ms ? `¡Racha de ${ms} entrenamientos!` : weekNow ? '¡Semana cumplida!' : '¡Tu racha sigue creciendo!'}</div>
+    <div class="cel-s">${weekNow ? `Cumpliste tus ${after.target} días de esta semana.` : `Llevas ${after.thisWeek} de ${after.target} esta semana.`}${after.freezes > before.freezes ? ' Ganaste un 🛡️ protector de racha.' : ''}</div>
+    ${wkStrip(after.days)}
+    <button class="btn primary block" data-act="cel-close">Continuar</button></div>`;
+  document.body.appendChild(ov);
+  try { if (typeof playAlert === 'function') playAlert(Object.assign({}, alertCfg(), { sound: 'campana', rep: 1, vib: 2 })); } catch (e) {}
+}
+document.addEventListener('click', e => { if (e.target.closest('[data-act="cel-close"]')) { const o = document.querySelector('.celebrate'); o && o.remove(); } });
+
 /* ================== Sesión ================== */
 function nextDay(plan) {
   if (!plan || !plan.days.length) return null;
@@ -814,6 +923,21 @@ function nextDay(plan) {
   if (last) { const i = plan.days.findIndex(d => d.id === last.dayId); if (i >= 0) return plan.days[(i + 1) % plan.days.length]; }
   return plan.days.find(d => d.weekday >= today) || plan.days[0];
 }
+const dropW = (w, ex) => { const inc = increment(ex || {}, w); return Math.max(0, Math.round(w * 0.75 / inc) * inc); };
+const newDrop = (w, ex) => ({ w: dropW(+w || 0, ex), r: null, done: false });
+/* Tu última nota de este ejercicio: primero en este gym, si no en cualquiera */
+function lastNote(name, gymId) {
+  let any = null;
+  for (const s of state.sessions) {
+    const x = s.exercises.find(e => e.name === name && e.note);
+    if (!x) continue;
+    const n = { text: x.note, date: s.date, gym: s.gymName || gymName(sGym(s)) };
+    if (sGym(s) === gymId) return n;
+    if (!any) any = n;
+  }
+  return any;
+}
+const stepDone = s => s.done && (s.drops || []).every(d => d.done);
 function startSession(planId, dayId) {
   const plan = state.plans.find(p => p.id === planId); const day = plan.days.find(d => d.id === dayId);
   const gymId = plan.gymId || 'rokaz', kind = day.kind || kindOfName(day.name);
@@ -822,32 +946,37 @@ function startSession(planId, dayId) {
     id: uid(), planId, planName: plan.name, dayId, dayName: day.name, gymId, gymName: gymName(gymId), kind,
     start: new Date().toISOString(), cur: 0,
     exercises: day.exercises.map(ex => {
-      const sg = suggest(gymId, kind, ex); const last = lastPerf(ex.name, gymId, kind);
+      const sg = suggest(gymId, kind, ex); const last = lastPerf(ex.name, gymId, kind); const ln = lastNote(ex.name, gymId);
       return {
         name: ex.name, type: ex.type, target: ex.sets, repsMin: ex.repsMin, repsMax: ex.repsMax, rest: ex.rest, inc: increment(ex, sg.w),
-        sugg: sg, lastDate: last ? last.date : null, prev: last ? last.sets.map(s => ({ w: s.w, r: s.r })) : [],
-        log: Array.from({ length: ex.sets }, () => ({ w: sg.w, r: null, done: false })),
+        exId: ex.id, dropLast: !!ex.dropLast, note: '', prevNote: ln,
+        sugg: sg, lastDate: last ? last.date : null, prev: last ? last.sets.map(s => ({ w: s.w, r: s.r, drops: (s.drops || []).map(x => ({ w: x.w, r: x.r })) })) : [],
+        log: Array.from({ length: ex.sets }, (_, j) => ({ w: sg.w, r: null, done: false, drops: ex.dropLast && j === ex.sets - 1 ? [newDrop(sg.w, ex)] : [] })),
       };
     }),
   };
   state.confirm = null; saveDraft(); state.tab = 'train'; wake(); render(); scrollTo(0, 0);
 }
-function markSet(i, j, val) {
-  const ex = state.draft.exercises[i]; const s = ex.log[j];
+function markSet(i, j, val, k) {
+  const ex = state.draft.exercises[i]; const main = ex.log[j]; main.drops = main.drops || [];
+  const s = k == null ? main : main.drops[k]; if (!s) return;
   s.done = val ?? !s.done;
-  if (s.done && (s.r == null || s.r === '')) s.r = ex.repsMax;
+  if (s.done && (s.r == null || s.r === '')) s.r = k == null ? ex.repsMax : Math.max(1, Math.round(ex.repsMax * 0.6));
   saveDraft();
   if (s.done) {
-    const isLast = i === state.draft.exercises.length - 1 && ex.log.every(x => x.done);
-    if (!isLast) startRest(ex.rest);
-    if (ex.log.every(x => x.done) && i === state.draft.cur && i < state.draft.exercises.length - 1) state.draft.cur = i + 1;
+    const pendingDrop = main.drops.some(d => !d.done);
+    const isLast = i === state.draft.exercises.length - 1 && ex.log.every(stepDone);
+    if (pendingDrop) { if (state.rest) state.rest = null; toast('¡Drop set! Baja el peso y sigue sin descansar.'); }
+    else if (!isLast) startRest(ex.rest);
+    if (ex.log.every(stepDone) && i === state.draft.cur && i < state.draft.exercises.length - 1) state.draft.cur = i + 1;
   }
   render();
 }
 function finishSession() {
   const d = state.draft;
   const exs = d.exercises.map(e => ({ name: e.name, type: e.type, repsMin: e.repsMin, repsMax: e.repsMax, target: e.target,
-    sets: e.log.filter(s => s.done).map(s => ({ w: +s.w || 0, r: +s.r || 0 })) })).filter(e => e.sets.length);
+    sets: e.log.filter(s => s.done).map(s => { const o = { w: +s.w || 0, r: +s.r || 0 }; const dd = (s.drops || []).filter(x => x.done).map(x => ({ w: +x.w || 0, r: +x.r || 0 })); if (dd.length) o.drops = dd; return o; }),
+    ...(String(e.note || '').trim() ? { note: String(e.note).trim() } : {}) })).filter(e => e.sets.length);
   if (!exs.length) { toast('No marcaste ninguna serie. Sesión descartada.'); discardSession(); return; }
   const prs = [];
   for (const e of exs) {
@@ -858,7 +987,9 @@ function finishSession() {
   const s = { id: d.id, date: d.start, planId: d.planId, planName: d.planName, dayId: d.dayId, dayName: d.dayName,
     gymId: d.gymId || 'rokaz', gymName: d.gymName || gymName(d.gymId), kind: d.kind || kindOfName(d.dayName),
     durationSec: Math.round((Date.now() - new Date(d.start)) / 1000), exercises: exs, synced: false };
+  const stBefore = streakInfo();
   state.sessions.unshift(s); saveLocal(); cloud.addSession(s);
+  setTimeout(() => celebrateStreak(stBefore, streakInfo()), 350);
   state.draft = null; state.rest = null; saveDraft(); unwake(); render();
   toast(prs.length ? `¡Sesión guardada! Récord en ${prs.join(', ')} 🏆` : '¡Sesión guardada! Buen trabajo.');
 }
@@ -902,7 +1033,7 @@ function tick() {
     <div class="grow"><div class="label" style="color:inherit;opacity:.75">${go ? '¡A la siguiente serie!' : 'Descanso'}</div>
       <div class="t num">${go ? '0:00' : clock(Math.ceil(left))}</div>
       <div class="rest-bar"><i style="width:${pct}%"></i></div></div>
-    <div class="row" style="justify-content:center"><button class="btn" data-act="rest-add">+15 s</button><button class="btn" data-act="rest-skip">${go ? 'Cerrar' : 'Saltar'}</button></div></div>`;
+    <div class="row" style="justify-content:center"><button class="btn" data-act="rest-add" data-d="-10" aria-label="Quitar 10 segundos">−10 s</button><button class="btn" data-act="rest-add" data-d="10" aria-label="Agregar 10 segundos">+10 s</button><button class="btn" data-act="rest-skip">${go ? 'Cerrar' : 'Saltar'}</button></div></div>`;
 }
 setInterval(() => { tick(); const el = $('#elapsed'); if (el && state.draft) el.textContent = clock((Date.now() - new Date(state.draft.start)) / 1000); }, 250);
 
@@ -929,7 +1060,7 @@ function dayCard(plan, d, nd, lastOf) {
 function vTrain() {
   if (state.draft) return vSession();
   const g = activeGym(), plan = activePlan(), nd = nextDay(plan);
-  const head = `${header('Hola, ' + HISTORY.name, WDL[new Date().getDay()] + ' · ' + esc(g.name))}${gymBar()}${reminders()}`;
+  const head = `${header('Hola, ' + HISTORY.name, WDL[new Date().getDay()] + ' · ' + esc(g.name))}${gymBar()}${streakCard()}${reminders()}`;
   if (!plan || !nd) return `${head}<div class="card empty"><h3>${esc(g.name)} aún no tiene rutinas</h3><div>Crea un plan para este gimnasio o copia uno de otro gym.</div><button class="btn primary" data-act="tab" data-tab="plans">Ir a Planes</button></div>${dailyPanel()}`;
   const lastOf = id => state.sessions.find(s => s.dayId === id);
   const sets = nd.exercises.reduce((a, e) => a + e.sets, 0);
@@ -969,7 +1100,7 @@ function dailyPanel(compact) {
 function vSession() {
   if (isWatch()) return vWatchSession();
   const d = state.draft;
-  const doneSets = d.exercises.reduce((a, e) => a + e.log.filter(s => s.done).length, 0);
+  const doneSets = d.exercises.reduce((a, e) => a + e.log.filter(stepDone).length, 0);
   const allSets = d.exercises.reduce((a, e) => a + e.log.length, 0);
   return `<div class="sess-head"><div class="grow"><div class="label">${esc(d.gymName || gymName(d.gymId))} · ${KINDS[d.kind] || esc(d.planName)}</div><h3>${esc(d.dayName)}</h3></div>
     <div style="text-align:right"><div class="num" id="elapsed" style="font-size:18px;font-weight:700">0:00</div><div class="muted" style="font-size:12px">${doneSets}/${allSets} series</div></div></div>
@@ -981,7 +1112,8 @@ function vSession() {
     const complete = e.log.every(s => s.done);
     return `<div class="card ex t-${e.type} ${complete ? 'complete' : ''}">
       <div class="row"><span class="dot t-${e.type}"></span><h3 class="grow">${esc(e.name)}</h3><button class="btn small how-btn" data-act="how" data-name="${esc(e.name)}">${typeof VID !== 'undefined' && VID.index.has(exKey(e.name)) ? '🎬 ' : ''}${libFind(e.name) ? 'Cómo se hace' : 'Videos'}</button></div>
-      <div class="ex-top">${typeof miniFig === 'function' ? miniFig(e.name) : ''}<div class="target" style="align-content:flex-start"><span class="chip">${e.target} × ${reps(e)} reps</span><span class="chip">Descanso ${restTxt(e.rest)}</span></div></div>
+      <div class="ex-top">${typeof miniFig === 'function' ? miniFig(e.name) : ''}<div class="target" style="align-content:flex-start"><span class="chip">${e.target} × ${reps(e)} reps</span><span class="chip rest-chip"><button data-act="rest-step" data-ex="${i}" data-d="-10" aria-label="Menos 10 segundos">−</button><span>Descanso <b class="num">${clock(e.rest)}</b></span><button data-act="rest-step" data-ex="${i}" data-d="10" aria-label="Más 10 segundos">+</button></span></div></div>
+      ${e.prevNote ? `<div class="note-prev"><span aria-hidden="true">📝</span><span><b>Tu nota</b> <span class="muted">(${ago(e.prevNote.date)}${e.prevNote.gym !== (d.gymName || gymName(d.gymId)) ? ' · ' + esc(e.prevNote.gym) : ''})</span><br>${esc(e.prevNote.text)}</span></div>` : ''}
       <div class="muted" style="font-size:12.5px">${e.lastDate ? `Anterior en ${esc(d.gymName || gymName(d.gymId))}: ${fmtDate(e.lastDate, true)} (${ago(e.lastDate)}). Toca una serie anterior para copiarla.` : (e.last ? `Última vez: <span class="num">${esc(e.last)}</span>` : `Primera vez en ${esc(d.gymName || gymName(d.gymId))} con este ejercicio.`)}</div>
       <div class="sugg ${e.sugg.up ? 'up' : ''}"><span>${e.sugg.up ? '⬆' : '→'}</span><span>${e.sugg.msg}</span></div>
       ${e.rest >= 90 ? `<div class="muted" style="font-size:12.5px">Calentamiento: 10 reps con <span class="num">${fmtKg(Math.round(e.sugg.w * 0.5 / 2.5) * 2.5)} kg</span> y 5 reps con <span class="num">${fmtKg(Math.round(e.sugg.w * 0.75 / 2.5) * 2.5)} kg</span></div>` : ''}
@@ -990,28 +1122,43 @@ function vSession() {
         ${pv ? `<button class="prev" data-act="use-prev" data-ex="${i}" data-set="${j}" aria-label="Copiar serie anterior ${fmtKg(pv.w)} kg por ${pv.r}"><span class="num">${fmtKg(pv.w)}</span><small>× ${pv.r}</small></button>` : '<span class="prev none">—</span>'}
         <input class="${s.done ? 'done-row' : ''}" id="w-${i}-${j}" inputmode="decimal" data-ex="${i}" data-set="${j}" data-f="w" value="${s.w ?? ''}" aria-label="Kilos serie ${j + 1}">
         <input class="${s.done ? 'done-row' : ''}" id="r-${i}-${j}" inputmode="numeric" data-ex="${i}" data-set="${j}" data-f="r" value="${s.r ?? ''}" placeholder="${e.repsMax}" aria-label="Repeticiones serie ${j + 1}">
-        <button class="check ${s.done ? 'on' : ''}" data-act="set" data-ex="${i}" data-set="${j}" aria-label="Serie ${j + 1} hecha" aria-pressed="${s.done}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button>`; }).join('')}
+        <button class="check ${s.done ? 'on' : ''}" data-act="set" data-ex="${i}" data-set="${j}" aria-label="Serie ${j + 1} hecha" aria-pressed="${s.done}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button>
+        ${(s.drops || []).map((dr, k) => { const pd = pv && pv.drops && pv.drops[k]; return `<span class="n drop-n"><button class="drop-x" data-act="drop-del" data-ex="${i}" data-set="${j}" data-k="${k}" aria-label="Quitar drop set">✕</button><small class="rir">DROP</small></span>
+        ${pd ? `<button class="prev" data-act="use-prev" data-ex="${i}" data-set="${j}" data-k="${k}" aria-label="Copiar drop anterior"><span class="num">${fmtKg(pd.w)}</span><small>× ${pd.r}</small></button>` : '<span class="prev none">↓</span>'}
+        <input class="drop-in ${dr.done ? 'done-row' : ''}" id="w-${i}-${j}-${k}" inputmode="decimal" data-ex="${i}" data-set="${j}" data-k="${k}" data-f="w" value="${dr.w ?? ''}" aria-label="Kilos drop set ${k + 1}">
+        <input class="drop-in ${dr.done ? 'done-row' : ''}" id="r-${i}-${j}-${k}" inputmode="numeric" data-ex="${i}" data-set="${j}" data-k="${k}" data-f="r" value="${dr.r ?? ''}" placeholder="${Math.max(1, Math.round(e.repsMax * 0.6))}" aria-label="Repeticiones drop set ${k + 1}">
+        <button class="check drop-c ${dr.done ? 'on' : ''}" data-act="set" data-ex="${i}" data-set="${j}" data-k="${k}" aria-label="Drop set hecho" aria-pressed="${dr.done}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button>`; }).join('')}`; }).join('')}
       </div>
-      <div class="row"><button class="btn small" data-act="add-set" data-ex="${i}">+ Serie</button>${e.log.length > 1 ? `<button class="btn small" data-act="rm-set" data-ex="${i}">− Serie</button>` : ''}</div>
+      <div class="row" style="flex-wrap:wrap"><button class="btn small" data-act="add-set" data-ex="${i}">+ Serie</button>${e.log.length > 1 ? `<button class="btn small" data-act="rm-set" data-ex="${i}">− Serie</button>` : ''}<button class="btn small drop-btn" data-act="drop-add" data-ex="${i}">+ Drop set</button></div>
+      <div class="field"><label class="label" for="note-${i}">Nota para la próxima vez</label><textarea id="note-${i}" class="note-in" rows="2" data-ex="${i}" data-f="note" placeholder="Ej. Solo pude 12 reps con mucho esfuerzo; mantener el peso">${esc(e.note || '')}</textarea></div>
     </div>`; }).join('')}
   <div class="grid2">
     <button class="btn danger" data-act="discard" id="btn-discard">${state.confirm === 'discard' ? '¿Descartar? Toca otra vez' : 'Descartar'}</button>
     <button class="btn primary" data-act="finish" id="btn-finish">${state.confirm === 'finish' ? 'Confirmar y guardar' : 'Terminar sesión'}</button>
   </div>`;
 }
+function watchStep(e) {
+  for (let j = 0; j < e.log.length; j++) {
+    const m = e.log[j];
+    if (!m.done) return { j, k: null, s: m };
+    const k = (m.drops || []).findIndex(d => !d.done);
+    if (k >= 0) return { j, k, s: m.drops[k] };
+  }
+  return null;
+}
 function vWatchSession() {
   const d = state.draft; const i = Math.min(d.cur, d.exercises.length - 1); const e = d.exercises[i];
-  let j = e.log.findIndex(s => !s.done); const allDone = j === -1; if (allDone) j = e.log.length - 1;
-  const s = e.log[j];
+  const st = watchStep(e); const allDone = !st; const j = st ? st.j : e.log.length - 1, k = st ? st.k : null;
+  const s = st ? st.s : e.log[j];
   const lastEx = i === d.exercises.length - 1;
   return `<div class="w-set">${i + 1}/${d.exercises.length} · <span id="elapsed" class="num">0:00</span></div>
   <div class="w-ex"><span class="dot t-${e.type}" style="display:inline-block;margin-right:6px;vertical-align:middle"></span>${esc(e.name)}</div>
-  <div class="w-set">${allDone ? 'Ejercicio completo' : `Serie ${j + 1} de ${e.log.length} · ${reps(e)} reps`}</div>
+  <div class="w-set">${allDone ? 'Ejercicio completo' : k != null ? `<span class="kind k-fuerza">Drop set</span> tras la serie ${j + 1}` : `Serie ${j + 1} de ${e.log.length} · ${reps(e)} reps`}</div>
   ${typeof miniFig === 'function' ? `<div class="w-fig">${miniFig(e.name)}</div>` : ''}
-  ${!allDone && (e.prev || [])[j] ? `<button class="w-prev" data-act="use-prev" data-ex="${i}" data-set="${j}">Anterior: <b class="num">${fmtKg(e.prev[j].w)} kg × ${e.prev[j].r}</b></button>` : ''}
+  ${!allDone && k == null && (e.prev || [])[j] ? `<button class="w-prev" data-act="use-prev" data-ex="${i}" data-set="${j}">Anterior: <b class="num">${fmtKg(e.prev[j].w)} kg × ${e.prev[j].r}</b></button>` : ''}
   ${allDone ? '' : `<div class="w-val"><button data-act="w-adj" data-f="w" data-d="-1" aria-label="Menos peso">−</button><div><span class="v num">${fmtKg(+s.w || 0)}</span><span class="u">KG</span></div><button data-act="w-adj" data-f="w" data-d="1" aria-label="Más peso">+</button></div>
   <div class="w-val"><button data-act="w-adj" data-f="r" data-d="-1" aria-label="Menos reps">−</button><div><span class="v num">${s.r ?? e.repsMax}</span><span class="u">REPS</span></div><button data-act="w-adj" data-f="r" data-d="1" aria-label="Más reps">+</button></div>
-  <button class="w-go" data-act="set" data-ex="${i}" data-set="${j}" data-val="1">✓ Serie hecha</button>`}
+  <button class="w-go" data-act="set" data-ex="${i}" data-set="${j}" ${k != null ? `data-k="${k}"` : ''} data-val="1">✓ ${k != null ? 'Drop hecho' : 'Serie hecha'}</button>`}
   ${e.sugg.up && !allDone ? `<div class="w-hint">⬆ Toca subir peso</div>` : ''}
   ${libFind(e.name) ? `<button class="btn small how-btn" data-act="how" data-name="${esc(e.name)}">¿Cómo se hace?</button>` : ''}
   <div class="w-nav"><button data-act="w-prev" ${i === 0 ? 'disabled' : ''}>‹ Ant.</button><button data-act="w-next" ${lastEx ? 'disabled' : ''}>Sig. ›</button></div>
@@ -1174,7 +1321,7 @@ function vHistory() {
       <div class="row" style="gap:6px;margin-top:3px;flex-wrap:wrap"><span class="gtag">${esc(s.gymName || gymName(sGym(s)))}</span><span class="kind k-${k}">${KINDS[k]}</span></div>
       <div class="muted num" style="font-size:12.5px;margin-top:3px">${ns} series · ${fmtKg(vol)} kg · ${Math.round(s.durationSec / 60)} min</div></div>
       <div class="bars" style="width:60px">${s.exercises.map(e => `<i class="t-${e.type}"></i>`).join('')}</div></summary>
-      <table>${s.exercises.map(e => `<tr><td><span class="dot t-${e.type}" style="display:inline-block;margin-right:6px"></span>${esc(e.name)}</td><td>${e.sets.map(x => `${fmtKg(x.w)}×${x.r}`).join('  ')}</td></tr>`).join('')}</table>
+      <table>${s.exercises.map(e => `<tr><td><span class="dot t-${e.type}" style="display:inline-block;margin-right:6px"></span>${esc(e.name)}</td><td>${e.sets.map(x => `${fmtKg(x.w)}×${x.r}${(x.drops || []).map(dd => ` <span class="dropt">↓${fmtKg(dd.w)}×${dd.r}</span>`).join('')}`).join('  ')}</td></tr>${e.note ? `<tr><td colspan="2" class="note-h">📝 ${esc(e.note)}</td></tr>` : ''}`).join('')}</table>
       <button class="btn small danger" data-act="sess-del" data-id="${s.id}" style="align-self:flex-start">${state.confirm === 'sdel-' + s.id ? '¿Borrar? Toca otra vez' : 'Borrar sesión'}</button>
     </details>`; }).join('')}`;
 }
@@ -1260,7 +1407,8 @@ function exSheet(pid, did, k) {
     <div class="grid3"><div class="field"><label class="label" for="fx-s">Series</label><input id="fx-s" name="sets" inputmode="numeric" value="${e.sets}"></div>
       <div class="field"><label class="label" for="fx-a">Reps mín</label><input id="fx-a" name="repsMin" inputmode="numeric" value="${e.repsMin}"></div>
       <div class="field"><label class="label" for="fx-b">Reps máx</label><input id="fx-b" name="repsMax" inputmode="numeric" value="${e.repsMax}"></div></div>
-    <div class="field"><label class="label" for="fx-r">Descanso</label><select id="fx-r" name="rest">${[45, 60, 75, 90, 120, 150, 180, 240].map(s => `<option value="${s}" ${s === e.rest ? 'selected' : ''}>${restTxt(s)}</option>`).join('')}</select></div>
+    <div class="field"><label class="label" for="fx-r">Descanso (segundos, de 10 en 10)</label><div class="stepper"><button type="button" data-act="fx-step" data-d="-10" aria-label="Menos 10 segundos">−10</button><input id="fx-r" name="rest" type="number" inputmode="numeric" min="10" max="600" step="10" value="${e.rest}"><span class="muted num" id="fx-r-txt">${clock(e.rest)}</span><button type="button" data-act="fx-step" data-d="10" aria-label="Más 10 segundos">+10</button></div></div>
+    <label class="row" style="gap:10px"><input type="checkbox" id="fx-drop" name="dropLast" ${e.dropLast ? 'checked' : ''} style="width:20px;height:20px"><span><b>Drop set en la última serie</b><br><span class="muted" style="font-size:12.5px">Al entrenar, la última serie trae una fila extra con ~25% menos peso.</span></span></label>
     <div class="grid2"><button type="button" class="btn" data-act="sheet-close">Cancelar</button><button class="btn primary" type="submit">Guardar</button></div>
     ${k != null ? `<button type="button" class="btn danger" data-act="ex-del" data-plan="${pid}" data-day="${did}" data-k="${k}">${state.confirm === 'exdel' ? '¿Quitar? Toca otra vez' : 'Quitar del día'}</button>` : ''}
   </form>`);
@@ -1305,11 +1453,18 @@ document.addEventListener('click', ev => {
     case 'start':
       if (state.draft) { state.tab = 'train'; render(); toast('Ya tienes una sesión en curso.'); break; }
       startSession(pid, did); break;
-    case 'set': markSet(+b.dataset.ex, +b.dataset.set, b.dataset.val ? true : undefined); break;
+    case 'set': markSet(+b.dataset.ex, +b.dataset.set, b.dataset.val ? true : undefined, b.dataset.k != null ? +b.dataset.k : undefined); break;
+    case 'drop-add': { const e = state.draft.exercises[+b.dataset.ex]; const m = e.log[e.log.length - 1]; m.drops = m.drops || []; const base = m.drops.length ? m.drops[m.drops.length - 1].w : m.w; m.drops.push(newDrop(base, e)); saveDraft(); render(); break; }
+    case 'drop-del': { const e = state.draft.exercises[+b.dataset.ex]; e.log[+b.dataset.set].drops.splice(+b.dataset.k, 1); saveDraft(); render(); break; }
+    case 'rest-step': {
+      const e = state.draft.exercises[+b.dataset.ex]; e.rest = Math.min(600, Math.max(10, (e.rest || 60) + +b.dataset.d)); saveDraft();
+      const pl = state.plans.find(p => p.id === state.draft.planId), dy = pl && pl.days.find(x => x.id === state.draft.dayId), pe = dy && dy.exercises.find(x => x.id === e.exId);
+      if (pe) { pe.rest = e.rest; savePlans(); }
+      render(); break; }
     case 'add-set': { const e = state.draft.exercises[+b.dataset.ex]; const l = e.log[e.log.length - 1]; e.log.push({ w: l ? l.w : e.sugg.w, r: null, done: false }); saveDraft(); render(); break; }
     case 'rm-set': { const e = state.draft.exercises[+b.dataset.ex]; e.log.pop(); saveDraft(); render(); break; }
     case 'w-adj': {
-      const d = state.draft, e = d.exercises[d.cur]; const s = e.log.find(x => !x.done); if (!s) break;
+      const d = state.draft, e = d.exercises[d.cur]; const st = watchStep(e); if (!st) break; const s = st.s;
       if (b.dataset.f === 'w') s.w = Math.max(0, (+s.w || 0) + e.inc * +b.dataset.d);
       else s.r = Math.max(0, (s.r ?? e.repsMax) + +b.dataset.d);
       saveDraft(); render(); break; }
@@ -1317,7 +1472,7 @@ document.addEventListener('click', ev => {
     case 'w-next': state.draft.cur = Math.min(state.draft.exercises.length - 1, state.draft.cur + 1); saveDraft(); render(); break;
     case 'finish': if (prevConfirm === 'finish') finishSession(); else { state.confirm = 'finish'; render(); } break;
     case 'discard': if (prevConfirm === 'discard') discardSession(); else { state.confirm = 'discard'; render(); } break;
-    case 'rest-add': if (state.rest) { state.rest.end = Math.max(Date.now(), state.rest.end) + 15000; state.rest.total += 15; state.rest.rang = false; tick(); } break;
+    case 'rest-add': if (state.rest) { const dd = +(b.dataset.d || 10); state.rest.end = Math.max(Date.now() + 1000, (state.rest.end < Date.now() ? Date.now() : state.rest.end) + dd * 1000); state.rest.total = Math.max(10, state.rest.total + dd); state.rest.rang = state.rest.end <= Date.now(); tick(); } break;
     case 'rest-skip': state.rest = null; tick(); break;
     case 'activate': state.settings.planByGym = Object.assign({}, state.settings.planByGym, { [activeGym().id]: pid }); state.settings.activePlanId = pid; savePlans(); render(); toast('Plan activo cambiado.'); break;
     case 'edit-plan': state.editPlan = state.editPlan === pid ? null : pid; render(); break;
@@ -1339,10 +1494,14 @@ document.addEventListener('click', ev => {
     case 'gym-rename': { const g = activeGym(); textSheet('Renombrar gimnasio', 'Nombre', g.name, v => { g.name = v; LS.set('gyms', state.gyms); }); break; }
     case 'gym-del': { const g = activeGym(); if (prevConfirm === 'gdel-' + g.id) { state.gyms = state.gyms.filter(x => x.id !== g.id); state.plans = state.plans.filter(p => p.gymId !== g.id); state.settings.activeGymId = state.gyms[0].id; state.confirm = null; saveGyms(); render(); toast(`${g.name} borrado. Su historial se conserva.`); } else { state.confirm = 'gdel-' + g.id; render(); } break; }
     case 'gfilter': state.gymFilter = b.dataset.gym; render(); break;
-    case 'use-prev': { const e = state.draft.exercises[+b.dataset.ex], j = +b.dataset.set, pv = (e.prev || [])[j]; if (pv && !e.log[j].done) { e.log[j].w = pv.w; e.log[j].r = pv.r; saveDraft(); render(); } break; }
+    case 'use-prev': { const e = state.draft.exercises[+b.dataset.ex], j = +b.dataset.set, pv = (e.prev || [])[j]; if (!pv) break;
+      if (b.dataset.k != null) { const k = +b.dataset.k, pd = (pv.drops || [])[k], dr = (e.log[j].drops || [])[k]; if (pd && dr && !dr.done) { dr.w = pd.w; dr.r = pd.r; } }
+      else if (!e.log[j].done) { e.log[j].w = pv.w; e.log[j].r = pv.r; }
+      saveDraft(); render(); break; }
     case 'sess-del': { const id = b.dataset.id; if (prevConfirm === 'sdel-' + id) { state.sessions = state.sessions.filter(s => s.id !== id); state.confirm = null; saveLocal(); cloud.delSession(id); render(); } else { state.confirm = 'sdel-' + id; b.textContent = '¿Borrar? Toca otra vez'; ev.preventDefault(); } break; }
     case 'sheet-close': state.confirm = null; figAnim.item = null; closeSheet(); break;
     case 'how': howSheet(b.dataset.name); break;
+    case 'fx-step': { const inp = document.getElementById('fx-r'); const v = Math.min(600, Math.max(10, (Math.round((+inp.value || 60) / 10) * 10) + +b.dataset.d)); inp.value = v; document.getElementById('fx-r-txt').textContent = clock(v); break; }
     case 'sup': { const t = today(); t[b.dataset.k] = !t[b.dataset.k]; t.edited = Date.now(); saveDaily(); render(); if (t[b.dataset.k] && b.dataset.k === 'crea') toast(`Creatina registrada · ${creaStreak()} días seguidos`); break; }
     case 'water': { const t = today(); t.water = Math.max(0, (t.water || 0) + +b.dataset.ml); t.edited = Date.now(); saveDaily(); render(); if (+b.dataset.ml > 0 && t.water >= WATER_MIN && t.water - +b.dataset.ml < WATER_MIN) toast('¡Meta de agua cumplida! 💧'); break; }
     case 'fig-play': if (!figAnim.playing) { figAnim.playing = true; figAnim.t0 = performance.now(); requestAnimationFrame(figLoop); } figCtrl(); break;
@@ -1357,7 +1516,7 @@ document.addEventListener('submit', ev => {
     const fd = new FormData(f); const { d } = findDay(f.dataset.plan, f.dataset.day);
     const num = (k, def) => { const v = parseFloat(String(fd.get(k)).replace(',', '.')); return isFinite(v) ? v : def; };
     let a = Math.round(num('repsMin', 8)), bb = Math.round(num('repsMax', a)); if (bb < a) [a, bb] = [bb, a];
-    const e = { name: String(fd.get('name')).trim(), type: fd.get('type'), weight: num('weight', 0), sets: Math.max(1, Math.round(num('sets', 3))), repsMin: a, repsMax: bb, rest: +fd.get('rest') };
+    const e = { name: String(fd.get('name')).trim(), type: fd.get('type'), weight: num('weight', 0), sets: Math.max(1, Math.round(num('sets', 3))), repsMin: a, repsMax: bb, rest: Math.min(600, Math.max(10, Math.round(num('rest', 60) / 10) * 10)), dropLast: !!fd.get('dropLast') };
     if (f.dataset.k !== '') Object.assign(d.exercises[+f.dataset.k], e); else d.exercises.push(Object.assign({ id: uid() }, e));
     savePlans(); closeSheet(); render(); toast('Ejercicio guardado.');
   }
@@ -1367,7 +1526,9 @@ document.addEventListener('input', ev => {
   const t = ev.target;
   if (t.id === 'calc-w' || t.id === 'calc-r') { state[t.id === 'calc-w' ? 'calcW' : 'calcR'] = t.value; $('#calc-out').innerHTML = calcOut(); return; }
   if (t.dataset.f && t.dataset.ex != null && state.draft) {
-    const s = state.draft.exercises[+t.dataset.ex].log[+t.dataset.set];
+    if (t.dataset.f === 'note') { state.draft.exercises[+t.dataset.ex].note = t.value; saveDraft(); return; }
+    const m = state.draft.exercises[+t.dataset.ex].log[+t.dataset.set];
+    const s = t.dataset.k != null ? (m.drops || [])[+t.dataset.k] : m; if (!s) return;
     const v = t.value.replace(',', '.'); s[t.dataset.f] = v === '' ? null : (isFinite(+v) ? +v : s[t.dataset.f]); saveDraft();
   }
 });
@@ -1378,6 +1539,7 @@ const hadPlans = !!LS.get('plans', null);
 const hadGyms = !!LS.get('gyms', null);
 if (migratePlans() && hadPlans) toast('Planes actualizados: Curl Femoral y Face Pull agregados.');
 migrateGyms();
+if (!state.settings.dropRev) { state.plans.forEach(p => p.days.forEach(d => d.exercises.forEach(e => { if (e.name === 'Extensión de Pierna') e.dropLast = true; }))); state.settings.dropRev = 1; savePlans(); }
 if (hadPlans && !hadGyms) setTimeout(() => toast("Nuevo: elige tu gimnasio arriba. Raydac tiene una copia de tus rutinas."), 400);
 render();
 cloud.init();
