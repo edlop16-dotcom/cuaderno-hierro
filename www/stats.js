@@ -79,8 +79,7 @@ function exStats(name) {
   const used = [...new Set(state.sessions.filter(s => s.exercises.some(e => e.name === name)).map(sGym))];
   let gym = state.statsGym || 'all'; if (gym !== 'all' && !used.includes(gym)) gym = 'all';
   const pts = exPoints(name, gym), wins = histWins(pts, name), tr = trendOf(pts), rec = typeof baseRec === 'function' ? baseRec(name) : null;
-  const prevGf = state.gymFilter; state.gymFilter = gym === 'all' ? null : gym;
-  let chart = ''; try { chart = pts.length ? exChart(name) : ''; } finally { state.gymFilter = prevGf; }
+  const chart = pts.length ? stChart(name, pts) : '';
   const best = pts.reduce((a, p) => !a || p.e > a.e ? p : a, null), lastP = pts[pts.length - 1], first = pts[0];
   const TR = { up: ['Subiendo', 'arrow-up', 'up'], flat: ['Estable', 'arrow-right', 'flat'], down: ['Bajando', 'arrow-down', 'down'] };
   const t = tr ? TR[tr.dir] : null;
@@ -92,12 +91,81 @@ function exStats(name) {
     ${chart}
     <div class="stat3"><div><b class="num">${pts.length}</b><span>Sesiones</span></div><div><b class="num">${fmtKg(best.top.w)}×${best.top.r}</b><span>Mejor serie</span></div><div><b class="num">${first !== lastP ? (lastP.top.w - first.top.w >= 0 ? '+' : '') + fmtKg(lastP.top.w - first.top.w) : '—'}</b><span>kg desde el inicio</span></div></div>
     ${rec ? `<div class="muted" style="font-size:12.5px">Récord previo (Raydac · Hevy / Symmetry): <b class="num">${fmtKg(rec.w)} kg × ${rec.r}</b></div>` : ''}
+    ${stRecords(pts)}
     <div class="label">Historial</div>
     <div class="st-list">${pts.map((p, i) => [p, wins[i]]).reverse().slice(0, 10).map(([p, w]) => `<div class="st-row"><div class="grow" style="min-width:0"><b>${fmtDate(p.d, true)}</b><small class="muted">${esc(gymName(p.gym))}</small></div>
       <div class="num st-sets">${p.sets.map(z => `${fmtKg(z.w)}×${z.r}`).join(' · ')}</div>${w ? `<span class="win ${w}" title="${w === 'pr' ? 'Récord' : 'Mejoraste'}">${ic('shield', 15)}</span>` : '<span class="win none"></span>'}</div>`).join('')}</div>`
     : `<div class="card empty">${rec ? `Tu récord previo: <b>${fmtKg(rec.w)} kg × ${rec.r}</b> (Raydac). ` : ''}Cuando registres este ejercicio en Forja verás aquí tu gráfica.</div>`}
     <div class="grid2">${x ? `<button class="btn" data-act="how" data-name="${esc(name)}">${ic('book-open', 16)} Ver técnica</button>` : '<span></span>'}<button class="btn primary" data-act="sheet-close">Cerrar</button></div>`);
 }
+
+/* ---------- Gráfica tocable (como Hevy): medida, rango y récords ---------- */
+const ST_METRICS = { w: ['Mayor peso', 'kg'], e: ['1RM estimado', 'kg'], vol: ['Volumen', 'kg'], reps: ['Reps totales', 'reps'] };
+const ST_RANGES = [['1', '1 mes'], ['3', '3 meses'], ['6', '6 meses'], ['all', 'Todo']];
+const stVal = (p, m) => m === 'w' ? p.top.w : m === 'e' ? p.e : m === 'vol' ? p.vol : p.sets.reduce((a, x) => a + x.r, 0);
+function stChart(name, all) {
+  const m = state.stMetric || 'w', rg = state.stRange || 'all';
+  const cut = rg === 'all' ? 0 : Date.now() - (+rg) * 30.5 * 864e5;
+  let pts = all.filter(p => new Date(p.d).getTime() >= cut); if (!pts.length) pts = all.slice(-1);
+  const W = 340, H = 170, L = 40, R = 12, T = 14, B = 22;
+  const vals = pts.map(p => stVal(p, m)); let lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
+  const pad = Math.max(1, (hi - lo) * 0.15); lo = Math.max(0, Math.floor(lo - pad)); hi = Math.ceil(hi + pad);
+  const t0 = new Date(pts[0].d).getTime(), t1 = new Date(pts[pts.length - 1].d).getTime();
+  const x = p => pts.length === 1 ? (L + W - R) / 2 : L + (new Date(p.d).getTime() - t0) / Math.max(1, t1 - t0) * (W - L - R);
+  const y = v => T + (1 - (v - lo) / Math.max(1, hi - lo)) * (H - T - B);
+  const path = pts.map((p, i) => `${i ? 'L' : 'M'}${x(p).toFixed(1)},${y(stVal(p, m)).toFixed(1)}`).join('');
+  const ticks = [lo, Math.round((lo + hi) / 2), hi];
+  const lastP = pts[pts.length - 1];
+  state.stPts = pts.map(p => ({ x: x(p), y: y(stVal(p, m)), v: stVal(p, m), d: p.d, top: p.top }));
+  return `<div class="st-head"><b class="num" id="st-val">${fmtKg(stVal(lastP, m))} ${ST_METRICS[m][1]}</b><span id="st-date">${fmtDate(lastP.d)}</span>
+      <div class="st-range">${ST_RANGES.map(([v, l]) => `<button class="${rg === v ? 'on' : ''}" data-act="st-range" data-v="${v}" data-name="${esc(name)}">${l}</button>`).join('')}</div></div>
+    <svg class="chart st-chart" id="st-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${ST_METRICS[m][0]} de ${esc(name)}">
+      ${ticks.map(t => `<line x1="${L}" x2="${W - R}" y1="${y(t)}" y2="${y(t)}" stroke="var(--line)" stroke-width="1"/><text x="${L - 6}" y="${y(t) + 3}" text-anchor="end">${fmtKg(t)}</text>`).join('')}
+      <path d="${path}L${x(lastP).toFixed(1)},${H - B}L${x(pts[0]).toFixed(1)},${H - B}Z" fill="url(#stg)" stroke="none"/>
+      <defs><linearGradient id="stg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--accent)" stop-opacity=".28"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>
+      <path d="${path}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+      ${state.stPts.map(p => `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3" fill="var(--accent)" stroke="var(--surface)" stroke-width="1.5"/>`).join('')}
+      <line id="st-cur" x1="${x(lastP)}" x2="${x(lastP)}" y1="${T}" y2="${H - B}" stroke="var(--accent2)" stroke-width="1.2" opacity=".9"/>
+      <circle id="st-dot" cx="${x(lastP)}" cy="${y(stVal(lastP, m))}" r="6" fill="var(--accent2)" stroke="#0b0d12" stroke-width="2"/>
+      <text x="${L}" y="${H - 5}">${fmtDate(pts[0].d)}</text>${pts.length > 1 ? `<text x="${W - R}" y="${H - 5}" text-anchor="end">${fmtDate(lastP.d)}</text>` : ''}
+    </svg>
+    <div class="st-metrics">${Object.keys(ST_METRICS).map(k => `<button class="gchip ${m === k ? 'on' : ''}" data-act="st-metric" data-v="${k}" data-name="${esc(name)}">${ST_METRICS[k][0]}</button>`).join('')}</div>`;
+}
+function stRecords(pts) {
+  const by = f => pts.reduce((a, p) => !a || f(p) > f(a) ? p : a, null);
+  const bw = by(p => p.top.w * 1000 + p.top.r), be = by(p => p.e), bv = by(p => p.vol);
+  let bs = null, br = null;
+  pts.forEach(p => p.sets.forEach(z => { if (!bs || z.w * z.r > bs.z.w * bs.z.r) bs = { z, p }; if (!br || z.r > br.z.r || (z.r === br.z.r && z.w > br.z.w)) br = { z, p }; }));
+  const row = (l, v, d) => `<div class="rec-row"><span>${l}</span><b class="num">${v}</b><small class="muted">${fmtDate(d)}</small></div>`;
+  return `<div class="label rec-h">${ic('trophy', 15)} Récords personales</div><div class="recs">
+    ${row('Mayor peso', `${fmtKg(bw.top.w)} kg × ${bw.top.r}`, bw.d)}
+    ${row('Mejor 1RM estimado', `${fmtKg(be.e)} kg`, be.d)}
+    ${row('Mejor serie (peso × reps)', `${fmtKg(bs.z.w)} × ${bs.z.r} = ${fmtKg(bs.z.w * bs.z.r)} kg`, bs.p.d)}
+    ${row('Más repeticiones', `${br.z.r} reps con ${fmtKg(br.z.w)} kg`, br.p.d)}
+    ${row('Mayor volumen en una sesión', `${fmtKg(bv.vol)} kg`, bv.d)}</div>`;
+}
+function stPointer(ev) {
+  const svg = document.getElementById('st-chart'); if (!svg || !state.stPts) return;
+  const r = svg.getBoundingClientRect(), cx = (('touches' in ev && ev.touches.length ? ev.touches[0].clientX : ev.clientX) - r.left) * (340 / r.width);
+  const p = state.stPts.reduce((a, q) => Math.abs(q.x - cx) < Math.abs(a.x - cx) ? q : a, state.stPts[0]);
+  const m = state.stMetric || 'w';
+  document.getElementById('st-cur').setAttribute('x1', p.x); document.getElementById('st-cur').setAttribute('x2', p.x);
+  document.getElementById('st-dot').setAttribute('cx', p.x); document.getElementById('st-dot').setAttribute('cy', p.y);
+  document.getElementById('st-val').textContent = `${fmtKg(p.v)} ${ST_METRICS[m][1]}${m === 'w' ? ' × ' + p.top.r : ''}`;
+  document.getElementById('st-date').textContent = fmtDate(p.d, true);
+}
+document.addEventListener('pointerdown', ev => { if (ev.target.closest && ev.target.closest('#st-chart')) { state.stDrag = true; stPointer(ev); } });
+document.addEventListener('pointermove', ev => { if (state.stDrag) stPointer(ev); });
+document.addEventListener('pointerup', () => { state.stDrag = false; });
+document.addEventListener('click', ev => {
+  const b = ev.target.closest('[data-act="st-metric"],[data-act="st-range"]'); if (!b) return;
+  ev.stopPropagation();
+  if (b.dataset.act === 'st-metric') state.stMetric = b.dataset.v; else state.stRange = b.dataset.v;
+  const sc = document.querySelector('#sheet .sheet-card'), top = sc ? sc.scrollTop : 0;
+  exStats(b.dataset.name);
+  const n = document.querySelector('#sheet .sheet-card'); if (n) n.scrollTop = top;
+}, true);
+
 /* Botón "Ver mi progreso" en las opciones de cada ejercicio */
 const _exActionsSt = exActions;
 exActions = function (key) {

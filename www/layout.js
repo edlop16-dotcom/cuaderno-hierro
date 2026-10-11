@@ -112,7 +112,7 @@ vGuide = function () {
   const g = state.exG || 'all', e = state.exE || 'all', q = state.guideQ || '';
   const list = exFilter(), sel = state.sel;
   const card = x => `<button class="card exc ${sel.includes(x.key) ? 'sel' : ''}" data-act="ex-tap" data-key="${x.key}" aria-pressed="${sel.includes(x.key)}">
-    <div class="fig">${figSVG(x, 1)}</div>
+    ${typeof PHOTO_KEYS !== 'undefined' && PHOTO_KEYS.has(x.key) ? `<div class="ph card-ph"><img src="ex/${x.key}-0.webp" alt="" loading="lazy" decoding="async"></div>` : `<div class="fig">${figSVG(x, 1)}</div>`}
     ${isFav(x.key) ? `<span class="fav-on" aria-label="Favorito">${ic('star', 14)}</span>` : ''}
     ${sel.includes(x.key) ? `<span class="sel-on">${ic('check', 14)}</span>` : ''}
     <div class="row" style="gap:6px"><span class="dot t-${x.type}"></span><span class="nm">${esc(x.name)}</span></div>
@@ -132,7 +132,7 @@ vGuide = function () {
 function exActions(key) {
   const x = LIB.find(y => y.key === key); if (!x) return;
   openSheet(`<div class="row"><div class="grow"><div class="label">${esc(x.group)} · ${EQUIP_L[equipOf(x)]}</div><h2>${esc(x.name)}</h2></div><button class="icon-btn" data-act="sheet-close" aria-label="Cerrar">${ic('x', 18)}</button></div>
-    <div class="row" style="gap:12px"><div class="fig" style="width:120px;padding:2px;flex:none">${figSVG(x, 1)}</div>
+    <div class="row" style="gap:12px">${typeof PHOTO_KEYS !== 'undefined' && PHOTO_KEYS.has(key) ? exPhoto(key, 'act-ph') : `<div class="fig" style="width:120px;padding:2px;flex:none">${figSVG(x, 1)}</div>`}
       <div class="target" style="align-content:flex-start">${x.musc.map(m => `<span class="chip"><span class="dot t-${x.type}"></span>${esc(m)}</span>`).join('')}${x.reps ? `<span class="chip">${esc(x.reps)} reps</span>` : ''}</div></div>
     <div class="ex-actions">
       <button class="btn primary block" data-act="ex-new1" data-key="${key}">${ic('plus', 16)} Crear rutina nueva con este ejercicio</button>

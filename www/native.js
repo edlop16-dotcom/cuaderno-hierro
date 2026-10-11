@@ -159,7 +159,7 @@ function vSettings() {
     ${CAP ? `<button class="btn small" data-act="upd-check" ${upd.checking ? 'disabled' : ''}>${upd.checking ? 'Buscando…' : 'Buscar ahora'}</button>` : ''}</div>
     ${upd.latest && upd.latest.build > (upd.current ? upd.current.build : 0) ? updBanner(true) : (upd.checked && CAP ? `<div class="muted" style="font-size:12.5px">${upd.error ? 'No se pudo revisar: ' + esc(upd.error) : 'Tienes la versión más reciente.'}</div>` : '')}
   </div>
-  <div class="muted" style="font-size:12px;text-align:center">Forja</div>`;
+  <div class="muted" style="font-size:11.5px;text-align:center">Forja · Fotos de ejercicios: Free Exercise DB (dominio público)</div>`;
 }
 function remSheet(i) {
   const r = i != null ? state.reminders[i] : { kind: 'custom', label: '', time: '09:00', days: [0, 1, 2, 3, 4, 5, 6], on: true };

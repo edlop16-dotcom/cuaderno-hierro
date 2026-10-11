@@ -435,3 +435,46 @@ body.sx-open .nav{visibility:hidden}
 .sheet-card>*{flex-shrink:0}
 .sheet-card .chart{width:100%;height:auto;display:block}
 .hab-water .num{white-space:nowrap;font-size:12.5px}
+/* Terminar */
+.fin-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.fin-stats>div{display:flex;flex-direction:column;align-items:center;gap:2px;padding:12px 4px;border-radius:14px;background:var(--surface2);border:1px solid var(--line)}
+.fin-stats b{font-size:17px;font-weight:800}
+.fin-stats span{font-size:11.5px;color:var(--muted)}
+/* Gráfica tocable */
+.st-head{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.st-head b{font-size:22px;font-weight:800}
+.st-head span{color:var(--accent2);font-size:13px;font-weight:600;text-transform:capitalize}
+.st-range{margin-left:auto;display:flex;gap:2px;padding:3px;border-radius:10px;background:var(--surface2)}
+.st-range button{border:0;background:transparent;color:var(--muted);font:inherit;font-size:11.5px;font-weight:700;padding:5px 8px;border-radius:8px}
+.st-range button.on{background:var(--surface3);color:var(--fg)}
+.st-chart{touch-action:none;cursor:crosshair}
+.st-metrics{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+.rec-h{display:flex;align-items:center;gap:6px;color:#ffc53d}
+.recs{display:flex;flex-direction:column;gap:6px}
+.rec-row{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:9px 12px;border-radius:12px;background:var(--surface2)}
+.rec-row span{font-size:12.5px;color:var(--muted)}
+.rec-row b{font-size:13.5px;text-align:right}
+.rec-row small{grid-column:1/-1;font-size:11px}
+
+/* ===== Fotos reales de ejercicios ===== */
+.ph{position:relative;overflow:hidden;border-radius:16px;background:#05060a;aspect-ratio:3/2;width:100%}
+.ph img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;display:block}
+.ph .b{opacity:0}
+.ph.anim .b{animation:phx 3.2s ease-in-out infinite}
+@keyframes phx{0%,38%{opacity:0}50%,88%{opacity:1}100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.ph.anim .b{animation:none}}
+.ph-btn{display:block;width:100%;padding:0;border:0;background:transparent;border-radius:24px;overflow:hidden;box-shadow:0 18px 40px -18px rgba(var(--tc),.55),0 0 0 1px rgba(255,255,255,.06)}
+.ph-btn .ph{border-radius:24px}
+.sx-hero .ph-btn{width:100%}
+.pv-hero .ph-btn{width:100%;box-shadow:none}
+.pv-hero{padding:0;overflow:hidden}
+.th-img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.pv-th .th-img{border-radius:10px}
+.pv-th{background:#05060a;padding:0;overflow:hidden}
+.sx-th{overflow:hidden}
+.sx-th .th-img{display:block}
+.card-ph{border-radius:12px}
+.act-ph{width:150px;flex:none;border-radius:14px}
+.how-ph{border-radius:18px}
+.fig-tog{align-self:flex-start}
+.fig-hide{display:none!important}

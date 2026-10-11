@@ -10,8 +10,12 @@ const TYPE_RGB = { Piernas: '52,211,153', Empuje: '255,107,107', 'Tracción': '7
 const typeRgb = t => TYPE_RGB[t] || '255,122,26';
 const sxOpenNow = () => !!(state.draft && !state.sessMin && !isWatch() && state.tab === 'train');
 const exComplete = e => e.log.every(stepDone);
-const bigFig = (name, cls) => { const x = libFind(name); return x ? `<button class="fig-mini ${cls || ''}" data-act="how" data-name="${esc(name)}" data-fig="${x.key}" aria-label="Ver cómo se hace ${esc(name)}">${figSVG(x, 0, false)}</button>` : `<div class="${cls || ''} sx-nofig">${ic('dumbbell', 48)}</div>`; };
-const thumb = name => { const x = libFind(name); return x ? figSVG(x, 1, false) : `<span class="th-l">${esc(String(name)[0])}</span>`; };
+/* Fotos reales de cada ejercicio (Free Exercise DB, dominio público): inicio y final que se alternan */
+const PHOTO_KEYS = new Set('prensa,hack,hipthrust,incline,rowcable,rowlow,legext,bench,pulldown,lateral,curl,triceps,bbrow,abduct,ohp,facepull,legcurl,rdl,dbbench,dbincline,dbfly,cablecross,pecdeck,dips,pushup,chestpress,pullup,dbrow,trow,cablepullover,deadlift,hyperext,bbohp,frontraise,reardelt,shrug,arnold,hammer,bbcurl,preacher,concentration,skull,ohtri,benchdip,ropepush,squat,goblet,bulgarian,lunge,seatedlegcurl,calfstand,calfseat,adduct,cablekick,glutebridge,plank,crunch,hangraise,cablecrunch,abwheel'.split(','));
+const photoKey = name => { const x = libFind(name); return x && PHOTO_KEYS.has(x.key) ? x.key : null; };
+const exPhoto = (key, cls, anim) => `<div class="ph ${anim === false ? '' : 'anim'} ${cls || ''}"><img src="ex/${key}-0.webp" alt="" decoding="async"><img class="b" src="ex/${key}-1.webp" alt="" decoding="async"></div>`;
+const bigFig = (name, cls) => { const pk = photoKey(name); if (pk) return `<button class="ph-btn ${cls || ''}" data-act="how" data-name="${esc(name)}" aria-label="Ver cómo se hace ${esc(name)}">${exPhoto(pk)}</button>`; const x = libFind(name); return x ? `<button class="fig-mini ${cls || ''}" data-act="how" data-name="${esc(name)}" data-fig="${x.key}" aria-label="Ver cómo se hace ${esc(name)}">${figSVG(x, 0, false)}</button>` : `<div class="${cls || ''} sx-nofig">${ic('dumbbell', 48)}</div>`; };
+const thumb = name => { const pk = photoKey(name); if (pk) return `<img class="th-img" src="ex/${pk}-0.webp" alt="" loading="lazy" decoding="async">`; const x = libFind(name); return x ? figSVG(x, 1, false) : `<span class="th-l">${esc(String(name)[0])}</span>`; };
 
 /* ---------- Vista previa antes de empezar ---------- */
 function previewSheet(pid, did) {
@@ -48,7 +52,7 @@ vSession = function () {
     <div class="sx-top">
       <button class="sx-ic" data-act="sx-min" aria-label="Minimizar entrenamiento">${ic('chevron-down', 26)}</button>
       <div class="grow" style="min-width:0"><div class="num sx-clock" id="elapsed">0:00</div><div class="sx-sub">${esc(d.dayName)} · ${done}/${all} series</div></div>
-      <button class="btn primary small sx-fin" data-act="finish">${state.confirm === 'finish' ? 'Confirmar' : 'Terminar'}</button>
+      <button class="btn primary small sx-fin" data-act="fin-ask">Terminar</button>
     </div>
     <div class="sx-prog"><i style="width:${all ? Math.round(done / all * 100) : 0}%"></i></div>
     <div class="sx-strip" id="sx-strip">${d.exercises.map((e, i) => `<button class="sx-th ${i === cur ? 'on' : ''} ${exComplete(e) ? 'done' : ''}" data-act="sx-go" data-i="${i}" aria-label="${esc(e.name)}" style="--tc:${typeRgb(e.type)}">${thumb(e.name)}${exComplete(e) ? `<span class="ok">${ic('check', 12)}</span>` : ''}</button>`).join('')}</div>
@@ -209,6 +213,52 @@ document.addEventListener('click', ev => {
   if (a === 'stale-real') finishWith(0);
   if (a === 'stale-keep') { closeSheet(); toast('¡Dale! Seguimos.'); }
   if (a === 'stale-discard') { if (state.confirm === 'stale-discard') { closeSheet(); discardSession(); toast('Entrenamiento descartado.'); } else { state.confirm = 'stale-discard'; b.textContent = '¿Seguro? Toca otra vez'; } }
+}, true);
+
+
+/* ---------- Terminar: guardar o descartar ---------- */
+function finishAsk() {
+  const d = state.draft; if (!d) return;
+  const done = d.exercises.reduce((a, e) => a + e.log.filter(stepDone).length, 0), all = d.exercises.reduce((a, e) => a + e.log.length, 0);
+  const vol = d.exercises.reduce((a, e) => a + e.log.filter(x => x.done).reduce((b, x) => b + (+x.w || 0) * (+x.r || 0), 0), 0);
+  const exDone = d.exercises.filter(e => e.log.some(x => x.done)).length;
+  const mins = (Date.now() - new Date(d.start).getTime()) / 60000;
+  let wins = 0; if (typeof exWin === 'function') d.exercises.forEach(e => { if (exWin(e, d)) wins++; });
+  openSheet(`<div class="row"><span class="stale-ic" style="background:rgba(255,106,31,.14);color:var(--accent)">${ic('trophy', 22)}</span><h2 class="grow">¿Terminar entrenamiento?</h2></div>
+    <div class="fin-stats"><div><b class="num">${hm(mins)}</b><span>Duración</span></div><div><b class="num">${done}/${all}</b><span>Series</span></div><div><b class="num">${fmtKg(vol)}</b><span>kg de volumen</span></div></div>
+    ${wins ? `<div class="winb up" style="align-self:flex-start">${ic('shield', 12)} ${wins} ${wins === 1 ? 'ejercicio mejorado' : 'ejercicios mejorados'}</div>` : ''}
+    ${!done ? `<div class="safety">Aún no marcas ninguna serie, así que no hay nada que guardar. Puedes seguir o descartarlo.</div>` : done < all ? `<div class="muted" style="font-size:13px">Te quedan <b>${all - done} series</b> sin marcar en ${d.exercises.length - exDone ? (d.exercises.length - exDone) + ' ejercicios sin empezar y ' : ''}otros ejercicios. Solo se guardan las series marcadas.</div>` : `<div class="muted" style="font-size:13px">¡Completaste todas las series! 💪</div>`}
+    ${done ? `<button class="btn primary block" data-act="fin-save">${ic('check', 18)} Guardar entrenamiento</button>` : ''}
+    <div class="grid2"><button class="btn" data-act="fin-keep">Seguir entrenando</button>
+      <button class="btn danger" data-act="fin-discard">${state.confirm === 'fin-discard' ? '¿Seguro? Toca otra vez' : 'Descartar'}</button></div>`);
+}
+document.addEventListener('click', ev => {
+  const b = ev.target.closest('[data-act^="fin-"]'); if (!b) return;
+  ev.stopPropagation();
+  const a = b.dataset.act;
+  if (a === 'fin-ask') { state.confirm = null; finishAsk(); }
+  if (a === 'fin-keep') { state.confirm = null; closeSheet(); }
+  if (a === 'fin-save') { state.confirm = null; closeSheet(); finishSession(); }
+  if (a === 'fin-discard') {
+    if (state.confirm === 'fin-discard') { state.confirm = null; closeSheet(); discardSession(); toast('Entrenamiento descartado.'); }
+    else { state.confirm = 'fin-discard'; b.textContent = '¿Seguro? Toca otra vez'; }
+  }
+}, true);
+
+/* Técnica: foto real arriba; la figura queda como esquema opcional */
+const _howSheetPh = howSheet;
+howSheet = function (name) {
+  _howSheetPh(name);
+  const pk = photoKey(name), fig = document.getElementById('fig-live'); if (!pk || !fig) return;
+  fig.insertAdjacentHTML('beforebegin', exPhoto(pk, 'how-ph') + `<button class="btn small fig-tog" data-act="fig-tog2">${ic('person-standing', 15)} Ver esquema del movimiento</button>`);
+  fig.classList.add('fig-hide'); const c = document.querySelector('#sheet .fig-ctrl'); if (c) c.classList.add('fig-hide');
+};
+document.addEventListener('click', ev => {
+  const b = ev.target.closest('[data-act="fig-tog2"]'); if (!b) return;
+  ev.stopPropagation();
+  const on = document.getElementById('fig-live').classList.toggle('fig-hide');
+  const c = document.querySelector('#sheet .fig-ctrl'); if (c) c.classList.toggle('fig-hide', on);
+  b.innerHTML = `${ic('person-standing', 15)} ${on ? 'Ver esquema del movimiento' : 'Ocultar esquema'}`;
 }, true);
 
 if (state.draft && !isWatch()) state.sessMin = state.tab !== 'train';
