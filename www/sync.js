@@ -136,18 +136,41 @@ const sync = {
       const dkeys = Object.keys(daily).sort(); while (dkeys.length > 200) delete daily[dkeys.shift()];
       if (syncHash(daily) !== syncHash(state.daily)) { state.daily = daily; changed = true; }
 
-      /* --- Planes, gimnasios y ajustes compartidos --- */
+      /* --- Planes, gimnasios y ajustes compartidos: se fusionan por cada ajuste ---
+         Cada ajuste (hábitos, cuerpo, nutrición, bloque, planes, gimnasios…) guarda cuándo se cambió.
+         Gana el cambio más reciente de ESE ajuste, así un equipo no borra lo que otro editó. */
       const rp = R && R.profile, lstamp = state.settings.stamp || 0;
-      // Primera vez en este equipo: manda la nube, salvo que este equipo tenga más historial
-      const takeRemote = rp && (!B ? ((R.sessions || []).length >= state.sessions.length) : (rp.stamp || 0) > lstamp);
-      if (takeRemote && syncHash([rp.plans, rp.gyms, rp.settings]) !== syncHash([state.plans, state.gyms, this.shared()])) {
-        state.plans = JSON.parse(JSON.stringify(rp.plans));
-        if (rp.gyms) state.gyms = JSON.parse(JSON.stringify(rp.gyms));
-        const keep = {}; SYNC_LOCAL_KEYS.forEach(k => { if (k in state.settings) keep[k] = state.settings[k]; });
-        state.settings = Object.assign({}, state.settings, rp.settings, keep);
-        try { if (typeof migrateGyms === 'function') migrateGyms(); } catch (e) {}
-        changed = true;
-      }
+      const oldRule = rp && (!B ? ((R.sessions || []).length >= state.sessions.length) : (rp.stamp || 0) > lstamp);
+      const Lv = Object.assign({}, this.shared(), { __plans: state.plans, __gyms: state.gyms }); delete Lv.stamp;
+      const Rv = rp ? Object.assign({}, rp.settings || {}, { __plans: rp.plans, __gyms: rp.gyms }) : {}; delete Rv.stamp;
+      const Rt = (rp && rp.ts) || {}, meta = LS.get('setMeta', null), first = !meta, M = meta || {}, outT = {};
+      let profChanged = false;
+      new Set(Object.keys(Lv).concat(Object.keys(Rv))).forEach(k => {
+        const inL = k in Lv && Lv[k] !== undefined, inR = k in Rv && Rv[k] !== undefined;
+        const lh = inL ? syncHash(Lv[k]) : null;
+        let lt;
+        if (M[k]) lt = M[k].h !== lh ? now : M[k].t;                 // cambiado aquí desde la última vez
+        else lt = first || inR ? 0 : now;                             // nuevo aquí (si la nube lo tiene, es un valor por defecto)
+        const rt = Rt[k] || 0;
+        let v = Lv[k], t = lt;
+        if (!inL) { v = Rv[k]; t = rt; }
+        else if (inR && syncHash(Rv[k]) === lh) t = Math.max(lt, rt);
+        else if (inR) {
+          if (rt > lt) { v = Rv[k]; t = rt; }
+          else if (rt === lt) {
+            if (k === 'habits' && Array.isArray(Rv[k]) && Array.isArray(Lv[k])) v = Rv[k].concat(Lv[k].filter(x => !Rv[k].some(y => y.k === x.k)));   // unir hábitos
+            else if (oldRule) v = Rv[k];
+          }
+        }
+        outT[k] = t;
+        if (!inL || syncHash(v) !== lh) {
+          profChanged = true;
+          if (k === '__plans') state.plans = JSON.parse(JSON.stringify(v));
+          else if (k === '__gyms') { if (v) state.gyms = JSON.parse(JSON.stringify(v)); }
+          else state.settings[k] = v == null ? v : JSON.parse(JSON.stringify(v));
+        }
+      });
+      if (profChanged) { try { if (typeof migrateGyms === 'function') migrateGyms(); } catch (e) {} changed = true; }
 
       if (changed) {
         this.applying = true;
@@ -155,7 +178,7 @@ const sync = {
         finally { this.applying = false; }
       }
 
-      const doc = { app: 'forja', v: 1, profile: { stamp: state.settings.stamp || 0, plans: state.plans, gyms: state.gyms, settings: this.shared() },
+      const doc = { app: 'forja', v: 1, profile: { stamp: state.settings.stamp || 0, ts: outT, plans: state.plans, gyms: state.gyms, settings: this.shared() },
         sessions: state.sessions.map(cleanSess), daily: state.daily, tomb };
       const strip = d => d ? { profile: d.profile, sessions: d.sessions, daily: d.daily, tomb: d.tomb } : null;
       if (!R || syncHash(strip(doc)) !== syncHash(strip(R))) { doc.at = new Date().toISOString(); doc.by = isWatch() ? 'reloj' : 'celular'; await this.writeRemote(doc, got.ut); }
@@ -164,6 +187,8 @@ const sync = {
       state.sessions.forEach(x => { s[x.id] = syncHash(cleanSess(x)); });
       Object.keys(state.daily).forEach(k => { d[k] = syncHash(state.daily[k]); });
       this.base = { s, d }; LS.set('syncBase', this.base); LS.del('syncRevive');
+      const nm = {}; const Lf = Object.assign({}, this.shared(), { __plans: state.plans, __gyms: state.gyms }); delete Lf.stamp;
+      Object.keys(Lf).forEach(k => { nm[k] = { h: syncHash(Lf[k]), t: outT[k] || 0 }; }); LS.set('setMeta', nm);
       this.meta = { last: Date.now(), err: null }; this.saveMeta();
       this.status = 'ok'; state.sync = 'cloud';
       if (changed) { if (typeof scheduleSoon === 'function') scheduleSoon(); safeRender(); }
@@ -183,7 +208,7 @@ const sync = {
   },
   revive(ids) { LS.set('syncRevive', LS.get('syncRevive', []).concat(ids)); },
   soon(ms) { if (!this.on()) return; clearTimeout(this.timer); this.timer = setTimeout(() => this.run(), ms == null ? 3000 : ms); },
-  reset() { this.base = null; LS.del('syncBase'); this.meta = {}; this.saveMeta(); },
+  reset() { this.base = null; LS.del('syncBase'); LS.del('setMeta'); this.meta = {}; this.saveMeta(); },
 };
 
 /* Cada vez que la app guarda algo, se programa una sincronización */
