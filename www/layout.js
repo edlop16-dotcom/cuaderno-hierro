@@ -272,7 +272,7 @@ render = function () { padPrev(); _renderL(); liveBar(); };
 if (!state.settings.importSym2) {
   const SID = 'sym-rokaz-2026-10-05';
   if (!state.sessions.some(s => s.id === SID)) {
-    state.sessions.push({ id: SID, date: new Date('2026-10-05T19:00:00-05:00').toISOString(), planId: 'plan2', planName: 'Torso / Pierna · 4 días', dayId: 'p2-lun', dayName: 'Piernas (Pesado)', gymId: 'rokaz', gymName: gymName('rokaz'), kind: 'fuerza', durationSec: 7080, source: 'Symmetry',
+    state.sessions.push({ id: SID, date: new Date('2026-10-09T19:00:00-05:00').toISOString(), planId: 'plan2', planName: 'Torso / Pierna · 4 días', dayId: 'p2-lun', dayName: 'Piernas (Pesado)', gymId: 'rokaz', gymName: gymName('rokaz'), kind: 'fuerza', durationSec: 7080, source: 'Symmetry',
       exercises: [
         { name: 'Prensa 45°', type: P, sets: [{ w: 160, r: 18 }, { w: 170, r: 18 }, { w: 170, r: 18 }] },
         { name: 'Sentadilla Hack', type: P, note: 'Con mala técnica, dominar 60', sets: [{ w: 60, r: 12 }, { w: 60, r: 12 }, { w: 60, r: 12 }] },
