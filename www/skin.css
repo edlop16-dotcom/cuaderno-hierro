@@ -891,3 +891,4 @@ body.sx-open .nav{visibility:hidden}
 .pk-stats>*{flex-shrink:0}
 .pk-steps{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px;font-size:14.5px;line-height:1.5}
 .pk-sheet .pk-ibody{flex:1}
+.pv-del{margin-top:-4px}
