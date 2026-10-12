@@ -3,10 +3,11 @@
    Se guarda con la serie y el coach lo usa para decidir si subir peso.
    ========================================================================== */
 const RIR_OPTS = [[0, '0', 'Al fallo'], [1, '1', ''], [2, '2', ''], [3, '3+', 'Fácil']];
+var rirTarget = j => Math.max(0, 2 - j);
 const rirTxt = v => v == null ? '' : v >= 3 ? '3+' : String(v);
 
 function rirPick(i, j, s) {
-  const plan = Math.max(0, 2 - j);
+  const plan = Math.min(3, rirTarget(j));
   return `<div class="rirpick" data-ex="${i}" data-set="${j}"><span class="rp-q">¿Reps de sobra?</span>${RIR_OPTS.map(([v, l]) =>
     `<button type="button" class="rp ${s.rir === v ? 'on' : ''} ${s.rir == null && v === plan ? 'plan' : ''}" data-act="rir" data-ex="${i}" data-set="${j}" data-v="${v}" aria-pressed="${s.rir === v}" aria-label="RIR ${l}">${l}</button>`).join('')}</div>`;
 }
