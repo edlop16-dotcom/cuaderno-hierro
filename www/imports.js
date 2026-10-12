@@ -122,3 +122,30 @@ if (!state.settings.hevyImport1) {
   if (typeof learnWeights === 'function') list.slice().sort((a, b) => a.date.localeCompare(b.date)).forEach(s => learnWeights(state.sessions.find(x => x.id === s.id)));
   state.settings.hevyImport1 = 1; saveLocal(); render();
 }
+
+/* ---------- Tu historial de Symmetry (capturas, agosto–septiembre en Raydac) ---------- */
+const MY_SYM = [
+  ['2026-08-19T20:52', 'Piernas', [['Hip Thrust', '25x20 25x20 25x20'], ['Prensa 45°', '120x20 120x20 120x20'], ['Sentadilla Hack', '50x12 50x15 50x15'], ['Extensión de Pierna', '45x15 45x15 45x15']]],
+  ['2026-08-26T20:31', 'Piernas', [['Hip Thrust', '35x15 35x15 35x15'], ['Prensa 45°', '170x12 170x12 170x12'], ['Sentadilla Hack', '60x10 60x10 60x10'], ['Extensión de Pierna', '60x12 60x11 60x11']]],
+  ['2026-08-31T20:19', 'Piernas', [['Hip Thrust', '35x18 35x18 35x18'], ['Prensa 45°', '170x12 160x12 160x12'], ['Sentadilla Hack', '60x12 60x10 60x10'], ['Extensión de Pierna', '60x12 60x12 60x12']]],
+  ['2026-09-14T20:41', 'Piernas', [['Hip Thrust', '35x18 35x16 35x16'], ['Prensa 45°', '160x12 160x12 160x12'], ['Sentadilla Hack', '60x12 60x12 60x12'], ['Extensión de Pierna', '60x12 60x12 60x10']]],
+  ['2026-09-22T21:50', 'Piernas', [['Hip Thrust', '35x15 35x18 35x18'], ['Prensa 45°', '160x12 160x12 160x15'], ['Sentadilla Hack', '60x15 60x15 60x15'], ['Extensión de Pierna', '60x12 60x12 60x10']]],
+  ['2026-09-25T20:33', 'Piernas', [['Hip Thrust', '35x15 35x18 35x18'], ['Prensa 45°', '160x15 160x15 160x15'], ['Extensión de Pierna', '60x15 60x14 60x14']]],
+  ['2026-09-26T20:12', 'Torso', [['Press Banca Plano (Barra)', '15x10 15x9 15x6'], ['Press Banca Inclinado (Barra)', '20x5 15x9 15x5'], ['Remo en T', '30x10 30x9 30x9'], ['Remo Sentado con Cable', '40x12 40x12 40x12'], ['Curl con Barra', '15x11 15x10 15x9'], ['Press Francés', '10x10 10x10 10x10']]],
+  ['2026-09-28T22:14', 'Piernas', [['Hip Thrust', '35x18 35x15 35x15'], ['Prensa 45°', '140x18 140x18 140x18'], ['Extensión de Pierna', '60x18 60x18 60x17']]],
+  ['2026-09-30T20:28', 'Piernas', [['Hip Thrust', '35x18 35x18 35x18'], ['Prensa 45°', '140x20 140x20 140x20'], ['Extensión de Pierna', '65x15 65x12 65x10']]],
+];
+function symSessions(rows) {
+  return rows.map(([when, day, exs]) => ({
+    id: 'sym-' + when.slice(0, 10), date: new Date(when + ':00-05:00').toISOString(), planId: 'sym', planName: 'Symmetry',
+    dayId: 'sym-' + normName(day), dayName: day, gymId: 'raydac', gymName: gymName('raydac'), kind: 'fuerza',
+    durationSec: exs.length * 900, source: 'Symmetry',
+    exercises: exs.map(([name, sets]) => ({ name, type: typeOf(name), sets: sets.split(' ').map(t => { const [w, r] = t.split('x').map(Number); return { w, r }; }) })),
+  }));
+}
+if (!state.settings.symImport2) {
+  const list = symSessions(MY_SYM);
+  importSessions(list);
+  if (typeof learnWeights === 'function') state.sessions.slice().sort((a, b) => a.date.localeCompare(b.date)).forEach(s => learnWeights(s));
+  state.settings.symImport2 = 1; saveLocal(); savePlans(); render();
+}
