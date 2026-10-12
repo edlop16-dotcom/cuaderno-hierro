@@ -18,7 +18,7 @@ App personal de gimnasio de Edgar (Edgwr), en español. Celular Android y reloj 
   vTrain = function () { ... _x() ... };
   ```
   Sirve igual para render, vTrain, vSession, finishSession, markSet, vSettings, header y previewSheet.
-- Orden de scripts: library.js, icons.js, (inline en index.html), coach.js, media.js, native.js, skin.js, config.js, sync.js, undo.js, layout.js, session.js, stats.js, safety.js, imports.js. Un archivo nuevo va al final.
+- Orden de scripts: library.js, icons.js, (inline en index.html), coach.js, media.js, native.js, skin.js, config.js, sync.js, undo.js, layout.js, session.js, stats.js, safety.js, imports.js, rir.js, body.js. Un archivo nuevo va al final.
 - Estado en `state` (sessions, plans, settings, draft). Se guarda en localStorage con claves `cdh.*`: `saveLocal()` para sesiones y `savePlans()` para settings y planes.
 - Navegación de 4 pestañas: Entrenar · Rutinas · Ejercicios · Perfil. Perfil tiene las subpestañas progress, history y settings (`vProfile`).
 - Sesión en pantalla completa `#sx` con páginas deslizables. Los hábitos y las rachas están en stats.js. Los avisos de lesión y el dolor muscular están en safety.js (`ZONES`, `zonesOf`).
@@ -34,7 +34,16 @@ App personal de gimnasio de Edgar (Edgwr), en español. Celular Android y reloj 
 Playwright con el Chromium preinstalado y un servidor local sobre la carpeta transpilada. Hacer capturas a 390×844 y también en tamaño reloj. Bloquear `googleapis.com`.
 
 ## Datos de Edgar
-1,70 m, ~73 kg, 40 años. Nivel principiante-intermedio. Entrena con entrenador en Roka'z. Pantorrillas sensibles: el 5 de octubre las llevó al fallo y quedaron con dolor.
+Estatura: en la app 173 cm (HISTORY.cm); en un chat dijo 1,70 m, por confirmar (se edita en Perfil → Cuerpo → Tus datos). ~73 kg, 40 años. Nivel principiante-intermedio. Entrena con entrenador en Roka'z. Pantorrillas sensibles: el 5 de octubre las llevó al fallo y quedaron con dolor.
+
+## Parejas de funciones (una versión por pareja; Edgar pide "pareja N")
+1. Mi cuerpo + RIR por serie — HECHA en beta (body.js, rir.js)
+2. Calentamiento y discos + Mapa muscular semanal
+3. Reemplazo de ejercicio + Preparación del día
+4. Proteína y calorías + Tarjetas para compartir
+5. Mesociclos con descarga + Nivel de fuerza
+6. Importar Strong + Requisitos de Google Play
+7. Coach con IA + Suscripción Pro
 
 ## Hoja de ruta (pedida por Edgar el 11-oct-2026)
 **Próximas versiones**
