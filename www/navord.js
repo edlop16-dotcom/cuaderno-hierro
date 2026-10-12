@@ -6,9 +6,9 @@
      presionado cualquier botón de la barra.
    - La tarjeta de hábitos ya no aparece en Entrenar; queda solo en Perfil.
    ========================================================================== */
-const NAV_ALL = ['profile', 'train', 'plans', 'guide'];
-const NAV_NAME = { profile: 'Perfil', train: 'Entrenar', plans: 'Rutinas', guide: 'Ejercicios' };
-const NAV_ICO = { profile: 'user', train: 'dumbbell', plans: 'clipboard-list', guide: 'book-open' };
+const NAV_ALL = ['profile', 'train', 'plans', 'guide', 'settings'];
+const NAV_NAME = { profile: 'Perfil', train: 'Entrenar', plans: 'Rutinas', guide: 'Ejercicios', settings: 'Ajustes' };
+const NAV_ICO = { profile: 'user', train: 'dumbbell', plans: 'clipboard-list', guide: 'book-open', settings: 'settings' };
 function navOrder() {
   const o = Array.isArray(state.settings.navOrder) ? state.settings.navOrder.filter(k => NAV_ALL.indexOf(k) >= 0) : [];
   NAV_ALL.forEach(k => { if (o.indexOf(k) < 0) o.push(k); });
@@ -17,7 +17,12 @@ function navOrder() {
 function applyNavOrder() {
   const box = document.querySelector('#nav .nav-in'); if (!box) return;
   navOrder().forEach(k => { const b = document.getElementById('nav-' + k); if (b) box.appendChild(b); });
+  /* Ajustes tiene su propio botón: se ilumina él y no Perfil */
+  const st = state.tab === 'settings', bp = document.getElementById('nav-profile'), bs = document.getElementById('nav-settings');
+  if (bs) bs.setAttribute('aria-current', st ? 'page' : 'false');
+  if (bp && st) bp.setAttribute('aria-current', 'false');
 }
+(function () { const b = document.getElementById('nav-settings'), s = b && b.querySelector('svg'); if (s) s.outerHTML = ic('settings', 22); })();
 if (!state.settings.navOrder) { state.settings.navOrder = NAV_ALL.slice(); saveLocal(); }
 applyNavOrder();
 

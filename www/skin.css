@@ -258,7 +258,7 @@ body.watch .pair-code{font-size:30px;padding:8px 4px}
 .gbtn{background:#fff;color:#1f1f1f;border-color:#fff;display:flex;align-items:center;justify-content:center;gap:10px;font-weight:700}
 
 /* ===== Navegación de 4 botones ===== */
-.nav-in{grid-template-columns:repeat(4,1fr)!important}
+.nav-in{grid-template-columns:repeat(5,1fr)!important}
 /* Perfil */
 .avatar.lg{width:58px;height:58px;border-radius:19px;font-size:24px}
 .pcard h2{margin:0}
