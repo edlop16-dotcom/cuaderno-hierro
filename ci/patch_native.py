@@ -16,10 +16,11 @@ if 'HabitAlarmPlugin' not in s:
         registerPlugin(HabitAlarmPlugin.class);
         registerPlugin(BodySensorsPlugin.class);
         registerPlugin(HealthPlugin.class);
+        registerPlugin(PhoneSleepPlugin.class);
         super.onCreate(savedInstanceState);
     }
 }''', s)
-assert 'registerPlugin(HealthPlugin.class)' in s, s
+assert 'registerPlugin(PhoneSleepPlugin.class)' in s, s
 open(main[0], 'w').write(s)
 
 p = 'android/app/src/main/AndroidManifest.xml'
@@ -74,6 +75,7 @@ perms = '''
     <uses-permission android:name="android.permission.health.READ_WEIGHT" />
     <uses-permission android:name="android.permission.health.READ_STEPS" />
     <uses-permission android:name="android.permission.health.READ_RESTING_HEART_RATE" />
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-feature android:name="android.hardware.location.gps" android:required="false" />
