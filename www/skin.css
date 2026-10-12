@@ -582,3 +582,41 @@ body.sx-open .nav{visibility:hidden}
 .bd-rec{display:flex;align-items:center;gap:8px;font-size:13px;padding:4px 0;border-bottom:1px solid var(--line2)}
 .bd-rec>span{min-width:62px}.bd-rec small{flex:1;min-width:0}.bd-rec b{flex:1}
 .bd-big>div:first-child{white-space:nowrap}
+
+/* ---------- Calentamiento y discos ---------- */
+.warm{border:1px solid var(--line);border-radius:14px;background:var(--surface2);padding:0 10px}
+.warm summary{display:flex;align-items:center;gap:8px;padding:10px 0;font-weight:700;font-size:13.5px;cursor:pointer;list-style:none}
+.warm summary::-webkit-details-marker{display:none}
+.warm summary svg:first-child{color:var(--accent)}
+.warm[open] summary svg:last-child{transform:rotate(180deg)}
+.warm.done summary{color:var(--muted)}
+.warm .chip.ok{color:var(--ok);font-size:11.5px}
+.wu-list{display:flex;flex-direction:column;gap:6px}
+.wu{display:grid;grid-template-columns:42px auto 1fr 26px;align-items:center;gap:8px;padding:8px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--fg);font:inherit;text-align:left;cursor:pointer}
+.wu.on{border-color:var(--ok);opacity:.7}
+.wu-n{font-size:12px;color:var(--muted);font-weight:700}
+.wu-w{white-space:nowrap;font-size:13.5px}
+.wu-p{display:flex;flex-wrap:wrap;gap:3px;justify-content:flex-end;font-size:11.5px}
+.wu-c{width:24px;height:24px;border-radius:8px;border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--ok-ink)}
+.wu.on .wu-c{background:var(--ok);border-color:var(--ok)}
+.wu-tip{font-size:11.5px;padding:8px 0 10px}
+.pl{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 5px;border-radius:6px;font-style:normal;font-weight:800;font-size:11px;color:#fff;background:#3a4258;font-family:var(--f-num)}
+.pl.p20{background:#3b82f6}.pl.p15{background:#eab308;color:#1a1300}.pl.p10{background:#22c55e;color:#03210f}.pl.p5{background:#e5e7eb;color:#111}.pl.p2_5{background:#ef4444}
+.plates-live{display:flex;flex-wrap:wrap;align-items:center;gap:5px;font-size:12px;color:var(--muted)}
+.plates-live .pl-chips{display:inline-flex;gap:3px;flex-wrap:wrap}
+
+/* ---------- Mapa muscular ---------- */
+:root{--mm0:#39415a;--mmb:#1d2333}
+.mm-card{gap:10px}
+.mm-card>*{flex-shrink:0}
+.mm-svg{width:100%;max-width:330px;height:auto;align-self:center}
+.mm-svg [data-z]{stroke:#0b0d12;stroke-width:1.2;transition:fill .3s}
+.mm-svg text{fill:var(--muted);font-size:9px}
+.mm-leg{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:11.5px;color:var(--muted)}
+.mm-leg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.mm-rows{display:flex;flex-direction:column;gap:6px}
+.mm-row{display:grid;grid-template-columns:96px 1fr 34px;align-items:center;gap:8px;font-size:12.5px}
+.mm-row b{text-align:right}
+.mm-mini b{color:var(--fg)}
+.pl s{text-decoration:none;font-weight:700;opacity:.85;margin-right:2px;font-size:10px}
+.mm-mini{text-align:left}.mm-mini .mm-mt{flex:1;min-width:0;display:block}.mm-mini .muted{white-space:nowrap}
