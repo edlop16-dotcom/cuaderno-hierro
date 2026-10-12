@@ -2,7 +2,7 @@
 
 App personal de gimnasio de Edgar (Edgwr), en español. Celular Android y reloj M99 Pro+ (WebView antiguo, Chrome ~51). Compite con Hevy y Symmetry; quizá se publique en Google Play.
 
-**Versión actual compilada:** v1.0.17. Las ramas `beta` y `main` están al día.
+**Versión actual compilada:** v1.0.18 (las 7 parejas). Versión web: workflow `.github/workflows/web.yml` publica `www/` en GitHub Pages en cada push a `main` (https://edlop16-dotcom.github.io/cuaderno-hierro/); requiere activar Pages → Source: GitHub Actions y agregar ese origen al cliente OAuth web de Google para entrar con Google.
 
 ## Repositorio y flujo de trabajo
 - Repo: `edlop16-dotcom/cuaderno-hierro`. appId `pe.edgwr.cuadernohierro`. Capacitor 6.
@@ -18,7 +18,7 @@ App personal de gimnasio de Edgar (Edgwr), en español. Celular Android y reloj 
   vTrain = function () { ... _x() ... };
   ```
   Sirve igual para render, vTrain, vSession, finishSession, markSet, vSettings, header y previewSheet.
-- Orden de scripts: library.js, icons.js, (inline en index.html), coach.js, media.js, native.js, skin.js, config.js, sync.js, undo.js, layout.js, session.js, stats.js, safety.js, imports.js, rir.js, body.js, warm.js, mmap.js, swap.js, ready.js, nutri.js, share.js, meso.js, level.js, play.js, ai.js. Un archivo nuevo va al final.
+- Orden de scripts: library.js, icons.js, (inline en index.html), coach.js, media.js, native.js, skin.js, config.js, sync.js, undo.js, layout.js, session.js, stats.js, safety.js, imports.js, rir.js, body.js, warm.js, mmap.js, swap.js, ready.js, nutri.js, share.js, meso.js, level.js, play.js, ai.js, web.js. Un archivo nuevo va al final.
 - Estado en `state` (sessions, plans, settings, draft). Se guarda en localStorage con claves `cdh.*`: `saveLocal()` para sesiones y `savePlans()` para settings y planes.
 - Navegación de 4 pestañas: Entrenar · Rutinas · Ejercicios · Perfil. Perfil tiene las subpestañas progress, history y settings (`vProfile`).
 - Sesión en pantalla completa `#sx` con páginas deslizables. Los hábitos y las rachas están en stats.js. Los avisos de lesión y el dolor muscular están en safety.js (`ZONES`, `zonesOf`).
@@ -29,6 +29,10 @@ App personal de gimnasio de Edgar (Edgwr), en español. Celular Android y reloj 
 - Las fotos de ejercicios son de Free Exercise DB (dominio público), en `www/ex/<key>-0/1.webp`.
 - Para importar historial: `importSessions(list)` en imports.js (Hevy CSV y Symmetry).
 - Estilos: se agregan al final de `skin.css`. En flex, poner `flex-shrink:0` a los hijos de `.sheet-card` y `.sx-page`. Antes de crear una clase nueva, comprobar que no choque con otra existente (ya pasó con `.sync` y `.prof`).
+
+## Versión web
+- `web.js`: solo actúa fuera de la app nativa (`IS_WEB`). Google con Google Identity Services → `signInWithIdp`; botón Google en la tarjeta de cuenta; `openExt` abre enlaces en otra pestaña; sincroniza al volver a la pestaña y cada 2 min; PWA (`manifest.webmanifest`, `sw.js` red primero).
+- La política de privacidad queda en `/privacidad.html` del mismo sitio.
 
 ## Pruebas
 Playwright con el Chromium preinstalado y un servidor local sobre la carpeta transpilada. Hacer capturas a 390×844 y también en tamaño reloj. Bloquear `googleapis.com`.

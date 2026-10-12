@@ -6,6 +6,7 @@
    - Forja Pro: pantalla de planes y control de funciones Pro. Mientras PRO_ENFORCE sea
      false (beta), todo está desbloqueado. El cobro será con Google Play Billing.
    ========================================================================== */
+var openExt = u => { location.href = u; };
 const AI_CFG = { endpoint: '', maxDay: 20 };          // p. ej. 'https://forja-coach.<tu-usuario>.workers.dev'
 const PRO_CFG = { enforce: false, monthly: 'S/ 14.90', yearly: 'S/ 99.90', trialDays: 7 };
 const PRO_FEATS = [
@@ -58,7 +59,7 @@ function aiAsk(q) {
     const txt = `${AI_SYS}\n\nMis datos de Forja:\n${aiContext()}\n\nMi pregunta: ${q}`;
     aiChat.list.push({ role: 'user', t: q, d: dk(new Date()) }, { role: 'bot', t: 'Abrí Claude con tu pregunta y tus datos. Si no se abre, el texto quedó copiado: pégalo en una conversación nueva.' }); aiSave(); aiSheet();
     try { navigator.clipboard && navigator.clipboard.writeText(txt).catch(() => {}); } catch (e) {}
-    setTimeout(() => { location.href = 'https://claude.ai/new?q=' + encodeURIComponent(txt.slice(0, 6000)); }, 500);
+    setTimeout(() => openExt('https://claude.ai/new?q=' + encodeURIComponent(txt.slice(0, 6000))), 300);
     return;
   }
   if (!isPro()) { proSheet(); return; }
