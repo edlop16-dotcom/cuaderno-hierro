@@ -71,7 +71,17 @@ readyScore = function () { const s = _readyScoreHC(); if (s == null) return s; c
 const _readyCardHC = readyCard;
 readyCard = function () {
   const h = _readyCardHC(), t = today(), r = rhrInfo();
-  if (!t.sleepMin && !r) return h;
+  if (!t.sleepMin && !r) {
+    /* Decir siempre qué pasa con Samsung Health, para que se sepa si está leyendo */
+    if (!HCN || isWatch()) return h;
+    const s = state.hc;
+    const msg = !s ? 'Revisando Samsung Health…'
+      : s.available !== 'yes' ? 'Samsung Health no está disponible en este teléfono. Marca tu sueño a mano.'
+      : !s.any ? `Samsung Health no está conectado. <button type="button" class="btn small" data-act="hc-go">Conectar</button>`
+      : !s.sleep ? `Samsung Health está conectado, pero sin permiso para leer el sueño. <button type="button" class="btn small" data-act="hc-perm">Permisos</button>`
+      : `Samsung Health conectado, pero no tiene registro de sueño de anoche${hcLast() ? ' (leído ' + ago(new Date(hcLast()).toISOString()) + ')' : ''}. Marca tu sueño a mano.`;
+    return h.replace(/(<\/h3>)/, `$1<div class="hc-ready none">${msg}</div>`);
+  }
   const bits = [];
   if (t.sleepMin) bits.push(`😴 Dormiste <b>${fmtHM(t.sleepMin)}</b>`);
   if (r) bits.push(`❤ Reposo <b>${r.bpm}</b>${r.avg ? ` (tu media ${r.avg})` : ''}${r.high ? ' · <b>alto: tu cuerpo viene cansado</b>' : ''}`);
@@ -160,6 +170,7 @@ document.addEventListener('click', ev => {
   const a = b.dataset.act;
   if (a === 'gym-pick') { setTimeout(geoDecorate, 0); return; }
   if (!/^(hc-|geo-)/.test(a)) return;
+  if (a === 'hc-go') { ev.stopPropagation(); ev.preventDefault(); closeSheet(); state.tab = 'settings'; render(); setTimeout(() => { const c = document.querySelector('.hc-card'); c && c.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 80); return; }
   ev.stopPropagation(); ev.preventDefault();
   if (a === 'hc-store') HCN.openStore().catch(() => {});
   if (a === 'hc-perm') HCN.openSettings().catch(() => {});
