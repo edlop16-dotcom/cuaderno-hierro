@@ -13,7 +13,7 @@
 const BS = (CAP && CAP.BodySensors) || null;
 state.bs = state.bs || null;
 const STEP_KEY = () => isWatch() ? 'stepsW' : 'stepsP';
-const stepsOf = t => Math.max(+(t && t.stepsP) || 0, +(t && t.stepsW) || 0, +(t && t.steps) || 0);
+const stepsOf = t => Math.max(+(t && t.stepsP) || 0, +(t && t.stepsW) || 0, +(t && t.stepsH) || 0, +(t && t.steps) || 0);
 const stepGoal = () => +state.settings.stepGoal || 8000;
 const hrMax = () => 220 - (+HISTORY.age || 40);
 const hrReady = () => +state.settings.hrReady || Math.round(hrMax() * 0.6);
