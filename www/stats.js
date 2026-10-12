@@ -279,3 +279,103 @@ document.addEventListener('click', ev => {
 }, true);
 
 render();
+
+/* ---------- Hábitos personalizados (con racha cada uno) ---------- */
+const HAB_ICONS = ['pill', 'zap', 'coffee', 'fish', 'droplet', 'sun', 'moon', 'book-open', 'heart-pulse', 'activity', 'dumbbell', 'star', 'target', 'brain'];
+function habList() {
+  if (!state.settings.habits) state.settings.habits = SUPS.map(s => ({ k: s.k, name: s.name, dose: s.dose, icon: HAB_IC2[s.k] || 'pill' }));
+  return state.settings.habits;
+}
+function applyHabits() {
+  const list = habList().filter(h => !h.hidden);
+  SUPS.length = 0; list.forEach(h => { SUPS.push(h); HAB_IC2[h.k] = h.icon || 'pill'; });
+}
+applyHabits();
+const _renderHab = render;
+render = function () { applyHabits(); _renderHab(); };
+const _habitCardX = habitCard;
+habitCard = function () {
+  applyHabits();
+  const h = _habitCardX(), a = h.indexOf('<div class="hab-row">'), e = a < 0 ? -1 : h.indexOf('</div>', a);
+  const add = `<button class="hab hab-add" data-act="hab-manage" aria-label="Agregar o editar hábitos"><span class="hab-ic">${ic('plus', 18)}</span><b>Hábito</b><small>Agregar</small></button>`;
+  return e < 0 ? h : h.slice(0, e) + add + h.slice(e);
+};
+dailyPanel = habitCard;
+function habManage(edit) {
+  const list = habList(), h = edit ? list.find(x => x.k === edit) : null;
+  openSheet(`<div class="row"><h2 class="grow">Tus hábitos</h2><button class="icon-btn" data-act="sheet-close" aria-label="Cerrar">${ic('x', 18)}</button></div>
+    <div class="muted" style="font-size:13px">Cada hábito tiene su propia racha 🔥. Puedes ocultar los que no uses.</div>
+    <div class="hm-list">${list.map(x => `<div class="hm-row ${x.hidden ? 'off' : ''}"><span class="hab-ic">${ic(x.icon || 'pill', 18)}</span><div class="grow" style="min-width:0"><b>${esc(x.name)}</b><small class="muted">${esc(x.dose || '')}${x.hidden ? ' · oculto' : ` · 🔥 ${supStreak(x.k)}`}</small></div>
+      <button class="icon-btn sm" data-act="hm-edit" data-k="${x.k}" aria-label="Editar ${esc(x.name)}">${ic('square-pen', 16)}</button>
+      <button class="switch ${x.hidden ? '' : 'on'}" data-act="hm-tog" data-k="${x.k}" role="switch" aria-checked="${!x.hidden}" aria-label="Mostrar ${esc(x.name)}"><i></i></button></div>`).join('')}</div>
+    <form id="f-hab" class="hm-form" data-k="${h ? h.k : ''}">
+      <div class="label">${h ? 'Editar hábito' : 'Nuevo hábito'}</div>
+      <div class="grid2"><input id="hb-name" required maxlength="22" placeholder="Ej. Vitamina D, Leer, Dormir 8 h" value="${h ? esc(h.name) : ''}">
+        <input id="hb-dose" maxlength="22" placeholder="Meta o dosis (opcional)" value="${h ? esc(h.dose || '') : ''}"></div>
+      <div class="hm-icons">${HAB_ICONS.map(i => `<label><input type="radio" name="hb-icon" value="${i}" ${(h ? h.icon : 'pill') === i ? 'checked' : ''}><span>${ic(i, 18)}</span></label>`).join('')}</div>
+      <div class="grid2">${h && !SUPS_BASE.includes(h.k) ? `<button type="button" class="btn danger" data-act="hm-del" data-k="${h.k}">${state.confirm === 'hm-del' ? '¿Borrar? Toca otra vez' : 'Borrar'}</button>` : (h ? '<button type="button" class="btn" data-act="hab-manage">Cancelar</button>' : '<span></span>')}<button class="btn primary" type="submit">${h ? 'Guardar' : '+ Agregar hábito'}</button></div>
+    </form>`);
+}
+const SUPS_BASE = ['crea', 'prot', 'omega'];
+document.addEventListener('click', ev => {
+  const b = ev.target.closest('[data-act^="hm-"],[data-act="hab-manage"]'); if (!b) return;
+  ev.stopPropagation();
+  const a = b.dataset.act, k = b.dataset.k, list = habList();
+  if (a === 'hab-manage') { state.confirm = null; habManage(); }
+  if (a === 'hm-edit') { state.confirm = null; habManage(k); }
+  if (a === 'hm-tog') { const h = list.find(x => x.k === k); if (h) { h.hidden = !h.hidden; savePlans(); habManage(); render(); } }
+  if (a === 'hm-del') {
+    if (state.confirm === 'hm-del') { state.confirm = null; state.settings.habits = list.filter(x => x.k !== k); savePlans(); habManage(); render(); toast('Hábito borrado.'); }
+    else { state.confirm = 'hm-del'; b.textContent = '¿Borrar? Toca otra vez'; }
+  }
+}, true);
+document.addEventListener('submit', ev => {
+  if (ev.target.id !== 'f-hab') return;
+  ev.preventDefault(); ev.stopImmediatePropagation();
+  const f = ev.target, name = document.getElementById('hb-name').value.trim(), dose = document.getElementById('hb-dose').value.trim();
+  const icon = (f.querySelector('input[name="hb-icon"]:checked') || {}).value || 'pill';
+  if (!name) return;
+  const list = habList();
+  if (f.dataset.k) { const h = list.find(x => x.k === f.dataset.k); if (h) Object.assign(h, { name, dose, icon }); toast('Hábito actualizado.'); }
+  else { list.push({ k: 'h' + uid(), name, dose, icon }); toast(`"${name}" agregado. ¡A sumar racha!`); }
+  savePlans(); habManage(); render();
+}, true);
+
+/* ---------- La rutina aprende tus pesos: al guardar, cada ejercicio queda con el peso que usaste ---------- */
+function learnWeights(s) {
+  if (!s) return;
+  const gid = sGym(s); let ch = false;
+  s.exercises.forEach(e => {
+    const top = e.sets.length ? Math.max.apply(null, e.sets.map(x => +x.w || 0)) : 0; if (!top) return;
+    state.plans.filter(p => (p.gymId || 'rokaz') === gid).forEach(p => p.days.forEach(d => d.exercises.forEach(x => { if (x.name === e.name && x.weight !== top) { x.weight = top; ch = true; } })));
+  });
+  if (ch) savePlans();
+}
+const _finishLearn = finishSession;
+finishSession = function () {
+  const id = state.draft && state.draft.id;
+  _finishLearn();
+  if (id) learnWeights(state.sessions.find(x => x.id === id));
+};
+
+/* ---------- Tu sesión de piernas en Roka'z (5 oct, Symmetry): asegurar que esté y que la rutina de Roka'z use esos pesos ---------- */
+if (!state.settings.importSym3) {
+  const SID = 'sym-rokaz-2026-10-05';
+  let s = state.sessions.find(x => x.id === SID);
+  if (!s) {
+    s = { id: SID, date: new Date('2026-10-05T19:00:00-05:00').toISOString(), planId: 'plan2', planName: 'Torso / Pierna · 4 días', dayId: 'p2-lun', dayName: 'Piernas (Pesado)', gymId: 'rokaz', gymName: gymName('rokaz'), kind: 'fuerza', durationSec: 7080, source: 'Symmetry',
+      exercises: [
+        { name: 'Prensa 45°', type: P, sets: [{ w: 160, r: 18 }, { w: 170, r: 18 }, { w: 170, r: 18 }] },
+        { name: 'Sentadilla Hack', type: P, note: 'Con mala técnica, dominar 60', sets: [{ w: 60, r: 12 }, { w: 60, r: 12 }, { w: 60, r: 12 }] },
+        { name: 'Hip Thrust', type: P, sets: [{ w: 30, r: 15 }, { w: 30, r: 10 }, { w: 30, r: 11 }] },
+        { name: 'Extensión de Pierna', type: P, sets: [{ w: 45, r: 14 }, { w: 45, r: 12 }, { w: 45, r: 12 }] },
+        { name: 'Abducción de Cadera', type: P, sets: [{ w: 20, r: 10 }, { w: 20, r: 10 }, { w: 20, r: 10 }] },
+      ] };
+    state.sessions.push(s); state.sessions.sort((a, b) => b.date.localeCompare(a.date));
+    if (typeof sync !== 'undefined') sync.revive([SID]);
+  }
+  /* Solo piernas: los ejercicios de torso de Roka'z siguen con la referencia de Raydac hasta que los hagas allí */
+  learnWeights(s);
+  state.settings.importSym3 = 1; saveLocal();
+}
+render();
