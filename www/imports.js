@@ -15,13 +15,14 @@ const HEVY_MAP = {
   'sentadilla (barra)': 'Sentadilla con Barra', 'dominadas': 'Dominadas', 'face pull': 'Face Pull', 'press militar (mancuerna)': 'Press Militar (Mancuernas)',
 };
 const MES = { ene: 0, feb: 1, mar: 2, abr: 3, may: 4, jun: 5, jul: 6, ago: 7, sep: 8, set: 8, oct: 9, nov: 10, dic: 11, jan: 0, apr: 3, aug: 7, dec: 11 };
-function parseCSV(text) {
+function parseCSV(text, delim) {
+  delim = delim || ',';
   const rows = []; let row = [], f = '', q = false;
   for (let i = 0; i < text.length; i++) {
     const c = text[i];
     if (q) { if (c === '"') { if (text[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
     else if (c === '"') q = true;
-    else if (c === ',') { row.push(f); f = ''; }
+    else if (c === delim) { row.push(f); f = ''; }
     else if (c === '\n' || c === '\r') { if (c === '\r' && text[i + 1] === '\n') i++; row.push(f); rows.push(row); row = []; f = ''; }
     else f += c;
   }
@@ -104,7 +105,7 @@ document.addEventListener('click', ev => { if (ev.target.closest('[data-act="imp
 const _vSettingsImp = vSettings;
 vSettings = function () {
   const h = _vSettingsImp(), at = h.indexOf('<div class="card"><h3>Respaldo</h3>');
-  const card = `<div class="card"><h3>Importar historial</h3><div class="muted" style="font-size:12.5px">Trae tus entrenamientos de Hevy para ver tus gráficas y que el coach parta de tus pesos reales.</div><button class="btn block" data-act="imp-hevy">${ic('download', 16)} Importar desde Hevy (CSV)</button></div>`;
+  const card = `<div class="card"><h3>Importar historial</h3><div class="muted" style="font-size:12.5px">Trae tus entrenamientos de Hevy o Strong para ver tus gráficas y que el coach parta de tus pesos reales.</div><button class="btn block" data-act="imp-hevy">${ic('download', 16)} Importar desde Hevy (CSV)</button></div>`;
   return at < 0 ? h + card : h.slice(0, at) + card + h.slice(at);
 };
 

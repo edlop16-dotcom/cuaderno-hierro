@@ -28,5 +28,7 @@ jobs:
         tag_name: v1.0.${{ github.run_number }}
         name: Forja 1.0.${{ github.run_number }}
         body: ${{ github.event.head_commit.message }}
-        files: Forja.apk
+        files: |
+          Forja.apk
+          Forja.aab
         make_latest: true
