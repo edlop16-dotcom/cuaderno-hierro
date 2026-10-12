@@ -105,12 +105,14 @@ function hrData(d) {
 }
 function hrChip() {
   let el = document.getElementById('hr-chip');
-  const show = hr.on && hr.bpm && Date.now() - hr.at < 20000 && state.draft;
+  const waiting = hr.on && state.draft && (!hr.bpm || Date.now() - hr.at >= 20000);
+  const show = hr.on && state.draft;
   if (!show) { if (el) el.hidden = true; return; }
   if (!el) { el = document.createElement('div'); el.id = 'hr-chip'; el.setAttribute('aria-live', 'off'); document.body.appendChild(el); }
-  const z = hr.bpm >= hrMax() * 0.85 ? 'hi' : hr.bpm <= hrReady() ? 'ok' : '';
+  const z = waiting ? '' : hr.bpm >= hrMax() * 0.85 ? 'hi' : hr.bpm <= hrReady() ? 'ok' : '';
   el.className = z; el.hidden = false;
-  el.innerHTML = `<span class="hb">❤</span><b class="num">${hr.bpm}</b>`;
+  el.innerHTML = `<span class="hb">❤</span><b class="num">${waiting ? '--' : hr.bpm}</b>`;
+  el.classList.toggle('wait', waiting);
 }
 setInterval(hrChip, 5000);
 
@@ -184,19 +186,21 @@ vSettings = function () {
   const row = (t, sub, btn) => `<div class="row"><div class="grow">${t}<div class="muted" style="font-size:12px">${sub}</div></div>${btn || ''}</div>`;
   const card = `<div class="card bs-card"><h3>${ic('heart-pulse', 17)} Pulso y pasos</h3>
     ${!BS ? `<div class="muted" style="font-size:12.5px">El pulso y los pasos se leen en la app del celular y del reloj. Aquí ves lo que se sincroniza.</div>` : !i ? '<div class="muted">Revisando sensores…</div>' : `
-    ${row('Pulso', i.hr ? (i.hrPerm ? 'Se mide durante tus sesiones.' : 'Este equipo tiene sensor de pulso.') : 'Este equipo no tiene sensor de pulso que la app pueda leer.', i.hr && !i.hrPerm ? '<button class="btn small" data-act="hr-perm">Permitir</button>' : i.hr ? '<button class="btn small" data-act="hr-test">Probar</button>' : '')}
+    ${row('Pulso', i.hr ? (i.hrPerm ? 'Se mide durante tus sesiones.' : 'Este equipo tiene sensor de pulso.') + (i.hrName ? `<br><small>Sensor: ${esc(i.hrName)}</small>` : '') : 'Este equipo no tiene sensor de pulso que la app pueda leer.', i.hr && !i.hrPerm ? '<button class="btn small" data-act="hr-perm">Permitir</button>' : i.hr ? '<button class="btn small" data-act="hr-test">Probar</button>' : '')}
     ${row('Pasos', i.steps ? (i.stepsPerm ? 'Contando los pasos del día.' : 'Falta el permiso de actividad física.') : 'Este equipo no tiene contador de pasos.', i.steps && !i.stepsPerm ? '<button class="btn small" data-act="st-perm">Permitir</button>' : '')}`}
     <form id="f-hrr" class="row" style="gap:8px"><label class="grow" for="hrr">Pulso de recuperación<div class="muted" style="font-size:12px">En el descanso te aviso al bajar a este valor (60 % de ${hrMax()}).</div></label><input id="hrr" inputmode="numeric" value="${hrReady()}" style="max-width:76px"><button class="btn small" type="submit">OK</button></form>
-    <div class="hr-test-out muted num" style="font-size:13px"></div></div>`;
+    <div class="hr-test-out muted num" style="font-size:13px"></div>
+    ${BS ? '<button class="btn small" data-act="bs-list" style="align-self:flex-start">Ver sensores del equipo</button><div class="bs-list muted"></div>' : ''}</div>`;
   return _vSettingsHr() + card;
 };
 
 let hrTestT = null;
 document.addEventListener('click', ev => {
-  const b = ev.target.closest('[data-act="st-perm"],[data-act="st-open"],[data-act="hr-perm"],[data-act="hr-test"]'); if (!b) return;
+  const b = ev.target.closest('[data-act="st-perm"],[data-act="st-open"],[data-act="hr-perm"],[data-act="hr-test"],[data-act="bs-list"]'); if (!b) return;
   ev.stopPropagation(); ev.preventDefault();
   const a = b.dataset.act;
   if (a === 'st-open') stepsSheet();
+  if (a === 'bs-list' && BS && BS.sensors) BS.sensors().then(r => { const el = document.querySelector('.bs-list'); if (el) el.innerHTML = ((r && r.list) || []).map(x => `<div>${esc(x.name)} · <span class="num">${x.type}</span>${x.str ? ' · ' + esc(x.str) : ''}</div>`).join('') || 'Sin sensores.'; }).catch(() => {});
   if (a === 'st-perm' && BS) BS.request({ what: 'steps' }).then(i => { state.bs = i; if (i.stepsPerm) { stepsRefresh(true); toast('Contador de pasos activado.'); } else toast('Sin permiso. Actívalo en Ajustes de Android → Apps → Forja → Permisos → Actividad física.'); render(); }).catch(() => {});
   if (a === 'hr-perm' && BS) BS.request({ what: 'hr' }).then(i => { state.bs = i; if (i.hrPerm) { toast('Pulso activado.'); render(); } else { state.hrAsk = 'no'; toast('Sin permiso. Actívalo en Ajustes → Apps → Forja → Permisos → Sensores corporales.'); render(); } }).catch(() => {});
   if (a === 'hr-test' && BS) {

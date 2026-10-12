@@ -956,3 +956,5 @@ body.sx-open .nav{visibility:hidden}
 .geo-card b{display:block}.geo-card small{display:block;font-size:12px}
 .geo-ic{width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:rgba(255,106,31,.18);color:var(--accent);flex-shrink:0}
 .geo-box{display:flex;flex-direction:column;gap:8px;margin-top:6px;padding-top:12px;border-top:1px solid var(--line,rgba(255,255,255,.08));flex-shrink:0}
+#hr-chip.wait .hb{animation:none;opacity:.6}
+.bs-list{font-size:11px;line-height:1.5;max-height:220px;overflow:auto}
