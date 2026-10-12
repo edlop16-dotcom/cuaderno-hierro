@@ -892,3 +892,10 @@ body.sx-open .nav{visibility:hidden}
 .pk-steps{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px;font-size:14.5px;line-height:1.5}
 .pk-sheet .pk-ibody{flex:1}
 .pv-del{margin-top:-4px}
+/* Orden de la barra */
+.no-card{display:flex;flex-direction:column;gap:8px}
+.no-card h3{display:flex;align-items:center;gap:8px}
+.no-list{display:flex;flex-direction:column;gap:6px;flex-shrink:0}
+.no-row{display:flex;align-items:center;gap:10px;padding:6px 6px 6px 10px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid var(--line,rgba(255,255,255,.08))}
+.no-row .no-n{width:20px;text-align:center;color:var(--accent);font-weight:800}
+.no-row .icon-btn[disabled]{opacity:.25}

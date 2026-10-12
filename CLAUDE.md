@@ -18,9 +18,9 @@ App personal de gimnasio de Edgar (Edgwr), en español. Celular Android y reloj 
   vTrain = function () { ... _x() ... };
   ```
   Sirve igual para render, vTrain, vSession, finishSession, markSet, vSettings, header y previewSheet.
-- Orden de scripts: library.js, icons.js, (inline en index.html), coach.js, media.js, native.js, skin.js, config.js, sync.js, undo.js, layout.js, session.js, stats.js, safety.js, imports.js, rir.js, body.js, warm.js, mmap.js, swap.js, ready.js, nutri.js, share.js, meso.js, level.js, play.js, ai.js, web.js, plan2.js, burn.js, routines.js, keep.js, exview.js, picker.js, daydel.js. Un archivo nuevo va al final.
+- Orden de scripts: library.js, icons.js, (inline en index.html), coach.js, media.js, native.js, skin.js, config.js, sync.js, undo.js, layout.js, session.js, stats.js, safety.js, imports.js, rir.js, body.js, warm.js, mmap.js, swap.js, ready.js, nutri.js, share.js, meso.js, level.js, play.js, ai.js, web.js, plan2.js, burn.js, routines.js, keep.js, exview.js, picker.js, daydel.js, navord.js. Un archivo nuevo va al final.
 - Estado en `state` (sessions, plans, settings, draft). Se guarda en localStorage con claves `cdh.*`: `saveLocal()` para sesiones y `savePlans()` para settings y planes.
-- Navegación de 4 pestañas: Entrenar · Rutinas · Ejercicios · Perfil. Perfil tiene las subpestañas progress, history y settings (`vProfile`).
+- Navegación de 4 pestañas, ordenable (navord.js, `settings.navOrder`; por defecto Perfil · Entrenar · Rutinas · Ejercicios). Los hábitos solo se muestran en Perfil. Perfil tiene las subpestañas progress, history y settings (`vProfile`).
 - Sesión en pantalla completa `#sx` con páginas deslizables. Los hábitos y las rachas están en stats.js. Los avisos de lesión y el dolor muscular están en safety.js (`ZONES`, `zonesOf`).
 - Sincronización con Firebase por REST, sin SDK (sync.js): login con Google y con correo, y vínculo del reloj con un código de 6 letras. Fusión en 3 vías con lápidas; `sync.revive(ids)`.
 - Las migraciones de una sola vez se marcan con flags en `state.settings`: importSym1-3, symDate9, weekFix1, hevyImport1, symImport2, etc.
