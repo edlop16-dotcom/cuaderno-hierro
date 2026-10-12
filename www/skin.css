@@ -960,3 +960,4 @@ body.sx-open .nav{visibility:hidden}
 .bs-list{font-size:11px;line-height:1.5;max-height:220px;overflow:auto}
 .hc-ready.none{background:rgba(255,255,255,.04);color:var(--muted)}
 .hc-ready .btn{margin-left:6px;padding:4px 10px}
+.hc-got{font-size:12.5px;line-height:1.5}

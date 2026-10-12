@@ -28,6 +28,7 @@ function hcSync(force) {
 }
 function hcApply(r) {
   let dch = false, bch = false;
+  LS.set('hcCounts', { sleep: (r.sleep || []).length, weight: (r.weight || []).length, steps: (r.steps || []).filter(x => x.n > 0).length, rhr: (r.rhr || []).length, lastSleep: (r.sleep || []).map(x => x.day).sort().pop() || '' });
   const D = k => (state.daily[k] = state.daily[k] || { water: 0 });
   (r.steps || []).forEach(x => { const t = D(x.day); if (t.stepsH !== x.n) { t.stepsH = x.n; dch = true; } });
   const sl = {};
@@ -100,7 +101,8 @@ function hcCard() {
   const last = hcLast();
   return `<div class="card hc-card"><h3>${ic('activity', 17)} Samsung Health</h3>
     ${s.any ? `<div class="hc-pills">${ok('sleep', 'Sueño')}${ok('weight', 'Peso')}${ok('steps', 'Pasos')}${ok('rhr', 'Pulso en reposo')}</div>
-      <div class="muted" style="font-size:12px">${last ? 'Última lectura: ' + ago(new Date(last).toISOString()) : 'Aún sin leer.'} Solo se leen datos, nunca se escriben.</div>
+      <div class="muted" style="font-size:12px">${last ? 'Última lectura: ' + new Date(last).toTimeString().slice(0, 5) + ' · ' + ago(new Date(last).toISOString()) + '.' : 'Aún sin leer.'} Solo se leen datos, nunca se escriben.</div>
+      ${(() => { const c = LS.get('hcCounts', null); if (!c) return ''; return `<div class="hc-got">Recibido de los últimos días: <b>${c.sleep}</b> noches de sueño${c.lastSleep ? ' (última: ' + c.lastSleep.split('-').reverse().slice(0, 2).join('/') + ')' : ''} · <b>${c.steps}</b> días con pasos · <b>${c.weight}</b> pesos · <b>${c.rhr}</b> pulsos en reposo</div>${!c.sleep ? '<div class="muted" style="font-size:12px">Samsung Health no está compartiendo tu sueño. Revisa: app <b>Health Connect</b> → Permisos de apps → <b>Samsung Health</b> → que pueda escribir <b>Sueño</b>; y que en Samsung Health → Sueño haya registros.</div>' : ''}`; })()}
       <div class="grid2"><button class="btn small" data-act="hc-sync">Leer ahora</button><button class="btn small" data-act="hc-perm">Permisos</button></div>`
     : `<ol class="hc-steps"><li>Abre <b>Samsung Health</b> → Ajustes → <b>Health Connect</b> y activa que comparta sueño, peso y pasos.</li><li>Vuelve aquí y toca <b>Conectar</b>: elige qué puede leer Forja.</li></ol>
       <button class="btn primary small" data-act="hc-conn">Conectar</button>`}</div>`;
