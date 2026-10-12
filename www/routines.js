@@ -119,13 +119,14 @@ function rtNewSheet() {
   state.rtKind = state.rtKind || 'fuerza';
   openSheet(`<div class="row"><h2 class="grow">Nueva rutina</h2><button class="icon-btn" data-act="sheet-close" aria-label="Cerrar">${ic('x', 18)}</button></div>
     <form id="f-rtnew" class="bd-form">
-      <label class="field"><span class="label">Nombre</span><input id="rn-name" required maxlength="40" placeholder="Ej. Espalda y postura"></label>
+      <label class="field"><span class="label">Nombre</span><input id="rn-name" maxlength="40" placeholder="Opcional · se nombra sola según los ejercicios"></label>
       <div class="field"><span class="label">Tipo</span><div class="rt-kinds">
         <button type="button" class="rt-kind ${state.rtKind === 'fuerza' ? 'on' : ''}" data-act="rt-kind" data-k="fuerza"><b>💪 Fuerza</b><small>Pesado · 6-10 reps · descanso 2 min</small></button>
         <button type="button" class="rt-kind ${state.rtKind === 'bombeo' ? 'on' : ''}" data-act="rt-kind" data-k="bombeo"><b>🔥 Bombeo</b><small>12-20 reps · descanso 1 min · ardor</small></button></div></div>
       <div class="grid2"><label class="field"><span class="label">Día</span><select id="rn-wd">${[1, 2, 3, 4, 5, 6, 0].map(d => `<option value="${d}" ${d === new Date().getDay() ? 'selected' : ''}>${WDL[d]}</option>`).join('')}</select></label>
         <label class="field"><span class="label">En el plan</span><select id="rn-plan">${plans.map(p => `<option value="${p.id}" ${act && p.id === act.id ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}<option value="__mine">Mis rutinas (aparte)</option></select></label></div>
       <button class="btn primary block" type="submit">Crear y agregar ejercicios</button></form>`);
+  try { document.activeElement.blur(); } catch (e) {}
 }
 /* --- Hoja: agregar ejercicios --- */
 function rtAddSheet(pid, did) {
@@ -187,10 +188,11 @@ document.addEventListener('input', ev => {
 });
 document.addEventListener('submit', ev => {
   if (ev.target.id !== 'f-rtnew') return; ev.preventDefault();
-  const name = $('#rn-name').value.trim() || 'Mi rutina', wd = +$('#rn-wd').value, sel = $('#rn-plan').value, g = activeGym().id;
+  const typed = $('#rn-name').value.trim(), wd = +$('#rn-wd').value, sel = $('#rn-plan').value, g = activeGym().id;
   let p = sel === '__mine' ? state.plans.find(x => x.gymId === g && x.custom) : state.plans.find(x => x.id === sel);
   if (!p) { p = { id: uid(), name: 'Mis rutinas', gymId: g, custom: true, days: [] }; state.plans.push(p); }
-  const d = { id: uid(), name, weekday: wd, kind: state.rtKind || 'fuerza', exercises: [] };
+  const kd = state.rtKind || 'fuerza', d = { id: uid(), name: typed || `${KINDS[kd]} · ${WDL[wd]}`, weekday: wd, kind: kd, exercises: [] };
+  if (!typed) d.autoName = true;
   p.days.push(d); p.days.sort((x, y) => ((x.weekday + 6) % 7) - ((y.weekday + 6) % 7));
   savePlans(); state.rtOpen[d.id] = true; state.tab = 'plans'; render();
   state.rtF = 'all'; state.rtQ = ''; rtAddSheet(p.id, d.id);

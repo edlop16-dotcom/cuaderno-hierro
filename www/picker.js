@@ -102,6 +102,11 @@ document.addEventListener('click', ev => {
     const { d } = findDay(P.pid, P.did); if (!d) return;
     const k = d.kind || kindOfName(d.name);
     P.sel.forEach(n => { if (!d.exercises.some(e => e.name === n)) d.exercises.push(newEx(n, k)); });
+    if (d.autoName && P.sel.length) {   // sin nombre escrito: se nombra según los ejercicios
+      const keys = P.sel.map(n => (LIB.find(x => x.name === n) || {}).key).filter(Boolean);
+      const nm = keys.length && typeof suggestName === 'function' ? suggestName(keys) : '';
+      if (nm) d.name = nm; delete d.autoName;
+    }
     const n = P.sel.length; state.rtOpen[d.id] = true; state.pk = null; savePlans(); closeSheet(); state.tab = 'plans'; render();
     toast(`${n} ${n === 1 ? 'ejercicio agregado' : 'ejercicios agregados'} a ${d.name}`);
   }
