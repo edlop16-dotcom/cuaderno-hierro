@@ -130,7 +130,7 @@ const sync = {
           const lh = syncHash(l), rh = syncHash(r), bh = bD[k];
           if (lh === rh || rh === bh) daily[k] = l;
           else if (lh === bh) daily[k] = r;
-          else daily[k] = Object.assign({}, r, l, { crea: !!(l.crea || r.crea), prot: !!(l.prot || r.prot), omega: !!(l.omega || r.omega), water: Math.max(l.water || 0, r.water || 0) });
+          else { const pg = (r.pg || []).concat((l.pg || []).filter(x => !(r.pg || []).some(y => y.at === x.at))); daily[k] = Object.assign({}, r, l, { crea: !!(l.crea || r.crea), prot: !!(l.prot || r.prot), omega: !!(l.omega || r.omega), water: Math.max(l.water || 0, r.water || 0) }, pg.length ? { pg } : {}); }
         } else daily[k] = l || r;
       });
       const dkeys = Object.keys(daily).sort(); while (dkeys.length > 200) delete daily[dkeys.shift()];

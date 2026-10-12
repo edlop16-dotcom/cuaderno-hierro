@@ -11,20 +11,21 @@ function meso() {
   let m = state.settings.meso;
   if (!m) {
     const d = new Date(), dow = (d.getDay() + 6) % 7, st = mondayOf(d); if (dow >= 5) st.setDate(st.getDate() + 7);
-    m = state.settings.meso = { on: true, weeks: 5, start: dk(st), n: 1 }; savePlans();
+    m = state.settings.meso = { on: true, weeks: 5, start: dk(st), n: 1 }; saveLocal();   // sin savePlans: no pisa ajustes de otro equipo
   }
   return m;
 }
 function mesoInfo() {
   const m = meso(); if (!m.on) return null;
   const now = mondayOf(new Date()), st = new Date(m.start + 'T00:00:00');
-  const W = 7 * 864e5, wk = Math.round((now - st) / W);
-  const deloadWk = m.deloadFrom ? Math.round((new Date(m.deloadFrom + 'T00:00:00') - st) / W) : m.weeks - 1;
-  /* terminó el bloque: empieza uno nuevo */
-  if (wk > deloadWk) { m.start = dk(new Date(st.getTime() + (deloadWk + 1) * W + 3 * 36e5)); delete m.deloadFrom; m.n = (m.n || 1) + 1; savePlans(); return mesoInfo(); }
+  const W = 7 * 864e5;
+  let wk = Math.round((now - st) / W), n = m.n || 1, from = st;
+  let deloadWk = m.deloadFrom ? Math.round((new Date(m.deloadFrom + 'T00:00:00') - st) / W) : m.weeks - 1;
+  /* El bloque terminó: los siguientes se calculan solos (sin guardar, para no pisar la sincronización) */
+  if (wk > deloadWk) { wk -= deloadWk + 1; from = new Date(st.getTime() + (deloadWk + 1) * W + 3 * 36e5); n += 1 + Math.floor(wk / m.weeks); wk = wk % m.weeks; deloadWk = m.weeks - 1; }
   if (wk < 0) return { pre: true, m, start: st };
   const deload = wk === deloadWk, acc = MESO_RIR[m.weeks] || MESO_RIR[5];
-  return { m, wk, total: deloadWk + 1, deload, rir: deload ? 3 : acc[Math.min(wk, acc.length - 1)], plus: !deload && wk >= Math.max(2, deloadWk - 2) ? 1 : 0, early: !!m.deloadFrom };
+  return { m, n, wk, total: deloadWk + 1, deload, rir: deload ? 3 : acc[Math.min(wk, acc.length - 1)], plus: !deload && wk >= Math.max(2, deloadWk - 2) ? 1 : 0, early: !!m.deloadFrom };
 }
 /* RIR objetivo por serie según la semana del bloque */
 rirTarget = function (j) {
@@ -56,7 +57,7 @@ function mesoStrip() {
   const dots = Array.from({ length: I.total }, (_, i) => `<i class="${i < I.wk ? 'done' : i === I.wk ? 'cur' : ''} ${i === I.total - 1 ? 'dl' : ''}"></i>`).join('');
   const sig = !I.deload && I.wk >= 1 ? fatigueSigns() : [];
   return `<button class="meso-strip ${I.deload ? 'deload' : ''}" data-act="meso-open">
-    <span class="grow" style="min-width:0"><span class="ms-t">${I.deload ? `${ic('battery', 15)} Semana de descarga` : `${ic('layers', 15)} Bloque ${I.m.n || 1} · Semana ${I.wk + 1} de ${I.total}`}</span>
+    <span class="grow" style="min-width:0"><span class="ms-t">${I.deload ? `${ic('battery', 15)} Semana de descarga` : `${ic('layers', 15)} Bloque ${I.n} · Semana ${I.wk + 1} de ${I.total}`}</span>
     <small>${I.deload ? 'Mitad de series, −10 % de peso, sin fallo. Tu cuerpo se recupera y vuelves más fuerte.' : `Esfuerzo: deja <b>${I.rir === 3 ? '2-3' : I.rir === 2 ? '2' : '0-1'}</b> reps de sobra${I.plus ? ' · +1 serie en los ejercicios principales' : ''}`}</small></span>
     <span class="ms-dots">${dots}</span></button>${sig.length ? `<div class="safe warn">${ic('battery', 16)}<span>Señales de fatiga: ${sig.join(', ')}. <button class="linkbtn" data-act="meso-deload">Hacer descarga esta semana</button></span></div>` : ''}`;
 }
@@ -117,8 +118,8 @@ document.addEventListener('click', ev => {
   const a = b.dataset.act, m = meso();
   if (a === 'meso-open') { mesoSheet(); return; }
   if (a === 'meso-weeks') m.weeks = +b.dataset.v;
-  if (a === 'meso-deload') { m.deloadFrom = dk(mondayOf(new Date())); toast('Esta semana es de descarga. ¡Recupérate!'); }
-  if (a === 'meso-restart') { const st = mondayOf(new Date()); st.setDate(st.getDate() + 7); m.start = dk(st); delete m.deloadFrom; m.n = (m.n || 1) + 1; toast('Tu bloque nuevo empieza el lunes'); }
+  if (a === 'meso-deload') { const I = mesoInfo(); if (I && !I.pre && I.wk > 0) { m.start = dk(new Date(mondayOf(new Date()).getTime() - I.wk * 7 * 864e5 + 3 * 36e5)); m.n = I.n; } m.deloadFrom = dk(mondayOf(new Date())); toast('Esta semana es de descarga. ¡Recupérate!'); }
+  if (a === 'meso-restart') { const st = mondayOf(new Date()); st.setDate(st.getDate() + 7); const I0 = mesoInfo(); m.start = dk(st); delete m.deloadFrom; m.n = ((I0 && I0.n) || m.n || 1) + 1; toast('Tu bloque nuevo empieza el lunes'); }
   if (a === 'meso-off') m.on = !m.on;
   savePlans(); if (!$('#sheet').hidden) mesoSheet(); render();
 }, true);
