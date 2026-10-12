@@ -18,7 +18,7 @@ App personal de gimnasio de Edgar (Edgwr), en español. Celular Android y reloj 
   vTrain = function () { ... _x() ... };
   ```
   Sirve igual para render, vTrain, vSession, finishSession, markSet, vSettings, header y previewSheet.
-- Orden de scripts: library.js, icons.js, (inline en index.html), coach.js, media.js, native.js, skin.js, config.js, sync.js, undo.js, layout.js, session.js, stats.js, safety.js, imports.js, rir.js, body.js, warm.js, mmap.js, swap.js, ready.js, nutri.js, share.js, meso.js, level.js, play.js, ai.js, web.js, plan2.js, burn.js, routines.js, keep.js, exview.js, picker.js, daydel.js, navord.js, habalarm.js. Un archivo nuevo va al final.
+- Orden de scripts: library.js, icons.js, (inline en index.html), coach.js, media.js, native.js, skin.js, config.js, sync.js, undo.js, layout.js, session.js, stats.js, safety.js, imports.js, rir.js, body.js, warm.js, mmap.js, swap.js, ready.js, nutri.js, share.js, meso.js, level.js, play.js, ai.js, web.js, plan2.js, burn.js, routines.js, keep.js, exview.js, picker.js, daydel.js, navord.js, habalarm.js, pulse.js. Un archivo nuevo va al final.
 - Estado en `state` (sessions, plans, settings, draft). Se guarda en localStorage con claves `cdh.*`: `saveLocal()` para sesiones y `savePlans()` para settings y planes.
 - Navegación de 4 pestañas, ordenable (navord.js, `settings.navOrder`; por defecto Perfil · Entrenar · Rutinas · Ejercicios). Los hábitos solo se muestran en Perfil. Perfil tiene las subpestañas progress, history y settings (`vProfile`).
 - Sesión en pantalla completa `#sx` con páginas deslizables. Los hábitos y las rachas están en stats.js. Los avisos de lesión y el dolor muscular están en safety.js (`ZONES`, `zonesOf`).
@@ -53,6 +53,8 @@ Estatura: en la app 173 cm (HISTORY.cm); en un chat dijo 1,70 m, por confirmar (
 4. Proteína y calorías + Tarjetas para compartir — HECHA en beta (nutri.js, share.js; plugins @capacitor/share y @capacitor/filesystem)
 5. Mesociclos con descarga + Nivel de fuerza — HECHA en beta (meso.js, level.js)
 6. Importar Strong + Requisitos de Google Play — HECHA en beta (play.js, AAB en CI, docs/privacidad.html, docs/google-play.md). Falta: publicar reglas Firestore, correo de contacto, GitHub Pages, migrar a API 36
+8. Pulso en la sesión + Pasos del día — HECHA en beta (pulse.js; plugin nativo `BodySensors` en ci/native: BODY_SENSORS y ACTIVITY_RECOGNITION; pasos en `daily.stepsP`/`stepsW`, se toma el mayor; resumen `s.hr` {avg,max,min,kcal,s} con Keytel). Pendiente: comprobar si el M99 deja leer el pulso (Ajustes → Pulso y pasos → Probar).
+9. Sueño y peso desde Samsung Health (Health Connect) + gimnasio automático por ubicación — PROPUESTA
 7. Coach con IA + Suscripción Pro — HECHA en beta (ai.js; server/coach-worker.js para Cloudflare; sin AI_CFG.endpoint abre Claude con el contexto; PRO_CFG.enforce=false durante la beta; falta complemento de Google Play Billing al publicar)
 
 ## Hoja de ruta (pedida por Edgar el 11-oct-2026)

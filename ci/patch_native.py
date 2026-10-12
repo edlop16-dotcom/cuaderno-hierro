@@ -14,10 +14,11 @@ if 'HabitAlarmPlugin' not in s:
     @Override
     public void onCreate(android.os.Bundle savedInstanceState) {
         registerPlugin(HabitAlarmPlugin.class);
+        registerPlugin(BodySensorsPlugin.class);
         super.onCreate(savedInstanceState);
     }
 }''', s)
-assert 'registerPlugin(HabitAlarmPlugin.class)' in s, s
+assert 'registerPlugin(BodySensorsPlugin.class)' in s, s
 open(main[0], 'w').write(s)
 
 p = 'android/app/src/main/AndroidManifest.xml'
@@ -46,6 +47,10 @@ perms = '''
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.BODY_SENSORS" />
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+    <uses-feature android:name="android.hardware.sensor.heartrate" android:required="false" />
+    <uses-feature android:name="android.hardware.sensor.stepcounter" android:required="false" />
 </manifest>'''
 if 'HabitAlarmActivity' not in m:
     m = m.replace('</application>', comp.lstrip('\n'), 1)

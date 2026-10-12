@@ -12,7 +12,12 @@ public class HabitAlarmReceiver extends BroadcastReceiver {
     public void onReceive(Context c, Intent i) {
         String a = i.getAction();
         if (a == null) return;
-        if (Intent.ACTION_BOOT_COMPLETED.equals(a) || Intent.ACTION_MY_PACKAGE_REPLACED.equals(a)) { HabitAlarms.rearm(c); return; }
+        if (Intent.ACTION_BOOT_COMPLETED.equals(a) || Intent.ACTION_MY_PACKAGE_REPLACED.equals(a)) { HabitAlarms.rearm(c); StepStore.armNightly(c); return; }
+        if (StepStore.A_SNAP.equals(a)) {
+            final PendingResult pr = goAsync();
+            StepStore.read(c, steps -> { StepStore.armNightly(c); pr.finish(); });
+            return;
+        }
         JSONObject o;
         try { o = new JSONObject(i.getStringExtra("item")); } catch (Exception e) { return; }
         if (HabitAlarms.A_FIRE.equals(a)) HabitAlarms.show(c, o);

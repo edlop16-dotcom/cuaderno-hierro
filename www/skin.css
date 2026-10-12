@@ -919,3 +919,27 @@ body.sx-open .nav{visibility:hidden}
 .ha-pill{flex:1;padding:15px 18px;border-radius:40px;background:rgba(255,255,255,.2);color:#fff;font-weight:700;font-size:17px}
 .ha-set{display:flex;flex-direction:column;gap:8px;padding:10px 0 2px;border-top:1px solid var(--line,rgba(255,255,255,.08))}
 .icon-btn.ha-on{color:var(--accent)}
+/* Pareja 8: pulso y pasos */
+.hab-ic.s{color:#34d399;background:rgba(52,211,153,.14)}
+.wbar2.s i{background:linear-gradient(90deg,#10b981,#34d399)}
+.hab-steps small{display:block;font-size:11px;margin-top:3px}
+.st-big{display:flex;align-items:baseline;gap:10px;flex-shrink:0}
+.st-big b{font-size:40px;font-weight:800;color:#34d399}
+.st-bars{position:relative;display:flex;align-items:flex-end;gap:6px;height:150px;padding-top:6px;flex-shrink:0}
+.st-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:4px;font-size:10.5px}
+.st-col i{display:block;width:100%;max-width:30px;border-radius:7px 7px 3px 3px;background:rgba(52,211,153,.35)}
+.st-col i.ok{background:linear-gradient(180deg,#34d399,#10b981)}
+.st-col small{color:var(--muted)}
+.st-goal{position:absolute;left:0;right:0;border-top:1.5px dashed rgba(52,211,153,.6);pointer-events:none}
+#hr-chip{position:fixed;top:calc(env(safe-area-inset-top,0px) + 62px);right:12px;z-index:60;display:flex;align-items:center;gap:5px;padding:4px 10px 4px 8px;border-radius:20px;background:rgba(18,21,29,.88);border:1px solid rgba(239,68,68,.45);color:#fff;font-size:15px;pointer-events:none}
+#hr-chip[hidden]{display:none}
+#hr-chip .hb{color:#ef4444;animation:hb 1s ease-in-out infinite}
+#hr-chip.ok{border-color:rgba(52,211,153,.6)}#hr-chip.ok .hb{color:#34d399}
+#hr-chip.hi{border-color:#f59e0b}
+@keyframes hb{0%,100%{transform:scale(1)}15%{transform:scale(1.25)}30%{transform:scale(1)}}
+.w-mode #hr-chip,.watch #hr-chip{top:2px;right:2px;font-size:13px;padding:2px 7px}
+.hr-rest{font-size:13px;font-weight:700;color:#fca5a5;margin:2px 0}
+.hr-rest.ok{color:#34d399}
+.hr-tag{display:inline-block;align-self:flex-start;margin-top:4px;font-size:11.5px;padding:2px 8px;border-radius:10px;background:rgba(239,68,68,.12);color:#fca5a5}
+.bs-card{display:flex;flex-direction:column;gap:10px}
+.bs-card h3{display:flex;align-items:center;gap:8px}
