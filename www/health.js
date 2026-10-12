@@ -117,7 +117,7 @@ const gymLocs = () => (state.settings.gymLoc = state.settings.gymLoc || {});
 function getPos(opt) {
   return new Promise((res, rej) => {
     if (!navigator.geolocation) return rej(new Error('sin GPS'));
-    navigator.geolocation.getCurrentPosition(p => res(p.coords), rej, Object.assign({ enableHighAccuracy: false, timeout: 15000, maximumAge: 300000 }, opt || {}));
+    navigator.geolocation.getCurrentPosition(p => res(p.coords), rej, Object.assign({ enableHighAccuracy: false, timeout: 30000, maximumAge: 600000 }, opt || {}));
   });
 }
 function distM(a, b) {
@@ -181,8 +181,8 @@ document.addEventListener('click', ev => {
   if (a === 'hc-conn') HCN.request().then(s => { state.hc = s; if (s.any) { toast('Samsung Health conectado.'); hcSync(true); } else toast('No se dio permiso. Revisa que Samsung Health comparta con Health Connect.'); render(); }).catch(e => toast(String(e && e.message || e)));
   if (a === 'hc-sync') { b.disabled = true; b.textContent = 'Leyendo…'; hcSync(true).then(ok => { toast(ok ? 'Datos de Samsung Health actualizados.' : 'No se pudo leer.'); render(); }); }
   if (a === 'geo-save') {
-    b.disabled = true; b.textContent = 'Buscando tu ubicación…';
-    getPos({ enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }).then(c => {
+    b.disabled = true; b.textContent = 'Buscando señal GPS… (sin internet puede tardar hasta 1 min)';
+    getPos({ enableHighAccuracy: true, timeout: 60000, maximumAge: 0 }).then(c => {
       gymLocs()[activeGym().id] = { lat: +c.latitude.toFixed(6), lng: +c.longitude.toFixed(6), at: Date.now() };
       if (state.settings.autoGym == null) state.settings.autoGym = true;
       state.atGym = { id: activeGym().id, at: Date.now() };
