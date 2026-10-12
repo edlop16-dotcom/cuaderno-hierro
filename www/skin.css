@@ -839,3 +839,15 @@ body.sx-open .nav{visibility:hidden}
 .rt-pk .pv-th{width:44px;height:44px;flex-shrink:0}
 .rt-star{color:var(--accent2);font-weight:700}
 .rt-ty{color:var(--tc);font-weight:800}.rt-exm b{white-space:normal}
+
+/* ---------- Ventana de ejercicio ---------- */
+.exv-top{margin-bottom:-6px}
+.exv-media{display:flex;flex-direction:column;gap:8px}
+.exv-ph{border-radius:18px}
+.exv-fig{border-radius:18px;background:var(--surface2);padding:6px}
+.exv-fig svg{width:100%;height:auto;max-height:240px}
+.exv-media .fig-tog{align-self:flex-start}
+.exv-musc{font-size:12.5px}
+.exv-seg{grid-template-columns:1fr 1fr}
+.exv-stats{display:flex;flex-direction:column;gap:12px}
+.exv-stats>*{flex-shrink:0}
