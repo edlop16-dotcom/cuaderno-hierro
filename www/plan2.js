@@ -1,7 +1,8 @@
 /* ==========================================================================
    Ajuste de tu rutina Full Body · 3 días (Roka'z), 12-oct-2026
    - Días pesados de verdad: prensa 8-12, hack 8-10, hip thrust 8-12, con más descanso.
-   - Isquiotibiales: curl femoral el lunes y peso muerto rumano el miércoles.
+   - Isquiotibiales: curl femoral tumbado (lunes y viernes) y sentado (miércoles), sin cargar la lumbar.
+   - Viernes: remo en T en lugar de remo con barra (cuida la lumbar).
    - Hombro lateral: elevaciones laterales también lunes y viernes.
    - Abdomen: crunch en polea el miércoles.
    Se aplica una sola vez por cuenta (después de sincronizar, para no pisar otros cambios).
@@ -28,10 +29,12 @@ function planFix2() {
       ins(d, 'Remo Sentado con Cable', mk('Elevaciones Laterales', EM, 3, 12, 15, 60, 8));
     } else if (k === 'fuerza') {
       heavy(d);
+      const rb = d.exercises.findIndex(e => e.name === 'Remo con Barra');   // remo inclinado carga la lumbar: remo en T con apoyo
+      if (rb >= 0 && !find(d, 'Remo en T')) d.exercises.splice(rb, 1, mk('Remo en T', TR, 3, 8, 10, 120, 30));
       ins(d, 'Curl Femoral Tumbado', mk('Elevaciones Laterales', EM, 3, 12, 15, 60, 8));
     } else if (k === 'bombeo') {
       const pr = d.exercises.findIndex(e => e.name === 'Prensa 45°');
-      if (pr >= 0 && !find(d, 'Peso Muerto Rumano')) d.exercises.splice(pr, 1, mk('Peso Muerto Rumano', P, 3, 10, 12, 90, 10, { bar: 20 }));
+      if (pr >= 0 && !find(d, 'Curl Femoral Sentado')) d.exercises.splice(pr, 1, mk('Curl Femoral Sentado', P, 3, 12, 15, 60, 40));   // isquios sin cargar la lumbar
       const el = find(d, 'Elevaciones Laterales'); if (el) set(el, { repsMin: 15, repsMax: 20 });
       if (!find(d, 'Crunch en Polea')) d.exercises.push(mk('Crunch en Polea', 'Core', 2, 12, 15, 60, 15));
     }
