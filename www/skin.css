@@ -774,3 +774,9 @@ body.sx-open .nav{visibility:hidden}
 .gis-btn{display:flex;justify-content:center;min-height:48px;padding:6px 0}
 .web-hint{gap:10px;border-color:rgba(77,163,255,.35)}
 @media (min-width:640px){.nav{left:50%;right:auto;width:584px;transform:translateX(-50%)}}
+
+/* ---------- Bombeo: zona de ardor ---------- */
+.burn{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:14px;background:linear-gradient(135deg,rgba(255,77,31,.16),rgba(255,176,32,.08));border:1px solid rgba(255,122,26,.4);font-size:13.5px;line-height:1.45}
+.burn-ic{font-size:20px;line-height:1}
+.burn small{display:block;color:var(--muted);font-size:12px;margin-top:3px}
+.w-burn{font-size:13px;color:var(--accent2);text-align:center;font-weight:600}
