@@ -620,3 +620,30 @@ body.sx-open .nav{visibility:hidden}
 .mm-mini b{color:var(--fg)}
 .pl s{text-decoration:none;font-weight:700;opacity:.85;margin-right:2px;font-size:10px}
 .mm-mini{text-align:left}.mm-mini .mm-mt{flex:1;min-width:0;display:block}.mm-mini .muted{white-space:nowrap}
+
+/* ---------- Reemplazo de ejercicio ---------- */
+.sw-btn{padding:0 10px;min-width:40px}
+.sw-list{display:flex;flex-direction:column;gap:6px;max-height:52vh;overflow:auto}
+.sw-row{display:flex;align-items:center;gap:10px;padding:8px;border-radius:14px;border:1px solid var(--line);background:var(--surface2);color:var(--fg);font:inherit;text-align:left;cursor:pointer}
+.sw-row b{display:block;font-size:14px}
+.sw-row small{display:block;font-size:12px}
+.sw-new{color:var(--warn);font-weight:700}
+.sw-w{white-space:nowrap;font-size:14px}
+.sw-keep{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600}
+.sw-keep input{width:20px;height:20px;accent-color:var(--accent)}
+.sw-tag{display:inline-block;font-size:11px;font-weight:600;color:var(--muted);background:var(--surface3);padding:2px 7px;border-radius:8px;vertical-align:middle}
+
+/* ---------- Preparación del día ---------- */
+.readycard{gap:10px}
+.readycard>*{flex-shrink:0}
+.rd-q{display:flex;flex-direction:column;gap:5px}
+.rd-opts{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.rd{display:flex;flex-direction:column;align-items:center;gap:1px;padding:9px 4px;border-radius:12px;border:1px solid var(--line);background:var(--surface2);color:var(--fg);font:inherit;font-weight:700;font-size:13.5px;cursor:pointer}
+.rd small{font-size:10.5px;color:var(--muted);font-weight:500}
+.rd.on.v0{background:rgba(255,77,109,.18);border-color:var(--bad)}
+.rd.on.v1{background:var(--surface3);border-color:var(--muted)}
+.rd.on.v2{background:rgba(46,229,157,.15);border-color:var(--ok)}
+.rd-plan{font-size:12.5px;line-height:1.45;padding:9px 11px;border-radius:12px;background:var(--surface2);border-left:3px solid var(--muted)}
+.rd-plan.low{border-color:var(--bad)}.rd-plan.mid{border-color:var(--warn)}.rd-plan.top{border-color:var(--ok)}
+.safe.ready.low{border-color:var(--bad)}
+.sw-w{display:flex;flex-direction:column;align-items:flex-end}.sw-w small{font-size:10.5px}
