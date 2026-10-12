@@ -18,7 +18,7 @@ App personal de gimnasio de Edgar (Edgwr), en español. Celular Android y reloj 
   vTrain = function () { ... _x() ... };
   ```
   Sirve igual para render, vTrain, vSession, finishSession, markSet, vSettings, header y previewSheet.
-- Orden de scripts: library.js, icons.js, (inline en index.html), coach.js, media.js, native.js, skin.js, config.js, sync.js, undo.js, layout.js, session.js, stats.js, safety.js, imports.js, rir.js, body.js, warm.js, mmap.js, swap.js, ready.js, nutri.js, share.js, meso.js, level.js, play.js, ai.js, web.js, plan2.js, burn.js, routines.js, keep.js, exview.js, picker.js, daydel.js, navord.js. Un archivo nuevo va al final.
+- Orden de scripts: library.js, icons.js, (inline en index.html), coach.js, media.js, native.js, skin.js, config.js, sync.js, undo.js, layout.js, session.js, stats.js, safety.js, imports.js, rir.js, body.js, warm.js, mmap.js, swap.js, ready.js, nutri.js, share.js, meso.js, level.js, play.js, ai.js, web.js, plan2.js, burn.js, routines.js, keep.js, exview.js, picker.js, daydel.js, navord.js, habalarm.js. Un archivo nuevo va al final.
 - Estado en `state` (sessions, plans, settings, draft). Se guarda en localStorage con claves `cdh.*`: `saveLocal()` para sesiones y `savePlans()` para settings y planes.
 - Navegación de 4 pestañas, ordenable (navord.js, `settings.navOrder`; por defecto Perfil · Entrenar · Rutinas · Ejercicios). Los hábitos solo se muestran en Perfil. Perfil tiene las subpestañas progress, history y settings (`vProfile`).
 - Sesión en pantalla completa `#sx` con páginas deslizables. Los hábitos y las rachas están en stats.js. Los avisos de lesión y el dolor muscular están en safety.js (`ZONES`, `zonesOf`).
@@ -29,6 +29,12 @@ App personal de gimnasio de Edgar (Edgwr), en español. Celular Android y reloj 
 - Las fotos de ejercicios son de Free Exercise DB (dominio público), en `www/ex/<key>-0/1.webp`.
 - Para importar historial: `importSessions(list)` en imports.js (Hevy CSV y Symmetry).
 - Estilos: se agregan al final de `skin.css`. En flex, poner `flex-shrink:0` a los hijos de `.sheet-card` y `.sx-page`. Antes de crear una clase nueva, comprobar que no choque con otra existente (ya pasó con `.sync` y `.prof`).
+
+## Alarmas de hábitos (nativo)
+- `habalarm.js` + plugin propio `HabitAlarm` en `ci/native/*.java`, que `ci/patch_native.py` copia al proyecto Android y registra en MainActivity (permisos USE_FULL_SCREEN_INTENT, USE_EXACT_ALARM). Recordatorio tipo `hab` con `r.hab` (clave del hábito); los tipos viejos crea/prot/omega también cuentan como hábitos.
+- A la hora: pantalla completa nativa (✕, ✓ hecho, aplazar N min). Lo marcado con la app cerrada se lee con `HabitAlarm.takeEvents()` al abrir. Con la app abierta o en web se muestra `#hab-alarm`.
+- `.github/workflows/android-beta.yml` compila en cada push a `beta` sin publicar release (solo comprueba).
+- Para Google Play: USE_EXACT_ALARM y pantalla completa requieren justificar el uso (o quitarlos).
 
 ## Versión web
 - `web.js`: solo actúa fuera de la app nativa (`IS_WEB`). Google con Google Identity Services → `signInWithIdp`; botón Google en la tarjeta de cuenta; `openExt` abre enlaces en otra pestaña; sincroniza al volver a la pestaña y cada 2 min; PWA (`manifest.webmanifest`, `sw.js` red primero).

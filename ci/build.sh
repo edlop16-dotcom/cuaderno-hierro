@@ -13,6 +13,7 @@ npx capacitor-assets generate --android --iconBackgroundColor '#12151d' --iconBa
 cp ci/ic_stat_notify.xml android/app/src/main/res/drawable/
 cp ci/cuaderno.keystore android/app/
 python3 ci/patch_gradle.py
+python3 ci/patch_native.py
 npx cap sync android
 cd android && chmod +x gradlew && ./gradlew assembleRelease bundleRelease --no-daemon
 cp app/build/outputs/apk/release/app-release.apk ../Forja.apk
