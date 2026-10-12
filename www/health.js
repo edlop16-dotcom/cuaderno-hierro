@@ -33,7 +33,7 @@ function hcApply(r) {
   (r.steps || []).forEach(x => { const t = D(x.day); if (t.stepsH !== x.n) { t.stepsH = x.n; dch = true; } });
   const sl = {};
   (r.sleep || []).forEach(x => { if (x.min >= 30) sl[x.day] = (sl[x.day] || 0) + x.min; });
-  Object.keys(sl).forEach(k => { const t = D(k); if (t.sleepMin !== sl[k]) { t.sleepMin = sl[k]; dch = true; } });
+  Object.keys(sl).forEach(k => { const t = D(k); if (t.sleepMin !== sl[k] || t.sleepSrc !== 'sh') { t.sleepMin = sl[k]; t.sleepSrc = 'sh'; dch = true; } });
   (r.rhr || []).forEach(x => { const t = D(x.day); if (t.rhr !== x.bpm) { t.rhr = x.bpm; dch = true; } });
   if ((r.weight || []).length && typeof body === 'function') {
     const b = body(), byDay = {};
@@ -84,9 +84,11 @@ readyCard = function () {
     return h.replace(/(<\/h3>)/, `$1<div class="hc-ready none">${msg}</div>`);
   }
   const bits = [];
-  if (t.sleepMin) bits.push(`😴 Dormiste <b>${fmtHM(t.sleepMin)}</b>`);
+  const ph = t.sleepSrc === 'ph' && t.sleepPh, hm = x => new Date(x).toTimeString().slice(0, 5);
+  if (t.sleepMin) bits.push(`😴 Dormiste <b>${fmtHM(t.sleepMin)}</b>${ph ? ` (${hm(ph.s)} → ${hm(ph.e)})` : ''}`);
+  if (ph && ph.w && ph.w.length) bits.push(`${ph.w.length} ${ph.w.length === 1 ? 'despertar' : 'despertares'} (${ph.w.map(w => hm(w[0]) + ', ' + w[1] + ' min').join(' · ')})`);
   if (r) bits.push(`❤ Reposo <b>${r.bpm}</b>${r.avg ? ` (tu media ${r.avg})` : ''}${r.high ? ' · <b>alto: tu cuerpo viene cansado</b>' : ''}`);
-  const line = `<div class="hc-ready">${bits.join(' · ')} <small>Samsung Health</small></div>`;
+  const line = `<div class="hc-ready">${bits.join(' · ')} <small>${ph ? 'según el uso del celular' : 'Samsung Health'}</small></div>`;
   return h.replace(/(<\/h3>)/, '$1' + line);
 };
 

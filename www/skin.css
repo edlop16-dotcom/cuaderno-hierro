@@ -961,3 +961,10 @@ body.sx-open .nav{visibility:hidden}
 .hc-ready.none{background:rgba(255,255,255,.04);color:var(--muted)}
 .hc-ready .btn{margin-left:6px;padding:4px 10px}
 .hc-got{font-size:12.5px;line-height:1.5}
+/* Sueño con el celular */
+.ps-card{display:flex;flex-direction:column;gap:10px}
+.ps-card h3{display:flex;align-items:center;gap:8px}
+.ps-list{display:flex;flex-direction:column;gap:2px;flex-shrink:0}
+.ps-row{display:grid;grid-template-columns:52px 1fr auto 52px;align-items:center;gap:8px;font-size:13px;padding:5px 2px;border-bottom:1px solid var(--line,rgba(255,255,255,.06))}
+.ps-row .ps-d{color:var(--muted);font-weight:700}
+.ps-row b{color:#a5b4fc}.ps-row small{color:var(--muted);text-align:right;font-size:11px}
