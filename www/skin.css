@@ -492,3 +492,21 @@ body.sx-open .nav{visibility:hidden}
 .hm-icons input{position:absolute;opacity:0;pointer-events:none}
 .hm-icons span{display:flex;align-items:center;justify-content:center;height:40px;border-radius:12px;background:var(--surface2);border:1px solid var(--line);color:var(--muted)}
 .hm-icons input:checked+span{border-color:var(--accent);color:var(--accent);background:rgba(255,106,31,.12)}
+/* ===== Cuidado de lesiones ===== */
+.safe{display:flex;gap:8px;align-items:flex-start;padding:10px 12px;border-radius:12px;font-size:12.8px;line-height:1.45}
+.safe svg{flex:none;margin-top:1px}
+.safe.stop{background:rgba(255,77,109,.1);border:1px solid rgba(255,77,109,.4);color:#ffb3c0}
+.safe.warn{background:rgba(255,197,61,.08);border:1px solid rgba(255,197,61,.35);color:#ffd98a}
+.safe.tip{background:rgba(77,163,255,.08);border:1px solid rgba(77,163,255,.3);color:#a9d1ff}
+.safe.new{background:rgba(180,140,255,.1);border:1px solid rgba(180,140,255,.4);color:#d6c4ff}
+.safe b{color:inherit;filter:brightness(1.15)}
+.sorecard h3{display:flex;align-items:center;gap:8px}
+.sorecard.compact{box-shadow:none;background:var(--surface2)}
+.sore-chips{display:flex;flex-wrap:wrap;gap:6px}
+.sore{border:1px solid var(--line);background:transparent;color:var(--muted);font:inherit;font-size:12.5px;font-weight:600;padding:7px 11px;border-radius:999px}
+.sore.l1{background:rgba(255,197,61,.14);border-color:rgba(255,197,61,.5);color:#ffd98a}
+.sore.l2{background:rgba(255,77,109,.16);border-color:rgba(255,77,109,.55);color:#ffb3c0}
+.sore-mini{display:flex;align-items:center;gap:8px;align-self:flex-start;border:1px dashed var(--line);background:transparent;color:var(--fg);font:inherit;font-size:13px;font-weight:600;padding:8px 14px;border-radius:999px}
+.pv-tag{display:inline-block;font-size:10px;font-weight:800;padding:2px 7px;border-radius:999px;vertical-align:middle;margin-left:4px}
+.pv-tag.sore{background:rgba(255,197,61,.18);color:#ffd98a}
+.pv-tag.new{background:rgba(180,140,255,.2);color:#d6c4ff}
