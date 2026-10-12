@@ -647,3 +647,37 @@ body.sx-open .nav{visibility:hidden}
 .rd-plan.low{border-color:var(--bad)}.rd-plan.mid{border-color:var(--warn)}.rd-plan.top{border-color:var(--ok)}
 .safe.ready.low{border-color:var(--bad)}
 .sw-w{display:flex;flex-direction:column;align-items:flex-end}.sw-w small{font-size:10.5px}
+
+/* ---------- Proteína y calorías ---------- */
+.hab-ic.p{background:rgba(255,122,26,.16);color:var(--accent)}
+.wbar2.p i{background:var(--grad)}
+.pg-sum{display:flex;flex-direction:column;gap:6px}
+.pg-sum b{font-size:30px;font-weight:800}
+.pg-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.pg{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:9px 8px;border-radius:12px;border:1px solid var(--line);background:var(--surface2);color:var(--fg);font:inherit;text-align:left;cursor:pointer}
+.pg b{font-size:13px;line-height:1.2}.pg small{font-size:11px;color:var(--muted)}
+.pg:active{border-color:var(--accent)}
+#f-pg input{flex:1;min-width:0;height:44px}
+.pg-list{display:flex;flex-wrap:wrap;gap:6px}
+.pg-list .chip{display:inline-flex;align-items:center;gap:4px}
+.pg-x{border:0;background:transparent;color:var(--muted);padding:0 0 0 2px;display:flex}
+.nu-kcal{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:6px}
+.nu-kcal b{font-size:32px;font-weight:800;margin-right:6px}
+.nu-kcal span{color:var(--muted);font-size:13px}
+.nu-mac{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;text-align:center}
+.nu-mac>div{display:flex;flex-direction:column;padding:9px 4px;border-radius:12px;background:var(--surface2);border-top:3px solid var(--muted)}
+.nu-mac .p{border-color:var(--accent)}.nu-mac .c{border-color:var(--water)}.nu-mac .f{border-color:var(--warn)}
+.nu-mac b{font-size:18px}.nu-mac span{font-size:11.5px;color:var(--muted)}
+.nu-bars{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;text-align:center}
+.nu-bars>div{display:flex;flex-direction:column;align-items:center;gap:2px}
+.nu-bt{position:relative;width:100%;height:80px;border-radius:8px;background:var(--surface2);overflow:hidden}
+.nu-bt i{position:absolute;left:0;right:0;bottom:0;background:var(--surface3);border-radius:8px 8px 0 0}
+.nu-bt i.ok{background:var(--grad)}
+.nu-goal{position:absolute;left:0;right:0;border-top:1.5px dashed var(--accent2)}
+.nu-bars small{font-size:10.5px;color:var(--muted)}
+
+/* ---------- Tarjetas para compartir ---------- */
+.sh-prev{display:flex;justify-content:center;min-height:200px;align-items:center}
+.sh-prev img{width:62%;max-width:260px;border-radius:16px;box-shadow:0 18px 40px -16px rgba(0,0,0,.8),0 0 0 1px rgba(255,255,255,.08)}
+.sh-card{gap:10px;border-color:rgba(255,122,26,.35)}
+.sh-ic{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:var(--grad);color:var(--accent-ink);flex-shrink:0}
