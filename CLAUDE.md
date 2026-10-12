@@ -1,0 +1,68 @@
+# Forja — guía para continuar el desarrollo
+
+App personal de gimnasio de Edgar (Edgwr), en español. Celular Android y reloj M99 Pro+ (WebView antiguo, Chrome ~51). Compite con Hevy y Symmetry; quizá se publique en Google Play.
+
+**Versión actual compilada:** v1.0.17. Las ramas `beta` y `main` están al día.
+
+## Repositorio y flujo de trabajo
+- Repo: `edlop16-dotcom/cuaderno-hierro`. appId `pe.edgwr.cuadernohierro`. Capacitor 6.
+- Los cambios se trabajan **solo en la rama `beta`**. Hay que probarlos y publicar la vista previa (`cuaderno-beta.html`, todos los `<script src>` incrustados y `FIREBASE=null`) en el mismo artifact de siempre, con `files` ex/*.webp desde `www/`.
+- **Cuando Edgar dice "compila"**: `git push origin beta:main`. GitHub Actions (`ci/build.sh`) compila el APK y publica el release `v1.0.N`. La app muestra entonces el banner "Actualizar". Nunca se empuja a `main` sin ese "compila".
+- `ci/legacy.mjs` transpila el JS a chrome51 para el reloj. Todo el código debe pasar por ahí: verificar con acorn ES2016 sobre la salida transpilada.
+- El keystore es fijo (`ci/cuaderno.keystore`, alias `cuaderno`, clave `cuaderno2026`). No cambiarlo: rompería las actualizaciones.
+
+## Arquitectura (www/)
+- JS vanilla. Cada archivo nuevo **sobrescribe funciones globales encadenando la anterior**:
+  ```js
+  const _x = vTrain;
+  vTrain = function () { ... _x() ... };
+  ```
+  Sirve igual para render, vTrain, vSession, finishSession, markSet, vSettings, header y previewSheet.
+- Orden de scripts: library.js, icons.js, (inline en index.html), coach.js, media.js, native.js, skin.js, config.js, sync.js, undo.js, layout.js, session.js, stats.js, safety.js, imports.js. Un archivo nuevo va al final.
+- Estado en `state` (sessions, plans, settings, draft). Se guarda en localStorage con claves `cdh.*`: `saveLocal()` para sesiones y `savePlans()` para settings y planes.
+- Navegación de 4 pestañas: Entrenar · Rutinas · Ejercicios · Perfil. Perfil tiene las subpestañas progress, history y settings (`vProfile`).
+- Sesión en pantalla completa `#sx` con páginas deslizables. Los hábitos y las rachas están en stats.js. Los avisos de lesión y el dolor muscular están en safety.js (`ZONES`, `zonesOf`).
+- Sincronización con Firebase por REST, sin SDK (sync.js): login con Google y con correo, y vínculo del reloj con un código de 6 letras. Fusión en 3 vías con lápidas; `sync.revive(ids)`.
+- Las migraciones de una sola vez se marcan con flags en `state.settings`: importSym1-3, symDate9, weekFix1, hevyImport1, symImport2, etc.
+- Gimnasios: `rokaz` (desde el 5 de octubre de 2026) y `raydac` (antes). Los pesos se guardan por gimnasio.
+- Barra: se anotan solo los discos; la barra de 20 kg se muestra aparte. 1RM con Epley, `w*(1+r/30)`. Las sesiones `approx:true` no cuentan para gráficas ni récords.
+- Las fotos de ejercicios son de Free Exercise DB (dominio público), en `www/ex/<key>-0/1.webp`.
+- Para importar historial: `importSessions(list)` en imports.js (Hevy CSV y Symmetry).
+- Estilos: se agregan al final de `skin.css`. En flex, poner `flex-shrink:0` a los hijos de `.sheet-card` y `.sx-page`. Antes de crear una clase nueva, comprobar que no choque con otra existente (ya pasó con `.sync` y `.prof`).
+
+## Pruebas
+Playwright con el Chromium preinstalado y un servidor local sobre la carpeta transpilada. Hacer capturas a 390×844 y también en tamaño reloj. Bloquear `googleapis.com`.
+
+## Datos de Edgar
+1,70 m, ~73 kg, 40 años. Nivel principiante-intermedio. Entrena con entrenador en Roka'z. Pantorrillas sensibles: el 5 de octubre las llevó al fallo y quedaron con dolor.
+
+## Hoja de ruta (pedida por Edgar el 11-oct-2026)
+**Próximas versiones**
+1. **Mi cuerpo** (en Perfil):
+   - Peso corporal, con el promedio semanal.
+   - Medidas mensuales: cuello, pecho, cintura, cadera, brazo, muslo y pantorrilla, cada una con su gráfica.
+   - Fotos de progreso (frente, perfil y espalda), guardadas solo en el teléfono, con comparación lado a lado.
+   - Grasa estimada con el método de la Marina de EE. UU.
+   - Tu potencial: FFMI y medidas objetivo según muñeca y tobillo.
+   - Mostrarlo todo como estimación orientativa.
+2. **RIR por serie** (0/1/2/3+) al marcar cada serie. El coach lo usa para decidir subidas.
+3. **Calentamiento y discos automáticos**: 40 %×10, 60 %×5, 80 %×3, y qué poner por lado.
+4. Importar Strong y Symmetry, además de Hevy (que ya existe).
+
+**Después**
+- Mapa muscular semanal: series por músculo (<10, 10-20, >20), con alertas.
+- Reemplazo de ejercicio por un equivalente, con el peso convertido.
+- Mesociclos con semana de descarga.
+- Preparación del día: sueño, energía y dolor.
+- Calculadora de proteína y calorías, con registro en gramos.
+- Tarjetas para compartir en Instagram y WhatsApp.
+
+**Para la tienda**
+- Coach con IA en español.
+- Nivel de fuerza.
+- Amigos y retos.
+- Modo entrenador.
+- Registro por voz en el reloj.
+- Suscripción Pro con Google Play Billing.
+- Requisitos de Play: AAB, política de privacidad, borrar la cuenta desde la app, formulario de Seguridad de datos y aviso de salud.
+- Revisión de seguridad y privacidad.
