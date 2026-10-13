@@ -109,7 +109,8 @@ if (HAP) window.nativeVibrate = n => { for (let i = 0; i < n; i++) setTimeout(()
 /* ================== Pantalla siempre encendida ================== */
 const KA = CAP && CAP.KeepAwake;
 const AWAKE = { app: 'Mientras la app está abierta', train: 'Solo durante el entrenamiento', off: 'Nunca (usa el ajuste del teléfono)' };
-const awakeMode = () => state.settings.awake || 'app';
+/* En el reloj, por defecto la pantalla se apaga sola (batería); se enciende al levantar la muñeca (ajuste del reloj) */
+const awakeMode = () => state.settings.awake || (isWatch() ? 'off' : 'app');
 let webLock = null, awakeOn = null;
 async function applyAwake() {
   const want = document.visibilityState === 'visible' && (awakeMode() === 'app' || (awakeMode() === 'train' && !!state.draft));

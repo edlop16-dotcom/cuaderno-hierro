@@ -1283,3 +1283,21 @@ body.onb-open #sheet{z-index:130}
 .w2-tw{display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--muted);margin:2px 0 6px;flex-shrink:0}
 .w2-tw button{min-width:38px;min-height:34px;margin:0 3px;border-radius:10px;border:1px solid var(--line);background:var(--surface2);color:var(--fg);font:inherit;font-size:17px;font-weight:800}
 .w2-tw .w2-twn{min-width:72px;font-size:14px}
+
+/* Reloj: "Saltar calentamiento" como botón visible */
+.w2-link{display:block;width:100%;min-height:44px;margin-top:8px;border:1px solid var(--line2)!important;border-radius:22px;background:var(--surface2)!important;color:var(--fg)!important;text-decoration:none!important;font-size:15px!important;font-weight:700;flex-shrink:0}
+/* Detalle del día (tarjeta de racha) */
+.dd-wrap{display:flex;flex-direction:column;flex-shrink:0}
+.dd-ses{border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-bottom:10px;background:var(--surface);flex-shrink:0}
+.dd-h b{display:block;font-size:15px}
+.dd-h small{font-size:12px}
+.dd-ex{padding:8px 0;border-top:1px solid var(--line)}
+.dd-ex:first-of-type{margin-top:6px}
+.dd-en{font-weight:700;font-size:13.5px}
+.dd-sets{display:flex;flex-wrap:wrap;margin-top:4px}
+.dd-s{display:inline-flex;align-items:baseline;background:var(--surface2);border-radius:8px;padding:3px 7px;margin:0 5px 5px 0;font-size:13px}
+.dd-s i{font-style:normal;color:var(--muted);font-size:11px;margin-right:5px}
+.dd-s small{color:var(--accent2);margin-left:4px;font-size:11px}
+.dd-note{font-size:12.5px;color:var(--muted);font-style:italic;margin-top:4px;line-height:1.4}
+.dd-acts{display:flex;flex-wrap:wrap;margin:2px -3px 4px;flex-shrink:0}
+.dd-acts .btn{margin:3px}
