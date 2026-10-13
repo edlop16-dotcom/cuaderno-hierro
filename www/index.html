@@ -896,7 +896,8 @@ function activePlan() {
   return list.find(p => p.id === want) || list[0] || null;
 }
 /* Reloj: pantalla muy chica, o casi cuadrada y pequeña en un equipo táctil (p. ej. M99: ~410×500) */
-const watchGeom = () => { const a = Math.min(innerWidth, innerHeight), b = Math.max(innerWidth, innerHeight); let touch = false; try { touch = matchMedia('(pointer: coarse)').matches; } catch (e) {} return a < 330 || (touch && b < 720 && b / a < 1.45); };
+/* El WebView viejo del reloj puede no informar el puntero táctil: también cuenta una pantalla física pequeña (< 900 px) */
+const watchGeom = () => { const a = Math.min(innerWidth, innerHeight), b = Math.max(innerWidth, innerHeight); let touch = false; try { touch = matchMedia('(pointer: coarse)').matches; } catch (e) {} const small = Math.max(screen.width || 9999, screen.height || 9999) < 900; return a < 330 || ((touch || small) && b < 720 && b / a < 1.45); };
 const isWatch = () => state.settings.watch === true || (state.settings.watch == null && watchGeom());
 function safeRender() { const a = document.activeElement; if (a && a.tagName === 'INPUT' && a.closest('#app')) return; if (!$('#sheet').hidden) return; render(); }
 

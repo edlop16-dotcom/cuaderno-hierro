@@ -149,7 +149,7 @@ function vSettings() {
     <div class="muted" style="font-size:12px">Evita que el teléfono se bloquee y te pida la clave entre series. Gasta un poco más de batería.</div></div>
     <div class="row"><div class="grow">Figura animada al entrenar<div class="muted" style="font-size:12px">Muestra el muñequito de cada ejercicio dentro de la sesión. Tócalo para ver la técnica y tus videos.</div></div>
     <button class="switch ${typeof alertCfg === 'function' && alertCfg().fig ? 'on' : ''}" data-act="fig-tog" role="switch" aria-checked="${typeof alertCfg === 'function' && alertCfg().fig}" aria-label="Figura animada al entrenar"><i></i></button></div>
-    <div class="row"><div class="grow">Modo reloj<div class="muted" style="font-size:12px">Una serie por pantalla con botones grandes. En pantallas pequeñas se activa solo.</div></div>
+    <div class="row"><div class="grow">Modo reloj<div class="muted" style="font-size:12px">Una serie por pantalla con botones grandes. En pantallas pequeñas se activa solo. <span class="num">(Esta pantalla: ${innerWidth}×${innerHeight}, ${(window.devicePixelRatio || 1).toFixed(1)}x)</span></div></div>
     <button class="switch ${isWatch() ? 'on' : ''}" data-act="watch" role="switch" aria-checked="${isWatch()}" aria-label="Modo reloj"><i></i></button></div></div>
   <div class="card"><h3>Respaldo</h3>
     <div class="muted" style="font-size:12.5px">Tus datos se guardan solo en este teléfono. Copia un respaldo de vez en cuando y guárdalo en tus notas o en WhatsApp; con él puedes pasar tus datos a otro equipo, como tu reloj. Los videos guardados no se incluyen.</div>

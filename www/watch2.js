@@ -16,6 +16,11 @@
       if (state.settings.watch === false && watchGeom()) { state.settings.watch = null; saveLocal(); }
       LS.set('watchMig1', 1);
     }
+    /* v1.0.34: el reloj había quedado en vista completa; volver al modo reloj una vez más */
+    if (!LS.get('watchMig2', 0)) {
+      if (state.settings.watch === false && watchGeom()) { state.settings.watch = null; saveLocal(); }
+      LS.set('watchMig2', 1);
+    }
   } catch (e) {}
 })();
 
