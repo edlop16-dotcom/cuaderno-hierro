@@ -29,7 +29,7 @@ jobs:
         for w in 500 600 700 800; do cp "node_modules/@fontsource/poppins/files/poppins-latin-$w-normal.woff2" www/fonts/; done
         for w in 400 500 600 700 800; do cp "node_modules/@fontsource/inter/files/inter-latin-$w-normal.woff2" www/fonts/; done
         node ci/legacy.mjs www
-        mkdir -p site && cp -r www/. site/ && cp docs/privacidad.html site/privacidad.html
+        mkdir -p site && cp -r www/. site/
         sed -i "s/forja-web-v1/forja-web-${GITHUB_SHA::8}/" site/sw.js
         touch site/.nojekyll
     - uses: actions/configure-pages@v5

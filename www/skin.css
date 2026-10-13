@@ -1241,3 +1241,12 @@ body.onb-open{overflow:hidden}
 
 .wk-card .pb-ic,.plate-card .pb-ic{width:34px;height:34px;margin-right:10px}
 .wk-card .row h3,.plate-card .row h3{margin:0}
+
+/* ===== Fase 3: consentimiento y legales (store.js) ===== */
+body.onb-open #sheet{z-index:130}
+.pb-consent{display:flex;align-items:flex-start;margin-top:16px;padding:12px;border-radius:14px;border:1px solid var(--line);background:var(--surface);font-size:13px;line-height:1.45;cursor:pointer;flex-shrink:0}
+.pb-consent.on{border-color:var(--accent);background:var(--grad-soft)}
+.pb-consent a{color:var(--accent2);font-weight:700}
+.pb-box{width:22px;height:22px;border-radius:7px;border:2px solid var(--muted);margin-right:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--accent-ink)}
+.pb-consent.on .pb-box{background:var(--grad);border-color:transparent}
+.err-card h3{margin:0 0 6px}

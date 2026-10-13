@@ -30,6 +30,7 @@ const PB_AVOID = {
   hip: /bulgara|zancada|sentadilla con barra/,
   wrist: /flexiones|press frances|curl con barra|fondos/,
 };
+/* Bienvenida: consentimiento expreso para datos de salud (Ley 29733) en el paso del cuestionario */
 const PARQ = [
   '¿Algún médico te dijo que tienes un problema del corazón o presión alta?',
   '¿Sientes dolor en el pecho en reposo, en tu día a día o al hacer actividad física?',
@@ -157,7 +158,8 @@ function pbOk() {
   const o = pb.o;
   if (pb.step === 1) return !!o.goal;
   if (pb.step === 2) return o.exp != null;
-  if (pb.step === 5) return +o.age >= 13 && +o.age <= 100 && +o.cm >= 120 && +o.cm <= 230 && +o.kg >= 30 && +o.kg <= 300;
+  if (pb.step === 7) return !!o.consent;
+  if (pb.step === 5) return +o.age >= LEGAL.minAge && +o.age <= 100 && +o.cm >= 120 && +o.cm <= 230 && +o.kg >= 30 && +o.kg <= 300;
   return true;
 }
 function pbBody() {
@@ -178,14 +180,15 @@ function pbBody() {
     <div class="pb-grid"><label class="pb-f"><span>Edad</span><input id="pb-age" inputmode="numeric" maxlength="3" value="${esc(o.age)}" placeholder="años"></label>
     <label class="pb-f"><span>Estatura</span><input id="pb-cm" inputmode="numeric" maxlength="3" value="${esc(o.cm)}" placeholder="cm"></label>
     <label class="pb-f"><span>Peso corporal</span><input id="pb-kg" inputmode="decimal" maxlength="5" value="${esc(o.kg === '' ? '' : String(o.kg).replace('.', ','))}" placeholder="kg"></label></div>
-    ${o.age !== '' && +o.age < 13 ? '<p class="pb-note bad">Forja es para personas de 13 años o más.</p>' : +o.age >= 13 && +o.age < 18 ? '<p class="pb-note">Como eres menor de edad, entrena con la guía de un adulto o un entrenador. No te mostraremos dietas ni calorías.</p>' : ''}
+    ${o.age !== '' && +o.age < LEGAL.minAge ? `<p class="pb-note bad">Forja es para personas de ${LEGAL.minAge} años o más.</p>` : +o.age >= LEGAL.minAge && +o.age < 18 ? '<p class="pb-note">Como eres menor de edad, entrena con la guía de un adulto o un entrenador. No te mostraremos dietas ni calorías.</p>' : ''}
     <div class="pb-lab">Sexo (para las fórmulas de calorías y fuerza)</div><div class="pb-pills">${[['m', 'Hombre'], ['f', 'Mujer']].map(([k, l]) => `<button type="button" class="pb-pill wide ${o.sex === k ? 'on' : ''}" data-pb="set" data-k="sex" data-v="${k}">${l}</button>`).join('')}</div>
     <div class="pb-lab">Pesas y máquinas en</div><div class="pb-pills">${[['kg', 'Kilos (kg)'], ['lb', 'Libras (lb)']].map(([k, l]) => `<button type="button" class="pb-pill wide ${o.unit === k ? 'on' : ''}" data-pb="set" data-k="unit" data-v="${k}">${l}</button>`).join('')}</div>`;
   if (s === 6) return `<h2>¿Tienes alguna molestia o lesión?</h2><p class="pb-sub">Evitaremos los ejercicios que suelen cargar esa zona. Si el dolor es fuerte o reciente, consulta a un profesional.</p>
     <div class="pb-list">${pbChip(!o.inj.length, 'data-pb="inj" data-v=""', 'Ninguna')}${PB_INJ.map(([k, l]) => pbChip(o.inj.includes(k), `data-pb="inj" data-v="${k}"`, l)).join('')}</div>`;
   if (s === 7) return `<h2>Cuestionario de salud</h2><p class="pb-sub">Basado en el PAR-Q. Responde con sinceridad: si respondes que sí a algo, te recomendaremos hablar con un médico antes de subir la intensidad.</p>
     <div class="pb-q">${PARQ.concat(o.sex === 'f' ? ['¿Estás embarazada o diste a luz en los últimos 6 meses?'] : []).map((q, i) => `<div class="pb-qr"><span class="grow">${q}</span><span class="pb-yn"><button type="button" class="${o.parq.includes(i) ? '' : 'on'}" data-pb="parq" data-i="${i}" data-v="0">No</button><button type="button" class="${o.parq.includes(i) ? 'on yes' : ''}" data-pb="parq" data-i="${i}" data-v="1">Sí</button></span></div>`).join('')}</div>
-    <p class="pb-fine">Forja te ayuda a organizar tu entrenamiento, pero no es un servicio médico ni reemplaza a un médico o fisioterapeuta. Si sientes dolor en el pecho, mareo o falta de aire anormal, detente y busca ayuda.</p>`;
+    <p class="pb-fine">Forja te ayuda a organizar tu entrenamiento, pero no es un servicio médico ni reemplaza a un médico o fisioterapeuta. Si sientes dolor en el pecho, mareo o falta de aire anormal, detente y busca ayuda.</p>
+    <div class="pb-consent ${o.consent ? 'on' : ''}" data-pb="consent" role="checkbox" tabindex="0" aria-checked="${!!o.consent}"><span class="pb-box">${o.consent ? ic('check', 14) : ''}</span><span class="grow">Acepto que Forja trate mis datos de salud (respuestas, molestias, peso, medidas, pulso, pasos y sueño) para armar y ajustar mi plan, según la <a href="#" data-pb="priv">Política de privacidad</a> y los <a href="#" data-pb="terms">Términos de uso</a>. Puedo retirar mi consentimiento borrando mis datos.</span></div>`;
   const plan = genPlan(o), mins = d => Math.round((d.exercises.reduce((a, e) => a + e.sets * (45 + (e.rest || 90)) + 90, 0) + 300) / 60);
   pb.plan = plan;
   return `<h2>Tu plan está listo${o.name ? ', ' + esc(o.name) : ''}</h2><p class="pb-sub">${PB_GOALS[o.goal][0]} · ${PB_EQ[o.equip][0]} · ${plan.days.length} días</p>
@@ -217,7 +220,7 @@ function pbFinish() {
   if (wasPub) state.plans = state.plans.filter(p => !(p.auto && p.gymId === g && !state.sessions.some(s => s.planId === p.id)));
   state.plans.push(plan);
   S.planByGym = Object.assign({}, S.planByGym, { [g]: plan.id }); S.activePlanId = plan.id;
-  S.onb = 1; S.healthOk = S.healthOk || 1;
+  S.onb = 1; S.healthOk = S.healthOk || 1; if (o.consent) saveConsent();
   applyProf(); savePlans(); pbClose();
   const sh = $('#sheet'); if (sh && !sh.hidden && sh.querySelector('[data-act="health-ok"]')) closeSheet();
   state.tab = 'train'; render();
@@ -237,9 +240,12 @@ document.addEventListener('click', ev => {
   if (a === 'next') { if (!pbOk()) return; if (pb.step >= PB_STEPS - 1) return pbFinish(); pb.step++; return pbRender(); }
   if (a === 'back') { pb.step = Math.max(0, pb.step - 1); return pbRender(); }
   if (a === 'x') return pbClose();
-  if (a === 'have') { state.settings.onb = 1; savePlans(); pbClose(); state.tab = 'settings'; render(); toast('Inicia sesión en "Tu cuenta" para traer tus datos.'); return; }
+  if (a === 'have') { state.settings.onb = 1; savePlans(); pbClose(); state.tab = 'settings'; render(); toast('Inicia sesión en "Tu cuenta" para traer tus datos.'); if (!state.settings.healthOk) setTimeout(() => healthSheet(true), 400); return; }
   if (a === 'set') { o[b.dataset.k] = b.dataset.n ? +b.dataset.v : b.dataset.v; if (b.dataset.k === 'sex' && o.sex !== 'f') o.parq = o.parq.filter(i => i < PARQ.length); return pbRender(); }
   if (a === 'inj') { const v = b.dataset.v; o.inj = !v ? [] : o.inj.includes(v) ? o.inj.filter(x => x !== v) : o.inj.concat([v]); return pbRender(); }
+  if (a === 'consent') { o.consent = !o.consent; return pbRender(); }
+  if (a === 'priv') return privacySheet();
+  if (a === 'terms') return termsSheet();
   if (a === 'parq') { const i = +b.dataset.i; o.parq = o.parq.filter(x => x !== i); if (b.dataset.v === '1') o.parq.push(i); return pbRender(); }
   /* Plantillas y ajustes */
   if (a === 'tpl') return pbTemplates();

@@ -10,6 +10,16 @@ service cloud.firestore {
       // El dueño puede eliminar su cuenta y sus datos (requisito de Google Play)
       allow delete: if request.auth != null && request.auth.uid == acc;
     }
+    // Reportes de errores anónimos: solo se pueden crear (nadie los lee desde la app).
+    // En Firestore → TTL, activar la política sobre el campo `exp` para borrarlos a los 90 días.
+    match /errors/{id} {
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly(['m', 's', 'l', 'st', 'v', 'p', 'ua', 'at', 'exp'])
+        && request.resource.data.m is string && request.resource.data.m.size() <= 400
+        && request.resource.data.st is string && request.resource.data.st.size() <= 1500
+        && request.resource.data.ua is string && request.resource.data.ua.size() <= 200;
+      allow read, update, delete: if false;
+    }
     // Códigos temporales para vincular un reloj
     match /pairs/{code} {
       allow create: if request.auth != null && request.resource.data.watch == request.auth.uid;
