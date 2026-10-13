@@ -48,9 +48,9 @@ function w2Nav(i, n) {
 }
 function w2Pad() {
   const P = w2.pad, { e } = w2Ex(), st = watchStep(e), s = st && st.s;
-  const cur = !s ? '' : P.f === 'w' ? fmtKg(+s.w || 0) : String(s.r != null ? s.r : goalReps(e, st.j));
-  const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', P.f === 'w' ? '.' : '', '0', '⌫'];
-  return `<div class="w2-pad"><div class="w2-padv"><small>${P.f === 'w' ? 'Peso en kg' + (e.bar ? ' (solo discos)' : '') : 'Repeticiones'}</small><b class="num" id="w2-padv">${P.v ? esc(P.v) : `<span class="ph">${esc(cur)}</span>`}</b></div>
+  const isW = P.f !== 'r', cur = P.cur != null ? P.cur : !s ? '' : P.f === 'w' ? fmtKg(+s.w || 0) : String(s.r != null ? s.r : goalReps(e, st.j));
+  const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', isW ? '.' : '', '0', '⌫'];
+  return `<div class="w2-pad"><div class="w2-padv"><small>${P.f === 'wu' ? 'Peso del calentamiento (kg)' : P.f === 'tw' ? 'Peso de tus series (kg)' : P.f === 'w' ? 'Peso en kg' + (e.bar ? ' (solo discos)' : '') : 'Repeticiones'}</small><b class="num" id="w2-padv">${P.v ? esc(P.v) : `<span class="ph">${esc(cur)}</span>`}</b></div>
     <div class="w2-keys">${keys.map(k => k ? `<button data-act="w2-k" data-k="${k}">${k}</button>` : '<span></span>').join('')}</div>
     <div class="w2-padok"><button data-act="w2-padx">Cancelar</button><button class="ok" data-act="w2-padok">OK</button></div></div>`;
 }
@@ -109,11 +109,12 @@ vWatchSession = function () {
   const { i, e } = w2Ex(), n = d.exercises.length, head = w2Head(d, i, e);
   const wu = w2Warm(e, i, d);
   if (wu) {
-    const s = wu.s;
+    const s = wu.s, wW = (e.wuW && e.wuW[wu.k] != null) ? e.wuW[wu.k] : s.w, tw = +((e.log.find(x => !x.done) || e.log[0] || {}).w) || 0;
     return `<div class="w2">${head}
       <div class="w2-sub w2-wu">🔥 Calentamiento ${wu.k + 1} de ${wu.W.sets.length} · no cuenta</div>
-      <div class="w2-big"><b class="num">${s.bar ? fmtKg(e.bar) : fmtKg(s.w)}</b> kg × <b class="num">${s.r}</b></div>
-      <div class="w2-pl">${s.bar ? 'Solo la barra, sin discos' : wu.W.plates ? `En cada lado: <b>${platesTxt(s.w)}</b>` : 'Serie ligera'}</div>
+      ${s.bar ? `<div class="w2-big"><b class="num">${fmtKg(e.bar)}</b> kg × <b class="num">${s.r}</b></div>` : `<div class="w2-val"><button data-act="w2-wadj" data-d="-1" aria-label="Menos peso">−</button><button class="w2-num" data-act="w2-pad" data-f="wu" data-cur="${fmtKg(wW)}"><b class="num">${fmtKg(wW)}</b><small>kg × ${s.r}</small></button><button data-act="w2-wadj" data-d="1" aria-label="Más peso">+</button></div>`}
+      <div class="w2-pl">${s.bar ? 'Solo la barra, sin discos' : wu.W.plates ? `En cada lado: <b>${platesTxt(wW)}</b>` : 'Serie ligera'}</div>
+      <div class="w2-tw">Tus series: <button data-act="w2-tadj" data-d="-1" aria-label="Bajar peso de tus series">−</button><button class="w2-twn" data-act="w2-pad" data-f="tw" data-cur="${fmtKg(tw)}"><b class="num">${fmtKg(tw)}</b> kg</button><button data-act="w2-tadj" data-d="1" aria-label="Subir peso de tus series">+</button></div>
       <div class="w2-tip">Serie suave para preparar el músculo. Después descansa 1 min.</div>
       <button class="w2-go" data-act="w2-wu" data-k="${wu.k}">✓ Hecho</button>
       <button class="w2-link" data-act="w2-wuskip">Saltar calentamiento</button>
@@ -235,7 +236,18 @@ document.addEventListener('click', ev => {
     else { const r = s.r != null && s.r !== '' ? +s.r : (st.k != null ? Math.max(1, Math.round(e.repsMax * 0.6)) : goalReps(e, st.j)); w2Apply(e, st, 'r', Math.max(0, r + dd)); }
     d.lastAct = Date.now(); saveDraft(); render();
   }
-  else if (a === 'w2-pad') { w2.pad = { f: b.dataset.f, v: '' }; render(); }
+  else if (a === 'w2-pad') { w2.pad = { f: b.dataset.f, v: '', cur: b.dataset.cur }; render(); }
+  else if (a === 'w2-wadj' || a === 'w2-tadj') {
+    if (a === 'w2-wadj') {
+      const wu = w2Warm(e, i, d); if (!wu) return;
+      const cur = (e.wuW && e.wuW[wu.k] != null) ? e.wuW[wu.k] : wu.s.w, inc = loadsPlates(e) ? 5 : increment(e, cur || 1);
+      e.wuW = e.wuW || []; e.wuW[wu.k] = Math.max(0, Math.round((cur + inc * +b.dataset.d) * 100) / 100);
+    } else {
+      const cur = +((e.log.find(x => !x.done) || e.log[0] || {}).w) || 0, inc = e.inc || increment(e, cur || 1), nv = Math.max(0, Math.round((cur + inc * +b.dataset.d) * 100) / 100);
+      e.log.forEach(x => { if (!x.done) x.w = nv; }); e.wuW = [];
+    }
+    d.lastAct = Date.now(); saveDraft(); render();
+  }
   else if (a === 'w2-k') {
     const P = w2.pad; if (!P) return; const k = b.dataset.k;
     if (k === '⌫') P.v = P.v.slice(0, -1);
@@ -246,6 +258,14 @@ document.addEventListener('click', ev => {
   else if (a === 'w2-padx') { w2.pad = null; render(); }
   else if (a === 'w2-padok') {
     const P = w2.pad, st = watchStep(e); w2.pad = null;
+    if (P && (P.f === 'wu' || P.f === 'tw')) {
+      if (P.v !== '' && isFinite(+P.v)) {
+        if (P.f === 'wu') { const wu = w2Warm(e, i, d); if (wu) { e.wuW = e.wuW || []; e.wuW[wu.k] = +P.v; } }
+        else { e.log.forEach(x => { if (!x.done) x.w = +P.v; }); e.wuW = []; }
+        d.lastAct = Date.now(); saveDraft();
+      }
+      return render();
+    }
     if (P && st && P.v !== '' && isFinite(+P.v)) { w2Apply(e, st, P.f, P.f === 'r' ? Math.round(+P.v) : +P.v); d.lastAct = Date.now(); saveDraft(); }
     render();
   }

@@ -1278,3 +1278,8 @@ body.onb-open #sheet{z-index:130}
 .cl-ex{font-size:12.5px;margin:6px 0 0 12px}
 .cl-ex small{display:block;color:var(--muted);font-style:italic}
 .coachmode-card h3{margin:0 0 6px}
+
+/* Reloj: calentamiento con peso editable y peso de tus series */
+.w2-tw{display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--muted);margin:2px 0 6px;flex-shrink:0}
+.w2-tw button{min-width:38px;min-height:34px;margin:0 3px;border-radius:10px;border:1px solid var(--line);background:var(--surface2);color:var(--fg);font:inherit;font-size:17px;font-weight:800}
+.w2-tw .w2-twn{min-width:72px;font-size:14px}
