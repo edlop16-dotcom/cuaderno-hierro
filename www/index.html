@@ -766,8 +766,10 @@ const WD = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const WDL = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 const TYPES = [P, EM, TR, 'Core'];
 
-if (state.settings.pub) Object.assign(HISTORY, { name: 'Atleta', gym: 'Mi gimnasio', age: 30, kg: 70, cm: 170, since: 'poco tiempo', goal: 'Salud y energía', records: [] });
-if (state.settings.pub && !state.settings.planByGym) state.settings.planByGym = { rokaz: state.settings.activePlanId || 'start' };
+/* Usuario público solo si no es la cuenta del dueño (el dueño siempre gana, aunque llegue `pub` por sincronización) */
+const pubUser = () => !!state.settings.pub && !state.settings.owner;
+if (pubUser()) Object.assign(HISTORY, { name: 'Atleta', gym: 'Mi gimnasio', age: 30, kg: 70, cm: 170, since: 'poco tiempo', goal: 'Salud y energía', records: [] });
+if (pubUser() && !state.settings.planByGym) state.settings.planByGym = { rokaz: state.settings.activePlanId || 'start' };
 function saveLocal() {
   LS.set('plans', state.plans); LS.set('settings', state.settings);
   LS.set('sessions', state.sessions);

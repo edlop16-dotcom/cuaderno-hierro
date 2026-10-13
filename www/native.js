@@ -14,7 +14,7 @@ const REM_KINDS = {
 function defaultReminders() {
   const all = [0, 1, 2, 3, 4, 5, 6];
   return [
-    ...(state.settings.pub ? [] : [{ id: 'r-crea', kind: 'crea', label: 'Toma tu creatina (5 g)', time: '08:00', days: all, on: true }]),
+    ...(pubUser() ? [] : [{ id: 'r-crea', kind: 'crea', label: 'Toma tu creatina (5 g)', time: '08:00', days: all, on: true }]),
     { id: 'r-w1', kind: 'water', label: 'Agua', time: '11:00', days: all, on: true },
     { id: 'r-w2', kind: 'water', label: 'Agua', time: '15:00', days: all, on: true },
     { id: 'r-w3', kind: 'water', label: 'Agua', time: '19:00', days: all, on: true },

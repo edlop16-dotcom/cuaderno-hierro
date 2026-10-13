@@ -7,7 +7,7 @@
    4. Resumen de la semana, de la semana pasada y del mes, con qué cambiar.
    5. Reajuste: sesión de regreso tras 10+ días sin entrenar y aviso de estancamiento.
    ========================================================================== */
-const goalNow = () => { const p = state.settings.prof; return p && p.goal ? p.goal : (state.settings.pub ? 'salud' : 'musculo'); };
+const goalNow = () => { const p = state.settings.prof; return p && p.goal ? p.goal : (pubUser() ? 'salud' : 'musculo'); };
 const smTip = (c, t) => { if (c.tips.indexOf(t) < 0) c.tips.push(t); };
 
 /* ---------- 1. Progresión según el objetivo ---------- */

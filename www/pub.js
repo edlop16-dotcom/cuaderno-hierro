@@ -138,18 +138,38 @@ function applyProf() {
   Object.assign(HISTORY, { name: p.name || HISTORY.name, age: +p.age || HISTORY.age, goal: (PB_GOALS[p.goal] || [HISTORY.goal])[0], since: PB_SINCE[p.exp] || HISTORY.since });
   const b = body(); if (b.h) HISTORY.cm = b.h; if (b.w.length) HISTORY.kg = r1(curWeight()); else if (p.kg) HISTORY.kg = +p.kg;
 }
+/* Cuenta del dueño: si por sincronización llegan valores de una instalación nueva (pub, goals vacíos,
+   rutina de inicio), se corrigen en el lugar y sin recargar. `pub` se pone en 0 (no se borra): un ajuste
+   borrado no se sincroniza y volvería a llegar desde la nube. */
+function ownerFix() {
+  const S = state.settings; if (!S.owner) return;
+  let ch = false;
+  if (S.pub) { S.pub = 0; ch = true; }
+  if (!S.ownerFix1) {
+    if (Array.isArray(S.goals) && !S.goals.length) S.goals = ['postura'];
+    const n = state.plans.length;
+    state.plans = state.plans.filter(p => !(p.auto && p.id === 'start' && !state.sessions.some(s => s.planId === p.id)));
+    if (state.plans.length !== n || S.activePlanId === 'start') {
+      Object.keys(S.planByGym || {}).forEach(g => { if (!state.plans.some(p => p.id === S.planByGym[g])) { const p = state.plans.find(x => (x.gymId || 'rokaz') === g); if (p) S.planByGym[g] = p.id; } });
+      if (!state.plans.some(p => p.id === S.activePlanId)) S.activePlanId = (S.planByGym || {}).rokaz || (state.plans[0] && state.plans[0].id);
+    }
+    S.ownerFix1 = 1; ch = true;
+  }
+  if (ch) savePlans();
+}
 /* Instalación de Edgar: dueño de la app (sus datos y migraciones personales siguen igual) */
 if (!state.settings.pub && !state.settings.owner) { state.settings.owner = 1; savePlans(); }
+ownerFix();
 applyProf();
-if (state.settings.pub) defaultPlans = () => [genPlan(Object.assign({ goal: 'salud', exp: 1, days: 3, mins: 60, equip: 'gym' }, pbProf() || {}))];
+if (pubUser()) defaultPlans = () => [genPlan(Object.assign({ goal: 'salud', exp: 1, days: 3, mins: 60, equip: 'gym' }, pbProf() || {}))];
 
 /* ---------- Bienvenida (pantalla completa, por pasos) ---------- */
 const pb = { step: 0, o: null, edit: false };
 const PB_STEPS = 9;
 function pbStart(step, edit) {
   const p = pbProf() || {}, b = body();
-  pb.o = Object.assign({ name: p.name || (state.settings.pub ? '' : HISTORY.name), goal: null, exp: null, days: 3, mins: 60, equip: 'gym', age: '', sex: b.sex || 'm', cm: state.settings.pub && !p.cm ? '' : b.h, kg: state.settings.pub && !p.kg ? '' : r1(curWeight()), unit: state.settings.unit || 'kg', inj: [], parq: [], preg: false }, JSON.parse(JSON.stringify(p)));
-  if (!state.settings.pub && !p.age) pb.o.age = HISTORY.age;
+  pb.o = Object.assign({ name: p.name || (pubUser() ? '' : HISTORY.name), goal: null, exp: null, days: 3, mins: 60, equip: 'gym', age: '', sex: b.sex || 'm', cm: state.settings.pub && !p.cm ? '' : b.h, kg: state.settings.pub && !p.kg ? '' : r1(curWeight()), unit: state.settings.unit || 'kg', inj: [], parq: [], preg: false }, JSON.parse(JSON.stringify(p)));
+  if (!pubUser() && !p.age) pb.o.age = HISTORY.age;
   pb.step = step || 0; pb.edit = !!edit; pbRender();
 }
 function pbClose() { const el = $('#onb'); if (el) el.remove(); document.body.classList.remove('onb-open'); }
@@ -265,7 +285,7 @@ const PB_TPL = [
   ['home3', 'En casa con mancuernas · 3 días', 'Mancuernas y una silla', { days: 3, split: 'fb', equip: 'home' }],
   ['body3', 'Peso corporal · 3 días', 'Sin equipo, en casa o en el parque', { days: 3, split: 'fb', equip: 'body' }],
 ];
-const pbBase = () => Object.assign({ goal: 'salud', exp: 1, days: 3, mins: 60, equip: 'gym', inj: [] }, pbProf() || {}, !pbProf() && !state.settings.pub ? { goal: 'musculo', exp: 2, days: 4 } : {});
+const pbBase = () => Object.assign({ goal: 'salud', exp: 1, days: 3, mins: 60, equip: 'gym', inj: [] }, pbProf() || {}, !pbProf() && !pubUser() ? { goal: 'musculo', exp: 2, days: 4 } : {});
 function pbTemplates() {
   const p = pbBase();
   openSheet(`<div class="row"><h2 class="grow">Plantillas</h2><button class="icon-btn" data-act="sheet-close" aria-label="Cerrar">${ic('x', 18)}</button></div>
@@ -376,11 +396,7 @@ SET_ORDER.sort((a, b) => a[1] - b[1]);
 const _renderPb = render;
 render = function () {
   /* Si un equipo nuevo se vinculó a la cuenta del dueño, vuelve al modo normal */
-  if (state.settings.pub && state.settings.owner) {
-    delete state.settings.pub;
-    state.plans = state.plans.filter(p => !(p.auto && !state.sessions.some(s => s.planId === p.id)) || state.plans.length === 1);
-    savePlans(); setTimeout(() => location.reload(), 300);
-  }
+  ownerFix();
   _renderPb();
   const app = $('#app'); if (!app) return;
   if (state.tab === 'train' && !state.draft && !isWatch()) {
@@ -399,5 +415,5 @@ const _setUnitPb = pbSetUnit;
 pbSetUnit = function (u, q) { _setUnitPb(u, q); pbWatchLb(); };
 
 /* Usuario nuevo: bienvenida (en el reloj se configura desde el celular) */
-if (state.settings.pub && !state.settings.onb && !isWatch()) pbStart(0);
+if (pubUser() && !state.settings.onb && !isWatch()) pbStart(0);
 render();
