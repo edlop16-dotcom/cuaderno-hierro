@@ -89,6 +89,7 @@ function w2Menu() {
     <button class="w2-mi" data-act="w2-menu" data-m="busy">⏳ Máquina ocupada</button>
     <button class="w2-mi" data-act="w2-menu" data-m="add">➕ Agregar ejercicio</button>
     <div class="w2-row2"><button class="w2-mi" data-act="w2-set" data-d="1">+ Serie</button><button class="w2-mi" data-act="w2-set" data-d="-1" ${e.log.length < 2 || e.log[e.log.length - 1].done ? 'disabled' : ''}>− Serie</button></div>
+    <button class="w2-mi" data-act="w2-away">🏠 Ir al inicio (la sesión sigue)</button>
     <button class="w2-mi" data-act="w2-full">📱 Vista completa</button>
     <button class="w2-mi fin" data-act="w2-menu" data-m="fin">🏁 Terminar entrenamiento</button>
     ${back}`;
@@ -141,6 +142,8 @@ vWatchSession = function () {
 /* ---------- Inicio en el reloj ---------- */
 const _vWatchHomeW2 = vWatchHome;
 vWatchHome = function () {
+  if (!state.draft) w2.away = false;
+  if (state.draft) return `<div class="w2-homebtns"><button class="w2-go" data-act="w2-back">▶ Volver al entrenamiento</button><div class="w2-tip">${esc(state.draft.dayName || '')} sigue abierto.</div><button class="w2-mi" data-act="tab" data-tab="settings">⚙ Ajustes</button><button class="w2-mi" data-act="tab" data-tab="profile">👤 Perfil</button><button class="w2-mi" data-act="w2-full">📱 Vista completa</button></div>`;
   return _vWatchHomeW2().replace(/<button class="btn small" data-act="watch-off">Ver completo<\/button>/g, '') +
     `<div class="w2-homebtns"><button class="w2-mi" data-act="tab" data-tab="settings">⚙ Ajustes</button><button class="w2-mi" data-act="tab" data-tab="profile">👤 Perfil</button><button class="w2-mi" data-act="w2-full">📱 Vista completa</button></div>`;
 };
@@ -218,6 +221,8 @@ document.addEventListener('click', ev => {
   const b = ev.target.closest('[data-act^="w2-"]'); if (!b) return;
   ev.stopPropagation(); ev.preventDefault();
   const a = b.dataset.act, d = state.draft;
+  if (a === 'w2-away') { w2.away = true; w2.menu = null; state.tab = 'train'; render(); return; }
+  if (a === 'w2-back') { w2.away = false; state.tab = 'train'; render(); return; }
   if (a === 'w2-full') { state.settings.watch = false; w2.menu = null; saveLocal(); render(); toast('Vista completa. Para volver: Ajustes → Modo reloj.'); return; }
   if (!d) return;
   const { i, e } = w2Ex();

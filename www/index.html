@@ -1471,7 +1471,8 @@ function vHistory() {
 function render() {
   const w = isWatch(); document.body.classList.toggle('watch', w);
   const v = { train: vTrain, plans: vPlans, guide: vGuide, progress: () => vProfile('progress'), history: () => vProfile('history'), settings: () => vProfile('settings'), profile: () => vProfile(state.profSub || 'progress') }[state.tab] || vTrain;
-  $('#app').innerHTML = w && state.draft ? vWatchSession() : (w && state.tab === 'train' && !state.draft ? vWatchHome() : v());
+  const away = typeof w2 !== 'undefined' && w2.away;   /* reloj: salió al inicio sin terminar la sesión */
+  $('#app').innerHTML = w && state.draft && !away ? vWatchSession() : (w && state.tab === 'train' ? vWatchHome() : v());
   const navT = ['progress', 'history', 'settings'].includes(state.tab) ? 'profile' : state.tab;
   document.querySelectorAll('.nav button').forEach(b => b.setAttribute('aria-current', b.dataset.tab === navT ? 'page' : 'false'));
   tick();
