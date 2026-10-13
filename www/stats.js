@@ -283,7 +283,9 @@ render();
 /* ---------- Hábitos personalizados (con racha cada uno) ---------- */
 const HAB_ICONS = ['pill', 'zap', 'coffee', 'fish', 'droplet', 'sun', 'moon', 'book-open', 'heart-pulse', 'activity', 'dumbbell', 'star', 'target', 'brain'];
 function habList() {
-  if (!state.settings.habits) state.settings.habits = SUPS.map(s => ({ k: s.k, name: s.name, dose: s.dose, icon: HAB_IC2[s.k] || 'pill' }));
+  if (!state.settings.habits) state.settings.habits = state.settings.pub
+    ? [{ k: 'prot', name: 'Proteína', dose: 'en cada comida', icon: 'beef' }, { k: 'hwalk', name: 'Caminar 30 min', dose: 'o tu meta de pasos', icon: 'activity' }, { k: 'hveg', name: 'Frutas y verduras', dose: '5 porciones', icon: 'sun' }, { k: 'hsleep', name: 'Dormir a tiempo', dose: '7-8 horas', icon: 'moon' }]
+    : SUPS.map(s => ({ k: s.k, name: s.name, dose: s.dose, icon: HAB_IC2[s.k] || 'pill' }));
   return state.settings.habits;
 }
 function applyHabits() {

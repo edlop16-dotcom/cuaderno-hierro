@@ -735,14 +735,26 @@ const LS = {
   set(k, v) { try { localStorage.setItem('cdh.' + k, JSON.stringify(v)); } catch (e) {} },
   del(k) { try { localStorage.removeItem('cdh.' + k); } catch (e) {} },
 };
+/* App pública: una instalación sin datos es un usuario nuevo. Empieza sin el historial, los gimnasios
+   ni las rutinas de Edgar; la bienvenida (pub.js) arma su plan según su objetivo. */
+const FRESH = (() => { try { return !localStorage.getItem('cdh.settings') && !localStorage.getItem('cdh.sessions') && !localStorage.getItem('cdh.plans'); } catch (e) { return false; } })();
+const PUB_INIT = { pub: 1, onb: 0, activePlanId: 'start', planRev: 2, gymRev: 1, dropRev: 1, barRev: 1, importSym1: 1, importSym2: 1, importSym3: 1, symDate9: 1, weekFix1: 1, hevyImport1: 1, symImport2: 1, planFix2: 1, bedtime1: 1, goals: [] };
+function starterPlans() {
+  const A = [E('Prensa 45°', P, 0, 3, '10-12', 2), E('Press de Pecho en Máquina', EM, 0, 3, '10-12', 2), E('Jalón al Pecho', TR, 0, 3, '10-12', 2), E('Curl Femoral Sentado', P, 0, 3, '10-12', 1.5), E('Elevaciones Laterales', EM, 0, 2, '12-15', 1), E('Plancha', 'Core', 0, 2, '30', 1)];
+  const B = [E('Hip Thrust', P, 0, 3, '10-12', 2), E('Press Militar (Mancuernas)', EM, 0, 3, '10-12', 2), E('Remo Sentado con Cable', TR, 0, 3, '10-12', 2), E('Extensión de Pierna', P, 0, 3, '12-15', 1.5), E('Curl Bíceps', TR, 0, 2, '12-15', 1), E('Tríceps Polea', EM, 0, 2, '12-15', 1)];
+  return [{ id: 'start', name: 'Cuerpo completo · 3 días', auto: 1, gymId: 'rokaz', days: [
+    { id: 'st-a', name: 'Cuerpo completo A', weekday: 1, kind: 'fuerza', exercises: A },
+    { id: 'st-b', name: 'Cuerpo completo B', weekday: 3, kind: 'fuerza', exercises: B },
+    { id: 'st-c', name: 'Cuerpo completo A', weekday: 5, kind: 'fuerza', exercises: JSON.parse(JSON.stringify(A)).map(e => Object.assign(e, { id: uid() })) }] }];
+}
 const state = {
   tab: 'train',
-  plans: LS.get('plans', null) || defaultPlans(),
-  settings: Object.assign({ activePlanId: 'plan1', watch: null, stamp: 0 }, LS.get('settings', {})),
+  plans: LS.get('plans', null) || (FRESH ? starterPlans() : defaultPlans()),
+  settings: Object.assign({ activePlanId: 'plan1', watch: null, stamp: 0 }, FRESH ? PUB_INIT : {}, LS.get('settings', {})),
   sessions: LS.get('sessions', []),
   draft: LS.get('draft', null),
   daily: LS.get('daily', {}),
-  gyms: LS.get('gyms', null),
+  gyms: LS.get('gyms', null) || (FRESH ? [{ id: 'rokaz', name: 'Mi gimnasio' }] : null),
   gymFilter: null,
   editPlan: null,
   confirm: null,
@@ -754,6 +766,8 @@ const WD = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const WDL = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 const TYPES = [P, EM, TR, 'Core'];
 
+if (state.settings.pub) Object.assign(HISTORY, { name: 'Atleta', gym: 'Mi gimnasio', age: 30, kg: 70, cm: 170, since: 'poco tiempo', goal: 'Salud y energía', records: [] });
+if (state.settings.pub && !state.settings.planByGym) state.settings.planByGym = { rokaz: state.settings.activePlanId || 'start' };
 function saveLocal() {
   LS.set('plans', state.plans); LS.set('settings', state.settings);
   LS.set('sessions', state.sessions);
@@ -1341,10 +1355,10 @@ function vProgress() {
   const max = 24;
   const imc = HISTORY.kg / Math.pow(HISTORY.cm / 100, 2);
   return `${header('Progreso', esc(HISTORY.name))}
-  <div class="card"><div class="label">Tu perfil · ${HISTORY.since} entrenando</div>
+  <div class="card bw"><div class="label">Tu perfil · ${HISTORY.since} entrenando</div>
     <div class="prof"><div><div class="v">${HISTORY.age}</div><div class="label">años</div></div><div><div class="v">${HISTORY.kg} kg</div><div class="label">peso</div></div>
     <div><div class="v">${fmtKg(HISTORY.cm / 100)} m</div><div class="label">altura</div></div><div><div class="v">${fmtKg(imc)}</div><div class="label">IMC</div></div></div>
-    <div class="muted" style="font-size:13px">Objetivo: ${esc(HISTORY.goal)}. Meta de proteína: 145-150 g al día (unos 2 g por kg).</div></div>
+    <div class="muted" style="font-size:13px">Objetivo: ${esc(HISTORY.goal)}. Meta de proteína: ${typeof protGoal === 'function' ? protGoal() : Math.round(HISTORY.kg * 2)} g al día.</div></div>
   <div class="tiles">
     <div class="tile"><span class="label">Sesiones 30 d</span><span class="v">${last30.length}</span></div>
     <div class="tile"><span class="label">Volumen semana</span><span class="v">${vol >= 1000 ? fmtKg(vol / 1000) + ' t' : fmtKg(vol) + ' kg'}</span></div>
@@ -1398,9 +1412,10 @@ function supHistory() {
   const days = []; for (let i = 13; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i); days.push(d); }
   const row = (label, fn) => `<span class="muted">${label}</span>${days.map(d => `<i class="${fn(state.daily[dk(d)] || {})}" title="${dk(d)}"></i>`).join('')}`;
   const taken = days.filter(d => (state.daily[dk(d)] || {}).crea).length;
-  return `<div class="card"><div class="row" style="justify-content:space-between"><h3>Suplementos y agua</h3><span class="chip">Últimos 14 días</span></div>
-    <div class="supgrid">${row('Creatina', x => x.crea ? 'on' : '')}${row('Proteína', x => x.prot ? 'on' : '')}${row('Omega 3', x => x.omega ? 'on' : '')}${row('Agua', x => (x.water || 0) >= WATER_MIN ? 'full' : (x.water || 0) >= 1250 ? 'half' : '')}</div>
-    <div class="muted" style="font-size:12.5px">Creatina ${taken} de 14 días. Funciona por acumulación: lo que importa es no saltarte días, también los de descanso. Agua: azul fuerte = meta cumplida (2,5 L o más).</div></div>`;
+  const crea = SUPS.some(x => x.k === 'crea');
+  return `<div class="card"><div class="row" style="justify-content:space-between"><h3>Hábitos y agua</h3><span class="chip">Últimos 14 días</span></div>
+    <div class="supgrid">${SUPS.map(h => row(esc(h.name), x => x[h.k] ? 'on' : '')).join('')}${row('Agua', x => (x.water || 0) >= WATER_MIN ? 'full' : (x.water || 0) >= 1250 ? 'half' : '')}</div>
+    <div class="muted" style="font-size:12.5px">${crea ? `Creatina ${taken} de 14 días. Funciona por acumulación: lo que importa es no saltarte días, también los de descanso. ` : 'Lo que cuenta es la constancia: marca cada hábito el día que lo cumples. '}Agua: azul fuerte = meta cumplida (2,5 L o más).</div></div>`;
 }
 function countPRs() {
   const best = {}; let n = 0;
@@ -1464,7 +1479,7 @@ function vWatchHome() {
   return `<div class="w-set">${WDL[new Date().getDay()]} · ${esc(activeGym().name)}</div><div class="w-ex">${esc(nd.name)}</div>
   <div class="w-hint">${nd.exercises.length} ejercicios · ${esc(plan.name)}</div>
   <button class="w-go" style="background:var(--accent);color:var(--accent-ink)" data-act="start" data-plan="${plan.id}" data-day="${nd.id}">Empezar</button>
-  <div class="w-nav"><button data-act="sup" data-k="crea">${today().crea ? '✓ Creatina' : 'Creatina'}</button><button data-act="water" data-ml="250">💧 ${fmtKg((today().water || 0) / 1000)} L +</button></div>
+  <div class="w-nav">${(h => h ? `<button data-act="sup" data-k="${h.k}">${today()[h.k] ? '✓ ' : ''}${esc(h.name)}</button>` : '')(SUPS[0])}<button data-act="water" data-ml="250">💧 ${fmtKg((today().water || 0) / 1000)} L +</button></div>
   ${plan.days.filter(d => d.id !== nd.id).map(d => `<button class="btn small block" data-act="start" data-plan="${plan.id}" data-day="${d.id}">${WD[d.weekday]} · ${esc(d.name)}</button>`).join('')}
   <button class="btn small" data-act="watch-off">Ver completo</button>`;
 }
@@ -1780,5 +1795,6 @@ cloud.init();
 <script src="train2.js"></script>
 <script src="watch2.js"></script>
 <script src="polish.js"></script>
+<script src="pub.js"></script>
 </body>
 </html>

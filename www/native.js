@@ -14,7 +14,7 @@ const REM_KINDS = {
 function defaultReminders() {
   const all = [0, 1, 2, 3, 4, 5, 6];
   return [
-    { id: 'r-crea', kind: 'crea', label: 'Toma tu creatina (5 g)', time: '08:00', days: all, on: true },
+    ...(state.settings.pub ? [] : [{ id: 'r-crea', kind: 'crea', label: 'Toma tu creatina (5 g)', time: '08:00', days: all, on: true }]),
     { id: 'r-w1', kind: 'water', label: 'Agua', time: '11:00', days: all, on: true },
     { id: 'r-w2', kind: 'water', label: 'Agua', time: '15:00', days: all, on: true },
     { id: 'r-w3', kind: 'water', label: 'Agua', time: '19:00', days: all, on: true },
@@ -29,7 +29,7 @@ function remText(r, dayOffset, date) {
   const isToday = dayOffset === 0;
   const t = state.daily[dk(date)] || {};
   if (r.kind === 'crea') { const st = creaStreak(); return { title: r.label, body: st ? `Llevas ${st} días seguidos. ¡No cortes la racha!` : 'La creatina funciona por acumulación: tómala todos los días.' }; }
-  if (r.kind === 'prot') return { title: r.label, body: 'Meta: 145-150 g de proteína al día.' };
+  if (r.kind === 'prot') return { title: r.label, body: `Meta: ${typeof protGoal === 'function' ? protGoal() : 145} g de proteína al día.` };
   if (r.kind === 'omega') return { title: r.label, body: 'Una cápsula con una comida.' };
   if (r.kind === 'water') return { title: r.label, body: isToday ? `Llevas ${fmtKg((t.water || 0) / 1000)} L de 2,5–3 L. Toma un vaso ahora.` : 'Meta de hoy: 2,5–3 L. Toma un vaso ahora.' };
   if (r.kind === 'train') { const p = activePlan(); const d = p.days.find(x => x.weekday === date.getDay()); return { title: r.label, body: d ? `${d.name} en ${HISTORY.gym}.` : 'Revisa tu plan.' }; }

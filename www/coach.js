@@ -36,7 +36,7 @@ function coachFor(ex, gymId, kind) {
       if (rn && rn.note) t.push(`Tu nota de allá: “${esc(rn.note)}”.`);
       return { w: rw, mode: 'hold', head: `<b>Referencia de ${esc(gymName(ref.gymId))}: ${fmtKg(rw)} kg</b>. Busca ${reps(ex)} reps.`, goal: rr, tips: t };
     }
-    return { w, mode: 'first', head: sg.up ? sg.msg : `Primera vez aquí: empieza con <b>${fmtKg(w)} kg</b> y busca ${reps(ex)} reps.`, goal: null,
+    return { w, mode: 'first', head: sg.up ? sg.msg : !(+w) ? (/flexiones|plancha|crunch abdominal|dominadas|fondos|puente de gluteo|peso corporal/.test(normName(ex.name)) ? `Primera vez: con tu peso corporal, busca ${reps(ex)} reps con buena técnica.` : `Primera vez: elige un peso con el que te sobren 3 reps y busca ${reps(ex)} reps.`) : `Primera vez aquí: empieza con <b>${fmtKg(w)} kg</b> y busca ${reps(ex)} reps.`, goal: null,
       tips: ['Serie 1 con 2 reps en reserva, serie 2 con 1 y la última al límite con buena técnica. Así la app aprende tu nivel.'] };
   }
   const last = H[0], note = normName(last.note);
@@ -138,7 +138,7 @@ function coachCard(plan, day) {
   const st = streakInfo();
   const extra = [];
   if (st.weeks >= 7 && st.weeks % 8 === 7) extra.push('Llevas ' + st.weeks + ' semanas seguidas cumpliendo. La próxima semana considera una <b>descarga</b>: mismos ejercicios, la mitad de series.');
-  const t = today(); if (!t.crea) extra.push('Aún no marcas la creatina de hoy.');
+  const t = today(); if (!t.crea && SUPS.some(x => x.k === 'crea')) extra.push('Aún no marcas la creatina de hoy.');
   return `<div class="card coach-card"><div class="row" style="justify-content:space-between"><h3>🧠 Coach · ${esc(day.name)}</h3><span class="chip">${ups ? ups + ' para subir' : 'Consolidar'}</span></div>
     <div class="muted" style="font-size:12.5px">Sobrecarga progresiva: cuando completas el tope de reps en todas las series, subes peso; si no, sumas reps con el mismo peso.</div>
     <div class="coach-rows">${rows.map(({ ex, c }) => `<div class="crow ${c.mode}"><span class="cic">${ic[c.mode] || '→'}</span><span class="grow" style="min-width:0"><b>${esc(ex.name)}</b><small>${c.head.replace(/<[^>]+>/g, '')}</small></span><span class="num">${fmtKg(c.w)} kg</span></div>`).join('')}</div>
