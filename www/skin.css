@@ -1194,3 +1194,50 @@ body.onb-open{overflow:hidden}
 #sheet .pb-list{margin:12px 0 6px}
 .pl.p45{background:#3b82f6;color:#fff}.pl.p35{background:#ffc53d;color:#241a00}.pl.p25{background:#2ee59d;color:#00261a}
 @media (max-height:430px){#onb h1{font-size:22px}#onb .pb-logo{width:52px;height:52px}#onb .pb-body{padding:8px 12px}}
+
+/* ===== Fase 2: cardio, resumen, regreso, estancamiento y plato (smart.js) ===== */
+.cd-card .row h3{margin:0}
+.cd-card .pb-ic,.ret-card .pb-ic,.stall-card .pb-ic{width:34px;height:34px;margin-right:10px}
+.cd-bar{height:10px;border-radius:8px;background:var(--surface3);overflow:hidden;margin-top:4px}
+.cd-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--water2),var(--water));border-radius:8px}
+.cd-meta{align-items:baseline}
+.cd-meta b{font-size:22px;margin-right:6px}
+.cd-today{display:flex;flex-wrap:wrap}
+.cd-today .chip{margin:0 6px 6px 0;display:inline-flex;align-items:center}
+.cd-types{display:flex;flex-wrap:wrap;margin:8px -4px 4px}
+.cd-t{flex:1 1 22%;min-width:72px;margin:4px;min-height:64px;border-radius:14px;background:var(--surface);border:1px solid var(--line);color:var(--fg);font:inherit;font-size:12px;font-weight:600;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer}
+.cd-t span{margin-top:4px}
+.cd-t.on{border-color:var(--water);background:rgba(34,211,238,.1);color:var(--water)}
+.cd-in{flex:1 1 0;min-width:64px;margin:4px;min-height:56px;border-radius:14px;background:var(--surface2);border:1px solid var(--line);color:var(--fg);font-size:17px;text-align:center}
+.cd-row{padding:6px 0;border-bottom:1px solid var(--line)}
+#sheet .cd-types,#sheet .pb-pills,#sheet .seg,#sheet .field,#sheet .cd-row{flex-shrink:0}
+.wk-card .seg{margin-top:8px}
+.wk-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0 4px}
+.wk-s{min-width:0;background:var(--surface2);border:1px solid var(--line);border-radius:12px;padding:9px 6px;text-align:center}
+.wk-s b{display:block;font-size:18px}
+.wk-s small{display:block;color:var(--muted);font-size:11px;margin-top:2px;line-height:1.2}
+.wk-s.ok{border-color:rgba(46,229,157,.4);background:rgba(46,229,157,.07)}
+.wk-s.ok b{color:var(--ok)}
+.wk-tips{margin:4px 0 0;padding-left:18px;font-size:13px;line-height:1.45}
+.wk-tips li{margin:3px 0}
+.wk-bars{display:flex;align-items:flex-end;height:70px;margin:8px 0 4px}
+.wk-bars > div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;margin:0 6px}
+.wk-bars i{display:block;width:100%;max-width:40px;min-height:4px;border-radius:6px 6px 2px 2px;background:var(--surface3)}
+.wk-bars i.ok{background:var(--ok)}
+.wk-bars small{color:var(--muted);font-size:11px;margin-top:4px}
+.recap{border-color:rgba(255,176,32,.35)!important}
+.ret-card{border-color:rgba(77,163,255,.35)!important}
+.ret-card.on{background:linear-gradient(135deg,rgba(77,163,255,.12),transparent)!important}
+.stall-card{border-color:rgba(255,197,61,.3)!important}
+.plate-card .pl-list{display:flex;flex-direction:column}
+.pl-i{display:flex;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);flex-shrink:0}
+.pl-i b{display:block;font-size:14px}
+.pl-i small{display:block;color:var(--muted);font-size:12px;line-height:1.35}
+.pl-q{min-width:46px;height:40px;padding:0 6px;border-radius:12px;margin-right:12px;display:flex;align-items:center;justify-content:center;font-weight:800;font-family:var(--f-num);font-size:15px;flex-shrink:0}
+.pl-i.p .pl-q{background:rgba(255,107,107,.15);color:var(--push)}
+.pl-i.v .pl-q{background:rgba(46,229,157,.13);color:var(--ok)}
+.pl-i.c .pl-q{background:rgba(255,176,32,.15);color:var(--accent2)}
+.pl-i.f .pl-q{background:rgba(180,140,255,.15);color:var(--core)}
+
+.wk-card .pb-ic,.plate-card .pb-ic{width:34px;height:34px;margin-right:10px}
+.wk-card .row h3,.plate-card .row h3{margin:0}

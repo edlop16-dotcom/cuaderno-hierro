@@ -18,7 +18,7 @@ App personal de gimnasio de Edgar (Edgwr), en español. Celular Android y reloj 
   vTrain = function () { ... _x() ... };
   ```
   Sirve igual para render, vTrain, vSession, finishSession, markSet, vSettings, header y previewSheet.
-- Orden de scripts: library.js, icons.js, (inline en index.html), coach.js, media.js, native.js, skin.js, config.js, sync.js, undo.js, layout.js, session.js, stats.js, safety.js, imports.js, rir.js, body.js, warm.js, mmap.js, swap.js, ready.js, nutri.js, share.js, meso.js, level.js, play.js, ai.js, web.js, plan2.js, burn.js, routines.js, keep.js, exview.js, picker.js, daydel.js, navord.js, habalarm.js, pulse.js, health.js, sleep.js, train2.js, watch2.js, polish.js, pub.js. Un archivo nuevo va al final.
+- Orden de scripts: library.js, icons.js, (inline en index.html), coach.js, media.js, native.js, skin.js, config.js, sync.js, undo.js, layout.js, session.js, stats.js, safety.js, imports.js, rir.js, body.js, warm.js, mmap.js, swap.js, ready.js, nutri.js, share.js, meso.js, level.js, play.js, ai.js, web.js, plan2.js, burn.js, routines.js, keep.js, exview.js, picker.js, daydel.js, navord.js, habalarm.js, pulse.js, health.js, sleep.js, train2.js, watch2.js, polish.js, pub.js, smart.js. Un archivo nuevo va al final.
 - Estado en `state` (sessions, plans, settings, draft). Se guarda en localStorage con claves `cdh.*`: `saveLocal()` para sesiones y `savePlans()` para settings y planes.
 - Navegación de 4 pestañas, ordenable (navord.js, `settings.navOrder`; por defecto Perfil · Entrenar · Rutinas · Ejercicios · Ajustes; Ajustes es el 5.º botón para el reloj). Los hábitos solo se muestran en Perfil. Perfil tiene las subpestañas Hoy · Progreso · Cuerpo · Historial (`state.profSub` = hoy/progress/body/history; polish.js): "Hoy" muestra `dayStrip()` (hábitos x/y, entreno, pasos, sueño) y la tarjeta de hábitos. Ajustes es página propia (`vProfile('settings')`), ordenada con `SET_ORDER`: cuenta y recordatorios primero, privacidad al final.
 - Sesión en pantalla completa `#sx` con páginas deslizables. Los hábitos y las rachas están en stats.js. Los avisos de lesión y el dolor muscular están en safety.js (`ZONES`, `zonesOf`).
@@ -83,7 +83,12 @@ Estatura: en la app 173 cm (HISTORY.cm); en un chat dijo 1,70 m, por confirmar (
 
 ## App pública: 4 fases (pedidas por Edgar el 13-oct-2026)
 1. **Base pública** — HECHA en beta (pub.js): bienvenida con objetivo, quitar lo personal, plantillas por objetivo, kg/lb y cuestionario de salud.
-2. **Entrenador inteligente**: progresión distinta según objetivo (fuerza con %1RM/RPE), registro de cardio, nutrición según objetivo con porciones locales, resumen semanal y mensual, reajuste si falta una semana o se estanca.
+2. **Entrenador inteligente** — HECHA en beta (smart.js):
+   - `coachFor` según `goalNow()` (prof.goal; dueño = musculo): fuerza (repsMax ≤ 6) calcula el peso con el 1RM estimado de la última sesión y el RIR de la semana (máx. +2 incrementos); grasa: "mantener ya es ganar" y estancamiento sin descarga; salud/movilidad: sube solo tras 2 sesiones completas seguidas, movilidad con +2,5 como máximo.
+   - Cardio en `daily[dk].cardio` [{at,t,min,z:s/m/v,km,kcal}] (borrar = `del:1`; sync.js lo fusiona por `at` como `pg`). kcal = MET × peso × horas. Meta OMS: min moderados + 2× fuertes ≥ 150. Caminar ≥30 min marca el hábito `hwalk`. Tarjeta `.cd-card` bajo "Te toca".
+   - Perfil → Cuerpo: "Tu plato" (método de la mano, por sexo y objetivo, comidas locales); se agregaron trucha, quinua y pavita a PROT_FOODS.
+   - Resumen (`weekReport(offset)`): sesiones, series, récords, cardio, pasos, sueño, hábitos, proteína, músculos con menos de 10 series y cambio del peso promedio según el objetivo, con hasta 3 consejos. En Perfil → Hoy: pestañas esta semana, la pasada y el mes. En Entrenar, "Tu semana pasada" hasta cerrarla (`settings.wkSeen`).
+   - Reajuste: 10+ días sin entrenar → "sesión de regreso" (`settings.retDay`: −1 serie y −10 % al empezar). 2+ ejercicios del plan estancados (3 sesiones sin mejorar el 1RM) → tarjeta con descarga (mesoSheet) y variantes (`settings.stallSeen` por semana).
 3. **Para la tienda**: Ley 29733 y textos legales, Seguridad de los datos y declaración de app de salud en Play, justificar o quitar permisos sensibles, API 36, reglas de Firestore, Crashlytics, Google Play Billing (plan Pro).
 4. **Crecimiento**: modo entrenador (clientes con código), amigos y retos, logros, inglés.
 

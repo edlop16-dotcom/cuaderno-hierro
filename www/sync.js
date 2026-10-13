@@ -130,7 +130,7 @@ const sync = {
           const lh = syncHash(l), rh = syncHash(r), bh = bD[k];
           if (lh === rh || rh === bh) daily[k] = l;
           else if (lh === bh) daily[k] = r;
-          else { const pg = (r.pg || []).concat((l.pg || []).filter(x => !(r.pg || []).some(y => y.at === x.at))); const m = Object.assign({}, r, l); Object.keys(m).forEach(x => { const a = l[x], c = r[x]; if (typeof a === 'boolean' || typeof c === 'boolean') m[x] = !!(a || c); else if (x === 'water' || /^steps/.test(x)) m[x] = Math.max(+a || 0, +c || 0); }); if (pg.length) m.pg = pg; daily[k] = m; }
+          else { const pg = (r.pg || []).concat((l.pg || []).filter(x => !(r.pg || []).some(y => y.at === x.at))); const m = Object.assign({}, r, l); Object.keys(m).forEach(x => { const a = l[x], c = r[x]; if (typeof a === 'boolean' || typeof c === 'boolean') m[x] = !!(a || c); else if (x === 'water' || /^steps/.test(x)) m[x] = Math.max(+a || 0, +c || 0); }); if (pg.length) m.pg = pg; const cdl = (r.cardio || []).concat((l.cardio || []).filter(x => !(r.cardio || []).some(y => y.at === x.at))).map(x => Object.assign({}, x, ((l.cardio || []).concat(r.cardio || [])).some(y => y.at === x.at && y.del) ? { del: 1 } : {})); if (cdl.length) m.cardio = cdl; daily[k] = m; }
         } else daily[k] = l || r;
       });
       const dkeys = Object.keys(daily).sort(); while (dkeys.length > 200) delete daily[dkeys.shift()];
