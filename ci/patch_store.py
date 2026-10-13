@@ -63,6 +63,8 @@ assert 'BillingPlugin' in s and 'setOnApplyWindowInsetsListener' in s, s
 m = 'android/app/src/main/AndroidManifest.xml'; s = open(m).read()
 s = s.replace('    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />\n', '')
 s = s.replace('<uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" android:maxSdkVersion="32" />', '<uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />')
-assert 'USE_EXACT_ALARM' not in s and 'SCHEDULE_EXACT_ALARM" />' in s
+if 'SYSTEM_ALERT_WINDOW' not in s:
+    s = s.replace('<uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />', '<uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />\n    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />', 1)
+assert 'USE_EXACT_ALARM' not in s and 'SCHEDULE_EXACT_ALARM" />' in s and 'SYSTEM_ALERT_WINDOW' in s
 open(m, 'w').write(s)
 print('API 36, Billing 8, bordes a borde y permisos listos')

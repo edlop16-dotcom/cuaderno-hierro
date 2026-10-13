@@ -65,6 +65,7 @@ public class HabitAlarmPlugin extends Plugin {
         NotificationManager nm = (NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE);
         r.put("fullScreen", Build.VERSION.SDK_INT < 34 || (nm != null && nm.canUseFullScreenIntent()));
         r.put("notif", NotificationManagerCompat.from(c).areNotificationsEnabled());
+        r.put("overlay", Build.VERSION.SDK_INT < 23 || Settings.canDrawOverlays(c));
         call.resolve(r);
     }
 
@@ -75,6 +76,7 @@ public class HabitAlarmPlugin extends Plugin {
         Uri pkg = Uri.parse("package:" + c.getPackageName());
         Intent i;
         if ("exact".equals(type) && Build.VERSION.SDK_INT >= 31) i = new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, pkg);
+        else if ("overlay".equals(type) && Build.VERSION.SDK_INT >= 23) i = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, pkg);
         else if ("fullScreen".equals(type) && Build.VERSION.SDK_INT >= 34) i = new Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT, pkg);
         else if (Build.VERSION.SDK_INT >= 26) i = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, c.getPackageName());
         else i = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, pkg);

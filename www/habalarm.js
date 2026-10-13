@@ -186,6 +186,7 @@ vSettings = function () {
   const s = state.haStatus || {};
   const warn = !HA ? '' : [
     s.exact === false ? `<div class="remind"><span>⏰</span><span>Para que suene a la hora exacta, permite <b>Alarmas y recordatorios</b>. <button class="btn small" data-act="ha-perm" data-t="exact">Permitir</button></span></div>` : '',
+    s.overlay === false ? `<div class="remind"><span>🔔</span><span>Para verlo en toda la pantalla <b>aunque estés usando el celular</b>, permite <b>Aparecer encima de otras apps</b>. <button class="btn small" data-act="ha-perm" data-t="overlay">Permitir</button></span></div>` : '',
     s.fullScreen === false ? `<div class="remind"><span>📱</span><span>Para verlo en toda la pantalla, permite <b>Notificaciones de pantalla completa</b>. <button class="btn small" data-act="ha-perm" data-t="fullScreen">Permitir</button></span></div>` : '',
   ].join('');
   const box = `<div class="ha-set">${warn}<div class="row"><div class="grow"><b>Hábitos a pantalla completa</b><div class="muted" style="font-size:12px">Los recordatorios de hábitos aparecen como en la app Recordatorios: ✓ hecho, ✕ descartar o aplazar.</div></div>

@@ -115,6 +115,13 @@ public class HabitAlarms {
             .addAction(0, "Aplazar 15 min", actionPI(c, A_SNOOZE, id, item));
         NotificationManager nm = (NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm != null) nm.notify(id, b.build());
+        /* Con el celular en uso Android solo muestra la notificación arriba. Si el usuario dio
+           "Aparecer encima de otras apps", abrimos la pantalla completa igual (como la app Recordatorios). */
+        try {
+            android.os.PowerManager pm = (android.os.PowerManager) c.getSystemService(Context.POWER_SERVICE);
+            boolean on = pm == null || pm.isInteractive();
+            if (on && android.os.Build.VERSION.SDK_INT >= 23 && android.provider.Settings.canDrawOverlays(c)) c.startActivity(full);
+        } catch (Exception ignored) {}
     }
 
     static void dismiss(Context c, int id) {

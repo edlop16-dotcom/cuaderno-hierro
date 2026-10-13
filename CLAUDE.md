@@ -56,7 +56,7 @@ App personal de gimnasio de Edgar (Edgwr), en español. Celular Android y reloj 
 
 ## Alarmas de hábitos (nativo)
 - `habalarm.js` + plugin propio `HabitAlarm` en `ci/native/*.java`, que `ci/patch_native.py` copia al proyecto Android y registra en MainActivity (permisos USE_FULL_SCREEN_INTENT, USE_EXACT_ALARM). Recordatorio tipo `hab` con `r.hab` (clave del hábito); los tipos viejos crea/prot/omega también cuentan como hábitos.
-- A la hora: pantalla completa nativa (✕, ✓ hecho, aplazar N min). Lo marcado con la app cerrada se lee con `HabitAlarm.takeEvents()` al abrir. Con la app abierta o en web se muestra `#hab-alarm`.
+- A la hora: pantalla completa nativa (✕, ✓ hecho, aplazar N min). Android solo la abre con el celular bloqueado o la pantalla apagada; con el celular en uso muestra la notificación arriba. Si el usuario da "Aparecer encima de otras apps" (SYSTEM_ALERT_WINDOW, `status().overlay`, `openSettings({type:"overlay"})`), `HabitAlarms.show` abre la actividad igual. Lo marcado con la app cerrada se lee con `HabitAlarm.takeEvents()` al abrir. Con la app abierta o en web se muestra `#hab-alarm`.
 - `.github/workflows/android-beta.yml` compila en cada push a `beta` sin publicar release (solo comprueba).
 - Para Google Play: USE_EXACT_ALARM y pantalla completa requieren justificar el uso (o quitarlos).
 
