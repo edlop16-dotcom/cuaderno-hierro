@@ -230,3 +230,9 @@ if (BS) {
   setInterval(() => { if (document.visibilityState !== 'hidden') stepsRefresh(); }, 120000);
 }
 render();
+
+/* Ahorro de batería: el sensor de pulso se apaga cuando la pantalla se apaga o la app queda atrás */
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') { if (hr.on) { hrStop(); hr.paused = true; } }
+  else if (hr.paused) { hr.paused = false; if (hrWanted()) hrStart(); }
+});

@@ -128,7 +128,8 @@ function distM(a, b) {
 let geoBusy = false, geoAt = 0;
 function autoGym(force) {
   const L = gymLocs(), ids = Object.keys(L).filter(id => state.gyms.some(g => g.id === id));
-  if (!ids.length || state.settings.autoGym === false || isWatch() || state.draft || geoBusy) return;
+  /* en el reloj (tiene sensor de pulso) no se usa el GPS: gasta mucha batería */
+  if (!ids.length || state.settings.autoGym === false || isWatch() || (state.bs && state.bs.hr) || state.draft || geoBusy) return;
   if (!force && Date.now() - geoAt < 10 * 60000) return;
   geoBusy = true; geoAt = Date.now();
   getPos().then(c => {
