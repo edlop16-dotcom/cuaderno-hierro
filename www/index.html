@@ -875,7 +875,9 @@ function activePlan() {
   const want = (state.settings.planByGym || {})[g];
   return list.find(p => p.id === want) || list[0] || null;
 }
-const isWatch = () => state.settings.watch === true || (state.settings.watch === null && Math.min(innerWidth, innerHeight) < 330);
+/* Reloj: pantalla muy chica, o casi cuadrada y pequeña en un equipo táctil (p. ej. M99: ~410×500) */
+const watchGeom = () => { const a = Math.min(innerWidth, innerHeight), b = Math.max(innerWidth, innerHeight); let touch = false; try { touch = matchMedia('(pointer: coarse)').matches; } catch (e) {} return a < 330 || (touch && b < 720 && b / a < 1.45); };
+const isWatch = () => state.settings.watch === true || (state.settings.watch == null && watchGeom());
 function safeRender() { const a = document.activeElement; if (a && a.tagName === 'INPUT' && a.closest('#app')) return; if (!$('#sheet').hidden) return; render(); }
 
 /* ================== Motor de progresión (doble progresión) ================== */
@@ -1690,7 +1692,7 @@ document.addEventListener('change', ev => {
     return;
   }
   if (ev.target.id === 'sel-ex') { state.progEx = ev.target.value; render(); } });
-addEventListener('resize', () => { if (state.settings.watch === null) safeRender(); });
+addEventListener('resize', () => { if (state.settings.watch == null) safeRender(); });
 
 const hadPlans = !!LS.get('plans', null);
 const hadGyms = !!LS.get('gyms', null);
@@ -1766,5 +1768,7 @@ cloud.init();
 <script src="pulse.js"></script>
 <script src="health.js"></script>
 <script src="sleep.js"></script>
+<script src="train2.js"></script>
+<script src="watch2.js"></script>
 </body>
 </html>

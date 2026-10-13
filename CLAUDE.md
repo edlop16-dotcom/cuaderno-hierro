@@ -18,7 +18,7 @@ App personal de gimnasio de Edgar (Edgwr), en español. Celular Android y reloj 
   vTrain = function () { ... _x() ... };
   ```
   Sirve igual para render, vTrain, vSession, finishSession, markSet, vSettings, header y previewSheet.
-- Orden de scripts: library.js, icons.js, (inline en index.html), coach.js, media.js, native.js, skin.js, config.js, sync.js, undo.js, layout.js, session.js, stats.js, safety.js, imports.js, rir.js, body.js, warm.js, mmap.js, swap.js, ready.js, nutri.js, share.js, meso.js, level.js, play.js, ai.js, web.js, plan2.js, burn.js, routines.js, keep.js, exview.js, picker.js, daydel.js, navord.js, habalarm.js, pulse.js, health.js, sleep.js. Un archivo nuevo va al final.
+- Orden de scripts: library.js, icons.js, (inline en index.html), coach.js, media.js, native.js, skin.js, config.js, sync.js, undo.js, layout.js, session.js, stats.js, safety.js, imports.js, rir.js, body.js, warm.js, mmap.js, swap.js, ready.js, nutri.js, share.js, meso.js, level.js, play.js, ai.js, web.js, plan2.js, burn.js, routines.js, keep.js, exview.js, picker.js, daydel.js, navord.js, habalarm.js, pulse.js, health.js, sleep.js, train2.js, watch2.js. Un archivo nuevo va al final.
 - Estado en `state` (sessions, plans, settings, draft). Se guarda en localStorage con claves `cdh.*`: `saveLocal()` para sesiones y `savePlans()` para settings y planes.
 - Navegación de 4 pestañas, ordenable (navord.js, `settings.navOrder`; por defecto Perfil · Entrenar · Rutinas · Ejercicios · Ajustes; Ajustes es el 5.º botón para el reloj). Los hábitos solo se muestran en Perfil. Perfil tiene las subpestañas progress, history y settings (`vProfile`).
 - Sesión en pantalla completa `#sx` con páginas deslizables. Los hábitos y las rachas están en stats.js. Los avisos de lesión y el dolor muscular están en safety.js (`ZONES`, `zonesOf`).
@@ -29,6 +29,11 @@ App personal de gimnasio de Edgar (Edgwr), en español. Celular Android y reloj 
 - Las fotos de ejercicios son de Free Exercise DB (dominio público), en `www/ex/<key>-0/1.webp`.
 - Para importar historial: `importSessions(list)` en imports.js (Hevy CSV y Symmetry).
 - Estilos: se agregan al final de `skin.css`. En flex, poner `flex-shrink:0` a los hijos de `.sheet-card` y `.sx-page`. Antes de crear una clase nueva, comprobar que no choque con otra existente (ya pasó con `.sync` y `.prof`).
+
+## Entreno: ajustes tras el primer uso real (train2.js) y modo reloj (watch2.js)
+- train2.js: al enfocar peso/reps se selecciona todo; lo escrito se copia a las series siguientes no hechas que tenían el mismo valor o estaban vacías (`copyForward`). Anillo de avance y ✓ en la franja `.sx-th`. Botón del ejercicio (antes "cambiar") abre `busySheet`: hacer ahora otro de la rutina (`doNow` reordena el borrador), cambiar por parecido (swap.js) o agregar de la lista (`pkOpenDraft`: el selector en modo borrador; `addToDraft`/`draftExFrom`, solo para hoy). `coachBox` respeta la Preparación del día (mid/low). `warmBox` reescrito con explicación y "pon en cada lado". Si el descanso acaba con el pulso > `hrReady()`, `restHold` espera hasta 75 s.
+- watch2.js: `watchGeom()` (index.html) activa el modo reloj en pantallas táctiles casi cuadradas < 720 px (M99) además de < 330 px; migración local `cdh.watchMig1` quita un `watch:false` antiguo. `vWatchSession` nuevo: puntos de avance, calentamiento paso a paso, peso/reps con −/+ y teclado propio (`w2.pad`, sin teclado del sistema), "⋯ Más" (cómo se hace, máquina ocupada, agregar, ±serie, vista completa, terminar). Descanso a pantalla completa en `#rest.w2-rest` (se arma una vez y se actualiza): tiempo, pulso, RIR de la serie (`state.wLast`) y qué sigue. Sin CSS grid ni `gap` en estos estilos (WebView viejo).
+- En el reloj no se usa GPS y el sensor de pulso se apaga con la pantalla apagada (batería).
 
 ## Alarmas de hábitos (nativo)
 - `habalarm.js` + plugin propio `HabitAlarm` en `ci/native/*.java`, que `ci/patch_native.py` copia al proyecto Android y registra en MainActivity (permisos USE_FULL_SCREEN_INTENT, USE_EXACT_ALARM). Recordatorio tipo `hab` con `r.hab` (clave del hábito); los tipos viejos crea/prot/omega también cuentan como hábitos.
