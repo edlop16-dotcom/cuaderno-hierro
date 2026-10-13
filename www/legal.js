@@ -8,8 +8,8 @@
 var LEGAL = {
   v: '2026-10-13',
   date: '13 de octubre de 2026',
-  owner: '[NOMBRE DEL TITULAR]',
-  contact: '[CORREO DE CONTACTO]',
+  owner: 'Edgar Hugo Lopez Luna',
+  contact: 'edgtiens@gmail.com',
   minAge: 14,
 };
 LEGAL.privacy = '<p class="muted">Última actualización: ' + LEGAL.date + '</p>'

@@ -93,7 +93,7 @@ Estatura: en la app 173 cm (HISTORY.cm); en un chat dijo 1,70 m, por confirmar (
    - API 36 con Capacitor 6: `patch_store.py` (después de patch_native.py) pone compile/target 36, AGP 8.10.1, Gradle 8.13, Kotlin 2.1.21 y minSdk 22. En Android 15+ MainActivity aplica márgenes con los insets (barras, recorte, teclado) porque el borde a borde es obligatorio.
    - Permisos: se quitó USE_EXACT_ALARM; SCHEDULE_EXACT_ALARM sin maxSdk (el usuario lo concede; habalarm.js ya muestra el botón).
    - Billing 8: plugin `Billing` (getProducts{ids} → offers con phases, purchase{productId, offerToken}, getActive, manage). `PRO_CFG.productId='forja_pro'`, planes base `mensual`/`anual`; `settings.pro.until` = ahora + 3 días si está activa, y se revisa al abrir. `PRO_CFG.enforce` sigue en false hasta crear la suscripción.
-   - Legales: `LEGAL` (privacy, terms, minAge 14, owner/contact por completar). Páginas `www/privacidad.html`, `terminos.html` y `eliminar-cuenta.html` (web.yml ya no copia docs/).
+   - Legales: `LEGAL` (privacy, terms, minAge 14, owner y contact = Edgar y su correo personal por ahora). Páginas `www/privacidad.html`, `terminos.html` y `eliminar-cuenta.html` (web.yml ya no copia docs/).
    - Consentimiento expreso en el paso 8 de la bienvenida (`settings.consent` {v, at}). El aviso de salud de play.js no sale mientras la bienvenida está pendiente.
    - Errores: `errPush` (window error / unhandledrejection, sin errores de red) → `cdh.errq` → Firestore `errors` (solo con cuenta, `settings.errRep` en Ajustes, campo `exp` para TTL de 90 días). Regla create-only en ci/firestore.rules.
 4. **Crecimiento**: modo entrenador (clientes con código), amigos y retos, logros, inglés.
