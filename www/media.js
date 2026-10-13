@@ -74,12 +74,14 @@ function miniFig(name) {
   const x = libFind(name); if (!x || !alertCfg().fig) return '';
   return `<button class="fig-mini" data-act="how" data-name="${esc(name)}" data-fig="${x.key}" aria-label="Ver cómo se hace ${esc(name)}">${figSVG(x, 0, false)}</button>`;
 }
-let miniT0 = performance.now(), miniLast = 0;
+let miniT0 = performance.now(), miniLast = 0, miniOn = false;
+/* La animación solo corre mientras haya figuras en pantalla (antes corría siempre a 60 fps y gastaba batería) */
 function miniLoop(now) {
+  const els = document.querySelectorAll('#app .fig-mini[data-fig]');
+  if (!els.length || document.hidden || reduceMotion()) { miniOn = false; return; }
   requestAnimationFrame(miniLoop);
-  if (now - miniLast < 40 || document.hidden || reduceMotion()) return;
+  if (now - miniLast < 40) return;
   miniLast = now;
-  const els = document.querySelectorAll('#app .fig-mini[data-fig]'); if (!els.length) return;
   const vh = innerHeight;
   els.forEach((el, i) => {
     const r = el.getBoundingClientRect(); if (r.bottom < 0 || r.top > vh) return;
@@ -87,7 +89,11 @@ function miniLoop(now) {
     el.innerHTML = figSVG(x, figT(now - miniT0 + i * 450), false);
   });
 }
-requestAnimationFrame(miniLoop);
+function miniKick() { if (!miniOn && document.querySelector('#app .fig-mini[data-fig]')) { miniOn = true; requestAnimationFrame(miniLoop); } }
+const _renderMini = render;
+render = function () { _renderMini(); miniKick(); };
+document.addEventListener('visibilitychange', () => { if (!document.hidden) miniKick(); });
+miniKick();
 
 /* ================== Videos guardados en el teléfono (sin internet) ================== */
 const VID = {

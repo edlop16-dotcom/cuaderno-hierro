@@ -1105,3 +1105,29 @@ body.watch button{-webkit-tap-highlight-color:transparent}
   .wr-btns button{height:44px}
   .w2-keys button{height:46px;font-size:22px}.w2-padv b{font-size:36px;min-height:40px}.w2-padok button{height:46px}
 }
+
+/* ===== Revisión completa (polish.js) ===== */
+/* Fotos del ejercicio sin franjas negras (el botón era cuadrado y la foto 3:2) */
+.ph-btn.sx-fig,.ph-btn.pv-fig{aspect-ratio:auto;padding:0;background:transparent}
+/* Solo se anima la foto del ejercicio que estás viendo */
+.sx-page .ph.anim .b{animation-play-state:paused}
+.sx-page.cur .ph.anim .b{animation-play-state:running}
+/* Título del ejercicio completo y botones debajo */
+.sx-page .card.ex > .row:first-child{flex-wrap:wrap;row-gap:8px}
+.sx-page .card.ex > .row:first-child > h3{flex:1 1 calc(100% - 28px);min-width:0}
+/* Escritorio: el entrenamiento en una columna legible */
+@media (min-width:700px){
+  .sx-page{align-items:center}
+  .sx-page > *{width:100%;max-width:620px}
+}
+/* Resumen del día (Perfil → Hoy) */
+.day-strip{display:flex;gap:8px;flex-shrink:0}
+.day-strip .ds-i{flex:1;display:flex;flex-direction:column;align-items:center;padding:10px 4px;border-radius:14px;background:var(--surface);border:1px solid var(--line2,rgba(255,255,255,.08))}
+.day-strip .ds-i b{font-size:18px;font-weight:800}
+.day-strip .ds-i small{font-size:11px;color:var(--muted);margin-top:2px}
+.day-strip .ds-i.ok{border-color:rgba(46,229,157,.45)}
+.day-strip .ds-i.ok b{color:var(--ok)}
+/* Reloj: sin desenfoques ni sombras ni animaciones decorativas (gastan batería) */
+body.watch *,body.watch *::before,body.watch *::after{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+body.watch .card,body.watch .sheet-card,body.watch .btn,body.watch .w2-mi,body.watch .w2-go{box-shadow:none!important}
+body.watch .ph.anim .b,body.watch #app.enter,body.watch #app.enter > *{animation:none!important}

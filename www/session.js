@@ -20,7 +20,8 @@ const thumb = name => { const pk = photoKey(name); if (pk) return `<img class="t
 /* ---------- Vista previa antes de empezar ---------- */
 function previewSheet(pid, did) {
   const { p, d } = findDay(pid, did); if (!p || !d) return;
-  const secs = d.exercises.reduce((a, e) => a + e.sets * (45 + (e.rest || 90)), 0);
+  /* duración realista: series + descansos + 1,5 min por cambio de máquina + 5 min de bici y calentamiento */
+  const secs = d.exercises.reduce((a, e) => a + e.sets * (45 + (e.rest || 90)) + 90, 0) + 300;
   const groups = [...new Set(d.exercises.map(e => (libFind(e.name) || {}).group || e.type))].slice(0, 3).join(' · ');
   const first = d.exercises[0];
   openSheet(`<div class="pv-hero" style="--tc:${typeRgb(first ? first.type : '')}">${first ? bigFig(first.name, 'pv-fig') : ''}<button class="icon-btn pv-x" data-act="sheet-close" aria-label="Cerrar">${ic('x', 18)}</button></div>
@@ -143,12 +144,16 @@ document.addEventListener('click', ev => {
 }, true);
 
 /* Animar la figura de la vista previa */
-let pvT0 = performance.now();
-(function pvLoop(now) {
+let pvT0 = performance.now(), pvOn = false;
+function pvLoop(now) {
+  const el = document.querySelector('#sheet .pv-fig[data-fig]');
+  if (!el || document.hidden || reduceMotion()) { pvOn = false; return; }
   requestAnimationFrame(pvLoop);
-  const el = document.querySelector('#sheet .pv-fig[data-fig]'); if (!el || document.hidden || reduceMotion()) return;
   const x = LIB.find(l => l.key === el.dataset.fig); if (x) el.innerHTML = figSVG(x, figT(now - pvT0), false);
-})(performance.now());
+}
+/* Solo anima mientras la vista previa con figura está abierta */
+const _previewPv = previewSheet;
+previewSheet = function (pid, did) { _previewPv(pid, did); if (!pvOn && document.querySelector('#sheet .pv-fig[data-fig]')) { pvOn = true; pvT0 = performance.now(); requestAnimationFrame(pvLoop); } };
 
 
 /* ---------- Entrenamiento olvidado: preguntar y ajustar la duración ---------- */
