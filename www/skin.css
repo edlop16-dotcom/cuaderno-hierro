@@ -1250,3 +1250,31 @@ body.onb-open #sheet{z-index:130}
 .pb-box{width:22px;height:22px;border-radius:7px;border:2px solid var(--muted);margin-right:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--accent-ink)}
 .pb-consent.on .pb-box{background:var(--grad);border-color:transparent}
 .err-card h3{margin:0 0 6px}
+
+/* ===== Fase 4: logros, amigos y modo entrenador (social.js) ===== */
+.bd-badges .pb-ic,.soc-card .pb-ic,.tr-card .pb-ic,.cl-card .pb-ic{width:34px;height:34px;margin-right:10px}
+.bd-badges .row h3,.soc-card .row h3,.tr-card .row h3,.cl-card .row h3{margin:0}
+.bdg-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px}
+.bdg{background:var(--surface2);border:1px solid var(--line);border-radius:14px;padding:10px 4px 8px;text-align:center;display:flex;flex-direction:column;align-items:center;opacity:.55}
+.bdg.on{opacity:1;border-color:rgba(255,176,32,.45);background:linear-gradient(160deg,rgba(255,176,32,.14),rgba(255,106,31,.05))}
+.bdg-ic{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--surface3);color:var(--muted)}
+.bdg.on .bdg-ic{background:var(--grad);color:var(--accent-ink)}
+.bdg small{font-size:10.5px;line-height:1.2;margin-top:6px;color:var(--fg)}
+.bdg-p{display:block;width:80%;height:4px;border-radius:3px;background:var(--surface3);margin-top:6px;overflow:hidden}
+.bdg-p b{display:block;height:100%;background:var(--accent2)}
+.soc-list{display:flex;flex-direction:column;margin-top:4px}
+.soc-row{display:flex;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);flex-shrink:0}
+.soc-row small{display:block;color:var(--muted);font-size:11.5px}
+.soc-row.me b{color:var(--accent2)}
+.soc-pos{width:26px;height:26px;border-radius:50%;background:var(--surface3);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;margin-right:10px;flex-shrink:0}
+.soc-row:first-child .soc-pos{background:var(--grad);color:var(--accent-ink)}
+.soc-row > b.num{font-size:18px;margin-left:8px}
+.soc-u{margin:0 4px 0 4px;color:var(--muted);font-size:11px}
+.icon-btn.sm{width:30px;height:30px;min-height:30px}
+.so-code{width:100%;box-sizing:border-box;min-height:56px;font-size:26px;letter-spacing:.3em;text-align:center;text-transform:uppercase;border-radius:14px;background:var(--surface2);border:1px solid var(--line);color:var(--fg);flex-shrink:0}
+.tr-offer{background:var(--grad-soft);border:1px solid rgba(255,106,31,.35);border-radius:14px;padding:10px 12px;font-size:13.5px;line-height:1.45;margin-bottom:8px}
+.cl-ses details{border-bottom:1px solid var(--line);padding:8px 0;flex-shrink:0}
+.cl-ses summary{cursor:pointer;font-size:13.5px}
+.cl-ex{font-size:12.5px;margin:6px 0 0 12px}
+.cl-ex small{display:block;color:var(--muted);font-style:italic}
+.coachmode-card h3{margin:0 0 6px}

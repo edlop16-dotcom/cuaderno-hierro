@@ -6,10 +6,10 @@
    Antes de publicar: completar LEGAL.owner y LEGAL.contact.
    ========================================================================== */
 var LEGAL = {
-  v: '2026-10-13',
+  v: '2026-10-13b',
   date: '13 de octubre de 2026',
   owner: 'Edgar Hugo Lopez Luna',
-  contact: 'edgtiens@gmail.com',
+  contact: 'edlopezluna@gmail.com',
   minAge: 14,
 };
 LEGAL.privacy = '<p class="muted">Última actualización: ' + LEGAL.date + '</p>'
@@ -24,6 +24,7 @@ LEGAL.privacy = '<p class="muted">Última actualización: ' + LEGAL.date + '</p>
   + '<li><b>Sueño estimado con el celular:</b> si das "Acceso a datos de uso", la app lee en tu teléfono a qué hora se apagó y encendió la pantalla. Solo se guarda el resultado (hora de dormir, de despertar y minutos).</li>'
   + '<li><b>Fotos de progreso:</b> se guardan <b>solo en tu teléfono</b> y nunca se suben a internet.</li>'
   + '<li><b>Reportes de errores (opcional):</b> mensaje del error, versión de la app y tipo de equipo, sin tu nombre ni tu correo.</li>'
+  + '<li><b>Amigos y entrenador (opcional):</b> si activas "Amigos y retos", tus amigos con tu código ven tu nombre, tu objetivo y tus números de la semana (sesiones, series, minutos de cardio, logros), nunca tus pesos, tu cuerpo ni tu salud. Si compartes con un entrenador, él ve tus últimas sesiones, tu rutina, tu peso promedio y las molestias que marcaste, y puede enviarte rutinas. Puedes quitar amigos o dejar de compartir cuando quieras.</li>'
   + '<li><b>Suscripción Pro:</b> el estado de tu suscripción. El pago lo procesa Google Play; no recibimos tus datos de pago.</li></ul>'
   + '<h4>3. Para qué los usamos</h4>'
   + '<p>Solo para que la app funcione: armar y ajustar tu plan, mostrar tu progreso, calcular sugerencias, recordatorios y calorías, y sincronizar tus equipos. <b>No vendemos tus datos, no mostramos publicidad, no usamos analítica de terceros y no los usamos para fines comerciales.</b></p>'

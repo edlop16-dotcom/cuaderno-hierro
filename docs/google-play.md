@@ -14,7 +14,7 @@
 
 ## Pasos manuales (los haces tú, en este orden)
 1. **Datos legales** en `www/legal.js`: por ahora `owner` = Edgar Hugo Lopez Luna y `contact` = su correo personal. Cuando haya empresa y dominio, cambiar esas dos líneas, subir `v` y `date` y avisar en la app.
-2. **Publicar las reglas de Firestore**: copia `ci/firestore.rules` en Firebase Console → Firestore → Reglas → Publicar.
+2. **Publicar las reglas de Firestore** (incluyen las de amigos y entrenador: `social`, `codes`, `share`, `inbox`): copia `ci/firestore.rules` en Firebase Console → Firestore → Reglas → Publicar.
 3. **Borrado automático de reportes**: Firebase Console → Firestore → TTL → política sobre la colección `errors`, campo `exp`.
 4. **Activar GitHub Pages** (Settings → Pages → Source: GitHub Actions). Las URLs para Play quedan así:
    - Política: `https://edlop16-dotcom.github.io/cuaderno-hierro/privacidad.html`
@@ -50,6 +50,7 @@
 | Ubicación → Ubicación precisa | Sí, solo si guarda la ubicación del gimnasio | Opcional | Funciones de la app |
 | Información financiera → Historial de compras | Sí, solo si se suscribe (estado de la suscripción) | Opcional | Funciones de la app |
 | Información y rendimiento de la app → Registros de fallos | Sí, anónimos | Opcional (se puede desactivar) | Análisis (arreglar errores) |
+| Información personal → Nombre y actividad compartida con amigos/entrenador | Sí, solo si el usuario lo activa (lo inicia el usuario) | Opcional | Funciones de la app (retos, entrenador) |
 | Fotos y videos | **No**: las fotos de progreso no salen del teléfono | — | — |
 | Contactos, mensajes, publicidad, identificadores de dispositivo | **No** | — | — |
 

@@ -18,7 +18,7 @@ App personal de gimnasio de Edgar (Edgwr), en español. Celular Android y reloj 
   vTrain = function () { ... _x() ... };
   ```
   Sirve igual para render, vTrain, vSession, finishSession, markSet, vSettings, header y previewSheet.
-- Orden de scripts: library.js, icons.js, (inline en index.html), coach.js, media.js, native.js, skin.js, config.js, sync.js, undo.js, layout.js, session.js, stats.js, safety.js, imports.js, rir.js, body.js, warm.js, mmap.js, swap.js, ready.js, nutri.js, share.js, meso.js, level.js, play.js, ai.js, web.js, plan2.js, burn.js, routines.js, keep.js, exview.js, picker.js, daydel.js, navord.js, habalarm.js, pulse.js, health.js, sleep.js, train2.js, watch2.js, legal.js, polish.js, pub.js, smart.js, store.js. Un archivo nuevo va al final (legal.js va antes de polish.js porque lo usa la bienvenida).
+- Orden de scripts: library.js, icons.js, (inline en index.html), coach.js, media.js, native.js, skin.js, config.js, sync.js, undo.js, layout.js, session.js, stats.js, safety.js, imports.js, rir.js, body.js, warm.js, mmap.js, swap.js, ready.js, nutri.js, share.js, meso.js, level.js, play.js, ai.js, web.js, plan2.js, burn.js, routines.js, keep.js, exview.js, picker.js, daydel.js, navord.js, habalarm.js, pulse.js, health.js, sleep.js, train2.js, watch2.js, legal.js, polish.js, pub.js, smart.js, store.js, social.js. Un archivo nuevo va al final (legal.js va antes de polish.js porque lo usa la bienvenida).
 - Estado en `state` (sessions, plans, settings, draft). Se guarda en localStorage con claves `cdh.*`: `saveLocal()` para sesiones y `savePlans()` para settings y planes.
 - Navegación de 4 pestañas, ordenable (navord.js, `settings.navOrder`; por defecto Perfil · Entrenar · Rutinas · Ejercicios · Ajustes; Ajustes es el 5.º botón para el reloj). Los hábitos solo se muestran en Perfil. Perfil tiene las subpestañas Hoy · Progreso · Cuerpo · Historial (`state.profSub` = hoy/progress/body/history; polish.js): "Hoy" muestra `dayStrip()` (hábitos x/y, entreno, pasos, sueño) y la tarjeta de hábitos. Ajustes es página propia (`vProfile('settings')`), ordenada con `SET_ORDER`: cuenta y recordatorios primero, privacidad al final.
 - Sesión en pantalla completa `#sx` con páginas deslizables. Los hábitos y las rachas están en stats.js. Los avisos de lesión y el dolor muscular están en safety.js (`ZONES`, `zonesOf`).
@@ -96,7 +96,13 @@ Estatura: en la app 173 cm (HISTORY.cm); en un chat dijo 1,70 m, por confirmar (
    - Legales: `LEGAL` (privacy, terms, minAge 14, owner y contact = Edgar y su correo personal por ahora). Páginas `www/privacidad.html`, `terminos.html` y `eliminar-cuenta.html` (web.yml ya no copia docs/).
    - Consentimiento expreso en el paso 8 de la bienvenida (`settings.consent` {v, at}). El aviso de salud de play.js no sale mientras la bienvenida está pendiente.
    - Errores: `errPush` (window error / unhandledrejection, sin errores de red) → `cdh.errq` → Firestore `errors` (solo con cuenta, `settings.errRep` en Ajustes, campo `exp` para TTL de 90 días). Regla create-only en ci/firestore.rules.
-4. **Crecimiento**: modo entrenador (clientes con código), amigos y retos, logros, inglés.
+4. **Crecimiento** — HECHA en beta salvo el inglés (social.js):
+   - Logros (`BADGES`, `badgeStats()` con caché): entrenos, semanas cumpliendo, récords, toneladas, cardio, hábitos y madrugador. Tarjeta en Perfil → Progreso; aviso al ganar uno (`settings.badgesSeen`, la primera vez se marcan sin aviso).
+   - Firestore: `codes/{code}` → {acc} (6 letras, se crea una vez); `social/{acc}` {name, j: resumen semanal}; `share/{acc}` {trainers[], j: últimas 8 sesiones, rutina, peso promedio, molestias}; `inbox/{acc}/items` (type `client` o `plan`). Reglas en ci/firestore.rules. Solo con cuenta y no en el reloj (`socAuth()`).
+   - Amigos y retos (`settings.social`, `settings.friends`): ranking de la semana por sesiones, series o cardio en Perfil → Hoy. Se publica como máximo cada 10 min y al terminar una sesión.
+   - Entrenador: el alumno escribe el código del entrenador (`settings.trainers`) y se crea `share/{acc}` + aviso en la bandeja del entrenador. El entrenador activa "Modo entrenador" en Ajustes (`settings.coachMode`), ve "Mis alumnos" (`settings.clients`), abre la ficha y envía una rutina de su gimnasio activo; el alumno la acepta (se agrega y activa) o la rechaza.
+   - Pruebas: soct.py con un Firestore simulado en Python (dos usuarios).
+   - Inglés: pendiente; requiere sacar todos los textos a un diccionario (trabajo grande aparte).
 
 ## Hoja de ruta (pedida por Edgar el 11-oct-2026)
 **Próximas versiones**
