@@ -206,3 +206,8 @@ habManage = function (edit) {
   });
 };
 scheduleSoon();
+
+/* Al volver de los ajustes del sistema (o reabrir la app), releer los permisos: el aviso desaparece si ya se dieron */
+function haRefresh() { if (!HA) return; try { HA.status().then(s => { const ch = JSON.stringify(s) !== JSON.stringify(state.haStatus || {}); state.haStatus = s; if (ch && state.tab === 'settings' && $('#sheet').hidden) render(); }).catch(() => {}); } catch (e) {} }
+document.addEventListener('visibilitychange', () => { if (!document.hidden) setTimeout(haRefresh, 600); });
+try { if (CAP && CAP.App) CAP.App.addListener('resume', () => setTimeout(haRefresh, 600)); } catch (e) {}
