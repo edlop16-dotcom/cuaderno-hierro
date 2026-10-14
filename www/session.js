@@ -56,7 +56,7 @@ vSession = function () {
       <button class="btn primary small sx-fin" data-act="fin-ask">Terminar</button>
     </div>
     <div class="sx-prog"><i style="width:${all ? Math.round(done / all * 100) : 0}%"></i></div>
-    <div class="sx-strip" id="sx-strip">${d.exercises.map((e, i) => `<button class="sx-th ${i === cur ? 'on' : ''} ${exComplete(e) ? 'done' : ''}" data-act="sx-go" data-i="${i}" aria-label="${esc(e.name)}" style="--tc:${typeRgb(e.type)}">${thumb(e.name)}${exComplete(e) ? `<span class="ok">${ic('check', 12)}</span>` : ''}</button>`).join('')}</div>
+    <div class="sx-strip" id="sx-strip">${d.exercises.map((e, i) => `<button class="sx-th ${i === cur ? 'on' : ''} ${exComplete(e) ? 'done' : ''}" data-act="sx-go" data-i="${i}" aria-label="${esc(e.name)}" style="--tc:${typeRgb(e.type)}">${thumb(e.name)}${exComplete(e) ? `<span class="ok">${ic('check', 12)}</span>` : ''}</button>`).join('')}<button class="sx-th-add" data-act="add-ex" data-ex="${d.exercises.length - 1}" aria-label="Agregar ejercicio">${ic('plus', 22)}</button></div>
     <div class="sx-pager" id="sx-pager">${cards.map((c, i) => { const e = d.exercises[i]; return `<section class="sx-page" data-i="${i}" style="--tc:${typeRgb(e.type)}">
       <div class="sx-hero">${bigFig(e.name, 'sx-fig')}<span class="sx-n num">${i + 1}/${d.exercises.length}</span><button class="sx-st" data-act="ex-stats" data-name="${esc(e.name)}">${ic('trending-up', 14)} Progreso</button></div>
       ${c}

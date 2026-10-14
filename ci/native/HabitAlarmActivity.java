@@ -17,6 +17,15 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.media.AudioAttributes;
+import android.media.MediaPlayer;
+import android.media.RingtoneManager;
+import android.net.Uri;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Vibrator;
+import android.os.VibrationEffect;
+import android.view.KeyEvent;
 
 import org.json.JSONObject;
 
@@ -25,6 +34,56 @@ public class HabitAlarmActivity extends Activity {
     private JSONObject item;
     private int snoozeMin = 15;
     private TextView snoozeBtn;
+    private MediaPlayer player;
+    private Vibrator vib;
+    private final Handler h = new Handler(Looper.getMainLooper());
+
+    /* Suena como una alarma (canal de alarma: se oye aunque el celular esté en silencio o vibración),
+       en bucle hasta tocar un botón o subir/bajar el volumen; se calla solo al minuto. */
+    private void ring() {
+        try {
+            Uri u = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+            if (u == null) u = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
+            if (u == null) u = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+            if (u != null) {
+                player = new MediaPlayer();
+                player.setAudioAttributes(new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ALARM).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build());
+                player.setDataSource(this, u);
+                player.setLooping(true);
+                player.prepare();
+                player.start();
+            }
+        } catch (Throwable t) { quiet(); }
+        try {
+            vib = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+            long[] pat = new long[]{0, 600, 400, 600, 1200};
+            if (vib != null) {
+                if (Build.VERSION.SDK_INT >= 26) vib.vibrate(VibrationEffect.createWaveform(pat, 0), new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ALARM).build());
+                else vib.vibrate(pat, 0);
+            }
+        } catch (Throwable t) { }
+        h.postDelayed(this::quiet, 60000);
+    }
+
+    private void quiet() {
+        try { if (player != null) { player.stop(); player.release(); } } catch (Throwable t) { }
+        player = null;
+        try { if (vib != null) vib.cancel(); } catch (Throwable t) { }
+        vib = null;
+        h.removeCallbacksAndMessages(null);
+    }
+
+    @Override
+    public void finish() { quiet(); super.finish(); }
+
+    @Override
+    protected void onDestroy() { quiet(); super.onDestroy(); }
+
+    @Override
+    public boolean onKeyDown(int code, KeyEvent e) {
+        if (code == KeyEvent.KEYCODE_VOLUME_UP || code == KeyEvent.KEYCODE_VOLUME_DOWN) { if (player != null || vib != null) { quiet(); return true; } }
+        return super.onKeyDown(code, e);
+    }
 
     private int dp(float v) { return Math.round(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, v, getResources().getDisplayMetrics())); }
 
@@ -45,6 +104,7 @@ public class HabitAlarmActivity extends Activity {
         if (Build.VERSION.SDK_INT >= 21) { w.setStatusBarColor(Color.TRANSPARENT); w.setNavigationBarColor(0xFFFF6A1F); }
         w.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
         setContentView(build());
+        if (b == null) ring();
     }
 
     private TextView text(String s, float sp, boolean bold) {
