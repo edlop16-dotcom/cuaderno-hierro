@@ -10,7 +10,7 @@ const NEWS = [
   ['clipboard-list', 'Coach semanal', 'El viernes: músculos que faltan o sobran (meta 10-20 series) y un entreno para completar el sábado o domingo. El domingo: propuesta de pesos y series para la semana siguiente, que solo cambia tu rutina si tocas Aplicar.', 'wc', 'Ver reporte'],
   ['trophy', 'Resumen al terminar', 'Al guardar una sesión: kg levantados, comparación con la última vez y qué hacer la próxima. Sonido de logro y tu música motivacional en Ajustes.', 'fs'],
   ['zap', 'Entreno rápido', 'Eliges enfoque, minutos y equipo; la app arma la sesión al momento.', 'qk', 'Probar'],
-  ['layers', 'Superseries', 'En Rutinas → Editar, toca un ejercicio y marca "Superserie con el siguiente": haces A1 y A2 sin descanso entre ellos.', 'ss'],
+  ['layers', 'Superseries', 'En Rutinas toca un día para abrirlo, luego el nombre del ejercicio, y marca "Superserie con el siguiente": haces A1 y A2 sin descanso entre ellos.', 'ss'],
   ['plus', 'Quitar o agregar series', 'Botones grandes bajo las series de cada ejercicio en la sesión (y − / + en el reloj). Solo cambian la sesión de hoy.', null],
   ['person-standing', '24 ejercicios nuevos', 'Con figura animada: burpees, remo invertido, sentarse y pararse de la silla, swing con kettlebell y más.', 'guide'],
   ['medal', 'Tu cuerpo por rangos', 'Cada músculo pintado con su mejor rango, y una medalla cuando subes.', 'rk'],
@@ -42,7 +42,7 @@ document.addEventListener('click', ev => {
   if (k === 'wc') { closeSheet(); return typeof wcSheet === 'function' && wcSheet('f'); }
   if (k === 'qk') { closeSheet(); return typeof qkSheet === 'function' && qkSheet(); }
   if (k === 'fs') return nwGo('settings', null, '.fs-set');
-  if (k === 'ss') return nwGo('plans', null, null, 'Toca Editar en un día, luego un ejercicio, y marca "Superserie con el siguiente".');
+  if (k === 'ss') return nwGo('plans', null, null, 'Toca un día para abrirlo, luego el nombre del ejercicio, y marca "Superserie con el siguiente".');
   if (k === 'guide') return nwGo('guide', null, null, 'Busca Burpees, Remo invertido o Sentarse y pararse de la silla.');
   if (k === 'rk') return nwGo('profile', 'progress', '.rk-card');
   if (k === 'al') return nwGo('settings', null, '.ha-durrow');
