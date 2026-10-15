@@ -1488,3 +1488,32 @@ input.wg-warn{outline:2px solid var(--warn);outline-offset:1px}
 .nw-it .btn{flex:none;margin-left:10px}
 .nw-set .row h3{margin:0}
 .nw-hl{box-shadow:0 0 0 2px var(--accent2),0 0 24px -4px var(--glow)!important;transition:box-shadow .3s}
+
+/* Nueva organización, tanda 1 (nav2.js): Hoy y Progreso */
+#app.v-hoy{gap:14px}
+.hoy-hero{cursor:pointer}
+.hoy-ready{display:flex;flex-direction:column;gap:8px;position:relative;z-index:1}
+.hoy-rq{font-size:12.5px;font-weight:700;color:var(--muted)}
+.hoy-chips{display:flex;gap:8px}
+.hoy-chip{flex:1;min-width:0;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:40px;padding:6px 6px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid var(--line2);color:var(--fg);font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.hoy-chip .ic{color:var(--muted)}
+.hoy-chip.on{background:rgba(255,176,32,.16);border-color:var(--accent2);color:var(--accent2)}
+.hoy-chip.on .ic{color:var(--accent2)}
+.hoy-rp{font-size:12.5px;line-height:1.4;color:var(--muted)}
+.hoy-rp b{color:var(--fg)}
+.hoy-rp.low b{color:var(--bad)}.hoy-rp.top b{color:var(--ok)}
+.hoy-pv{position:relative;z-index:1;align-self:center;display:inline-flex;align-items:center;gap:6px;background:none;border:0;color:var(--muted);font:inherit;font-size:13px;font-weight:600;cursor:pointer;padding:2px 6px}
+.streak-card.hoy-st{padding:12px 14px;gap:8px}
+.streak-card.hoy-st .flame{width:34px;height:42px}
+.streak-card.hoy-st .streak-n{font-size:30px}
+.streak-card.hoy-st .wkd i{width:28px;height:28px}
+.streak-card.hoy-st>.muted{display:none}
+.hoy-avisos{display:flex;flex-direction:column;gap:10px}
+.hoy-more{align-self:center;display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:999px;background:var(--surface);border:1px solid var(--line2);color:var(--muted);font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.hoy-alt{display:flex;flex-direction:column;gap:8px}
+.hoy-altr{display:flex;gap:8px}
+.hoy-ab{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:72px;padding:10px 6px;border-radius:16px;background:var(--surface);border:1px solid var(--line2);color:var(--fg);font:inherit;font-size:12.5px;font-weight:700;text-align:center;cursor:pointer}
+.hoy-ab .ic{color:var(--accent2)}
+.hoy-ab.on{border-color:rgba(255,77,109,.45)}
+.hoy-ab.on .ic{color:var(--bad)}
+.prog-seg button{display:inline-flex;align-items:center;justify-content:center;gap:5px}

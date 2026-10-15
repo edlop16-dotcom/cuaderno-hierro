@@ -5,19 +5,17 @@
    Para la próxima versión: cambiar NEWS_KEY y la lista NEWS.
    No sale en el reloj, en una instalación nueva (tiene la bienvenida) ni durante una sesión.
    ========================================================================== */
-const NEWS_KEY = 'n1';   // se guarda en cdh.newsSeen (local: el celular y el reloj van por separado)
+const NEWS_KEY = 'n2';   // se guarda en cdh.newsSeen (local: el celular y el reloj van por separado). n1 = 1.0.39, n2 = nueva organización
 const NEWS = [
-  ['clipboard-list', 'Coach semanal', 'El viernes: músculos que faltan o sobran (meta 10-20 series) y un entreno para completar el sábado o domingo. El domingo: propuesta de pesos y series para la semana siguiente, que solo cambia tu rutina si tocas Aplicar.', 'wc', 'Ver reporte'],
-  ['trophy', 'Resumen al terminar', 'Al guardar una sesión: kg levantados, comparación con la última vez y qué hacer la próxima. Sonido de logro y tu música motivacional en Ajustes.', 'fs'],
-  ['zap', 'Entreno rápido', 'Eliges enfoque, minutos y equipo; la app arma la sesión al momento.', 'qk', 'Probar'],
-  ['layers', 'Superseries', 'En Rutinas toca un día para abrirlo, luego el nombre del ejercicio, y marca "Superserie con el siguiente": haces A1 y A2 sin descanso entre ellos.', 'ss'],
-  ['plus', 'Quitar o agregar series', 'Botones grandes bajo las series de cada ejercicio en la sesión (y − / + en el reloj). Solo cambian la sesión de hoy.', null],
-  ['person-standing', '24 ejercicios nuevos', 'Con figura animada: burpees, remo invertido, sentarse y pararse de la silla, swing con kettlebell y más.', 'guide'],
-  ['medal', 'Tu cuerpo por rangos', 'Cada músculo pintado con su mejor rango, y una medalla cuando subes.', 'rk'],
+  ['calendar-check', 'Hoy es tu inicio', 'Al abrir la app ves tu entreno, tus hábitos para marcar en un toque, tu semana y un solo aviso a la vez.', 'hoy', 'Ver Hoy'],
+  ['battery', '¿Cómo llegas hoy? en un toque', 'Cansado, Normal o Con todo, en la tarjeta de hoy: la rutina se ajusta sola. Empezar arranca directo; «Ver ejercicios y ajustar» abre la vista previa.', 'hoy-r'],
+  ['trending-up', 'Progreso tiene su pestaña', 'Semana (resumen, mapa muscular y coach semanal), Ejercicios (curvas, récords y rangos) e Historial.', 'prog'],
+  ['settings', 'Ajustes en ⚙', 'Arriba a la derecha en todas las pantallas. La barra queda para lo que usas cada día.', 'set'],
+  ['user', 'Perfil', 'Tu cuenta, tu cuerpo, tus logros y tus amigos.', 'perfil'],
+  ['clipboard-list', 'Coach semanal', 'El viernes, músculos que faltan o sobran y un entreno para completar el fin de semana; el domingo, propuesta para la semana siguiente.', 'wc', 'Ver reporte'],
   ['alarm-clock', 'Ding dong en los hábitos', 'El recordatorio suena una vez (2-3 s) y vibra una vez, aunque el celular esté en silencio. En Ajustes puedes poner alarma de 30 s o 1 min.', 'al'],
-  ['share-2', 'Tu día para la IA', 'Toca un día de tu racha: series, tipo de día y objetivo, listo para Claude, ChatGPT o WhatsApp.', 'dd'],
 ];
-const NEWS_PUB = ['target', 'Peso inicial sugerido y misiones', 'Las rutinas nuevas llegan con un peso prudente para empezar, y tienes misiones de inicio en Entrenar.', null];
+const NEWS_PUB = ['target', 'Peso inicial sugerido y misiones', 'Las rutinas nuevas llegan con un peso prudente para empezar, y tienes misiones de inicio en Hoy.', null];
 
 function newsSheet() {
   const list = NEWS.concat(pubUser() ? [NEWS_PUB] : []);
@@ -30,7 +28,7 @@ function newsSheet() {
 }
 /* Ir a una pantalla y resaltar la tarjeta */
 function nwGo(tab, sub, sel, msg) {
-  closeSheet(); state.tab = tab; if (sub) state.profSub = sub; render(); scrollTo(0, 0);
+  closeSheet(); state.tab = tab; if (sub) { if (tab === 'progress') state.progSub = sub; else state.profSub = sub; } render(); scrollTo(0, 0);
   if (msg) toast(msg); else { const t = $('#toast'); if (t) t.hidden = true; }
   if (sel) setTimeout(() => { const el = document.querySelector(sel); if (!el) return; el.scrollIntoView({ block: 'center', behavior: 'smooth' }); el.classList.add('nw-hl'); setTimeout(() => el.classList.remove('nw-hl'), 2400); }, 150);
 }
@@ -44,9 +42,14 @@ document.addEventListener('click', ev => {
   if (k === 'fs') return nwGo('settings', null, '.fs-set');
   if (k === 'ss') return nwGo('plans', null, null, 'Toca un día para abrirlo, luego el nombre del ejercicio, y marca "Superserie con el siguiente".');
   if (k === 'guide') return nwGo('guide', null, null, 'Busca Burpees, Remo invertido o Sentarse y pararse de la silla.');
-  if (k === 'rk') return nwGo('profile', 'progress', '.rk-card');
+  if (k === 'rk') return nwGo('progress', 'ejercicios', '.rk-card');
   if (k === 'al') return nwGo('settings', null, '.ha-durrow');
   if (k === 'dd') return nwGo('train', null, '.streak-card', 'Toca un día con llama en tu racha.');
+  if (k === 'hoy') return nwGo('train', null, '.hoy-hero');
+  if (k === 'hoy-r') return nwGo('train', null, '.hoy-ready');
+  if (k === 'prog') return nwGo('progress', 'semana');
+  if (k === 'set') return nwGo('settings', null, '#btn-settings', 'Ajustes se abre con ⚙ arriba a la derecha.');
+  if (k === 'perfil') return nwGo('profile', 'body');
 }, true);
 
 /* Ajustes → Novedades */
