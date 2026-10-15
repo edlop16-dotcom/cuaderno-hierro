@@ -223,7 +223,7 @@ async function clientSheet(acc) {
 }
 async function sendPlan(acc, pid) {
   const p = state.plans.find(x => x.id === pid); if (!p) return;
-  const clean = { name: p.name, days: p.days.map(d => ({ name: d.name, weekday: d.weekday, kind: d.kind, exercises: d.exercises.map(e => ({ name: e.name, type: e.type, weight: e.weight, sets: e.sets, repsMin: e.repsMin, repsMax: e.repsMax, rest: e.rest, bar: e.bar, note: e.note })) })) };
+  const clean = { name: p.name, days: p.days.map(d => ({ name: d.name, weekday: d.weekday, kind: d.kind, exercises: d.exercises.map(e => ({ name: e.name, type: e.type, weight: e.weight, sets: e.sets, repsMin: e.repsMin, repsMax: e.repsMax, rest: e.rest, bar: e.bar, note: e.note, ss: e.ss ? 1 : undefined })) })) };
   try {
     await fb.fs('POST', 'inbox/' + acc + '/items', null, { fields: { type: fS('plan'), from: fS(socMe()), name: fS(meName()), j: fS(JSON.stringify(clean)), at: { timestampValue: new Date().toISOString() } } });
     toast(`Rutina "${p.name}" enviada.`);
