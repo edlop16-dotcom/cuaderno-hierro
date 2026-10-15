@@ -14,7 +14,7 @@ const NEWS = [
   ['plus', 'Quitar o agregar series', 'Botones grandes bajo las series de cada ejercicio en la sesión (y − / + en el reloj). Solo cambian la sesión de hoy.', null],
   ['person-standing', '24 ejercicios nuevos', 'Con figura animada: burpees, remo invertido, sentarse y pararse de la silla, swing con kettlebell y más.', 'guide'],
   ['medal', 'Tu cuerpo por rangos', 'Cada músculo pintado con su mejor rango, y una medalla cuando subes.', 'rk'],
-  ['alarm-clock', 'Alarma de hábitos breve', 'Suena 10 s por defecto; puedes poner 30 s o 1 min.', 'al'],
+  ['alarm-clock', 'Ding dong en los hábitos', 'El recordatorio suena una vez (2-3 s) y vibra una vez, aunque el celular esté en silencio. En Ajustes puedes poner alarma de 30 s o 1 min.', 'al'],
   ['share-2', 'Tu día para la IA', 'Toca un día de tu racha: series, tipo de día y objetivo, listo para Claude, ChatGPT o WhatsApp.', 'dd'],
 ];
 const NEWS_PUB = ['target', 'Peso inicial sugerido y misiones', 'Las rutinas nuevas llegan con un peso prudente para empezar, y tienes misiones de inicio en Entrenar.', null];

@@ -34,9 +34,23 @@ remText = function (r, d, at) { const k = habKeyOf(r); return k ? { title: r.lab
 
 /* Lista de alarmas de los próximos 14 días */
 state.haSnz = [];
-/* Cuánto suena la alarma nativa (HabitAlarmActivity lee `ring`): breve por defecto */
-const HA_DUR = [[10, 'Breve (10 s)'], [30, '30 s'], [60, '1 min']];
-const haRing = () => { const v = +state.settings.alarmSec; return HA_DUR.some(d => d[0] === v) ? v : 10; };
+/* Sonido del recordatorio (`ring` de cada item; HabitAlarms.isDing = menos de 30): ding dong corto por defecto,
+   o alarma en bucle de 30 s / 1 min. El valor viejo 10 ("Breve") pasa solo a ding dong. */
+const HA_DUR = [[3, 'Ding dong (corto)'], [30, 'Alarma 30 s'], [60, 'Alarma 1 min']];
+const haRing = () => { const v = +state.settings.alarmSec; return HA_DUR.some(d => d[0] === v) ? v : 3; };
+/* Ding dong en la web (en la app lo toca el lado nativo por el canal de alarma): Mi5 → Do5 con caída suave */
+function haDing() {
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.resume) actx.resume();
+    const t0 = actx.currentTime + 0.03;
+    [[659.25, 0, 1.3], [523.25, 0.55, 2]].forEach(([f, d, len]) => [[1, 0.3], [2.76, 0.08], [2, 0.06]].forEach(([m, g0]) => {
+      const o = actx.createOscillator(), g = actx.createGain(), end = m === 2.76 ? 0.5 : len;
+      o.type = 'sine'; o.frequency.value = f * m;
+      g.gain.setValueAtTime(0.0001, t0 + d); g.gain.exponentialRampToValueAtTime(g0, t0 + d + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t0 + d + end);
+      o.connect(g); g.connect(actx.destination); o.start(t0 + d); o.stop(t0 + d + end + 0.05);
+    }));
+  } catch (e) {}
+}
 function haItems() {
   const now = Date.now(), out = [];
   state.reminders.forEach((r, ri) => {
@@ -93,7 +107,8 @@ function haShow(it) {
     <div class="ha-bottom"><div class="ha-row"><button type="button" class="ha-c ha-no" data-act="ha-no" aria-label="Descartar">${ic('x', 34)}</button><button type="button" class="ha-c ha-yes" data-act="ha-yes" aria-label="Hecho">${ic('check', 34)}</button></div>
     <div class="ha-snz"><button type="button" class="ha-pm" data-act="ha-min" data-d="-5" aria-label="Menos minutos">—</button><button type="button" class="ha-pill" data-act="ha-snooze">Aplazar ${haMin} min</button><button type="button" class="ha-pm" data-act="ha-min" data-d="5" aria-label="Más minutos">+</button></div></div>`;
   el.hidden = false;
-  try { navigator.vibrate && navigator.vibrate([300, 200, 300]); } catch (e) {}
+  try { navigator.vibrate && navigator.vibrate(450); } catch (e) {}   // una sola vibración
+  if (!HA) haDing();
   if (HA && it.id) HA.dismiss({ id: it.id }).catch(() => {});
 }
 function haHide() { const el = document.getElementById('hab-alarm'); if (el) { el.hidden = true; el.innerHTML = ''; } haCur = null; }
@@ -135,7 +150,7 @@ document.addEventListener('click', ev => {
     if (HA) HA.test({ sec: 8, ring: haRing(), title: 'Tomar suplementos, ¡no fallar!', body: 'Así se verá tu recordatorio de hábito', time: new Date(Date.now() + 8000).toTimeString().slice(0, 5) }).then(() => toast('Bloquea el teléfono: en 8 segundos aparece la pantalla.')).catch(() => toast('No se pudo programar la prueba.'));
     else haShow({ title: 'Tomar suplementos, ¡no fallar!', body: 'Así se verá tu recordatorio de hábito', time: new Date().toTimeString().slice(0, 5), habit: '', name: '' });
   }
-  if (a === 'ha-dur') { state.settings.alarmSec = +b.dataset.v; savePlans(); scheduleSoon(); render(); toast(`La alarma sonará ${(HA_DUR.find(d => d[0] === haRing()) || [0, ''])[1].toLowerCase()}.`); }
+  if (a === 'ha-dur') { state.settings.alarmSec = +b.dataset.v; savePlans(); scheduleSoon(); render(); toast(`Sonido del recordatorio: ${(HA_DUR.find(d => d[0] === haRing()) || [0, ''])[1].toLowerCase()}.`); if (haRing() < 30 && !HA) haDing(); }
   if (a === 'ha-perm' && HA) HA.openSettings({ type: b.dataset.t }).catch(() => {});
   if (a === 'ha-rem') { closeSheet(); remSheet(null); haPrefill(b.dataset.k); }
 }, true);
@@ -196,8 +211,8 @@ vSettings = function () {
   ].join('');
   const box = `<div class="ha-set">${warn}<div class="row"><div class="grow"><b>Hábitos a pantalla completa</b><div class="muted" style="font-size:12px">Los recordatorios de hábitos aparecen como en la app Recordatorios: ✓ hecho, ✕ descartar o aplazar.</div></div>
     <button class="btn small" data-act="ha-test">Probar</button></div>
-    <div class="ha-durrow"><span class="label">Cuánto suena la alarma</span><div class="seg ha-dur" role="group" aria-label="Duración de la alarma">${HA_DUR.map(([v, l]) => `<button type="button" class="${haRing() === v ? 'on' : ''}" data-act="ha-dur" data-v="${v}" aria-pressed="${haRing() === v}">${l}</button>`).join('')}</div>
-    <div class="muted" style="font-size:12px">Se calla antes si tocas un botón o las teclas de volumen.</div></div></div>`;
+    <div class="ha-durrow"><span class="label">Sonido del recordatorio</span><div class="seg ha-dur" role="group" aria-label="Sonido del recordatorio">${HA_DUR.map(([v, l]) => `<button type="button" class="${haRing() === v ? 'on' : ''}" data-act="ha-dur" data-v="${v}" aria-pressed="${haRing() === v}">${l}</button>`).join('')}</div>
+    <div class="muted" style="font-size:12px">${haRing() < 30 ? 'Suena una vez (2-3 s) y vibra una vez, aunque el celular esté en silencio.' : 'Suena en bucle aunque el celular esté en silencio; se calla antes si tocas un botón o las teclas de volumen.'}</div></div></div>`;
   return h.replace('<button class="btn block" data-act="r-new">', box + '<button class="btn block" data-act="r-new">')
     .replace('Son notificaciones normales, no alarmas.', 'Los de hábitos aparecen en toda la pantalla; los demás son notificaciones normales.');
 };

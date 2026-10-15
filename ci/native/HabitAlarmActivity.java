@@ -38,10 +38,11 @@ public class HabitAlarmActivity extends Activity {
     private Vibrator vib;
     private final Handler h = new Handler(Looper.getMainLooper());
 
-    /* Suena como una alarma (canal de alarma: se oye aunque el celular esté en silencio o vibración),
-       en bucle hasta tocar un botón o subir/bajar el volumen; se calla sola a los `ring` segundos
-       del recordatorio (Ajustes → Cuánto suena la alarma: 10 s por defecto, 30 s o 1 min). */
+    /* Modo corto (por defecto): el ding dong ya sonó al llegar el recordatorio (HabitAlarms.show); aquí no suena nada.
+       Alarma 30 s / 1 min: suena por el canal de alarma (se oye aunque el celular esté en silencio o vibración),
+       en bucle hasta tocar un botón o subir/bajar el volumen, y se calla sola a los `ring` segundos. */
     private void ring() {
+        if (item == null || HabitAlarms.isDing(item)) return;
         try {
             Uri u = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
             if (u == null) u = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
@@ -63,7 +64,7 @@ public class HabitAlarmActivity extends Activity {
                 else vib.vibrate(pat, 0);
             }
         } catch (Throwable t) { }
-        int sec = item != null ? item.optInt("ring", 10) : 10;
+        int sec = item.optInt("ring", 30);
         h.postDelayed(this::quiet, Math.max(3, Math.min(120, sec)) * 1000L);
     }
 

@@ -8,8 +8,13 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.media.AudioAttributes;
-import android.media.RingtoneManager;
+import android.media.AudioFormat;
+import android.media.AudioTrack;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
 
 import androidx.core.app.NotificationCompat;
 
@@ -20,7 +25,8 @@ import org.json.JSONObject;
 /** Alarmas de hábitos a pantalla completa (como la app Recordatorios de Samsung). */
 public class HabitAlarms {
     static final String PREFS = "forja_habit_alarms";
-    static final String CH = "habitos_alarma";
+    static final String CH = "habitos_ding";   // canal sin sonido propio: el ding dong lo toca la app por el canal de alarma
+    static final String CH_OLD = "habitos_alarma";
     static final String A_FIRE = "pe.edgwr.cuadernohierro.HABIT_FIRE";
     static final String A_DONE = "pe.edgwr.cuadernohierro.HABIT_DONE";
     static final String A_SNOOZE = "pe.edgwr.cuadernohierro.HABIT_SNOOZE";
@@ -75,16 +81,49 @@ public class HabitAlarms {
     static void channel(Context c) {
         if (Build.VERSION.SDK_INT < 26) return;
         NotificationManager nm = (NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE);
-        if (nm == null || nm.getNotificationChannel(CH) != null) return;
+        if (nm == null) return;
+        if (nm.getNotificationChannel(CH_OLD) != null) nm.deleteNotificationChannel(CH_OLD);   // el viejo sonaba con el tono de notificación y vibraba 3 veces
+        if (nm.getNotificationChannel(CH) != null) return;
         NotificationChannel ch = new NotificationChannel(CH, "Hábitos a pantalla completa", NotificationManager.IMPORTANCE_HIGH);
-        ch.setDescription("Recordatorios de hábitos que aparecen en toda la pantalla");
-        ch.enableVibration(true);
-        ch.setVibrationPattern(new long[] { 0, 400, 250, 400, 250, 400 });
-        ch.setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION),
-            new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_NOTIFICATION_EVENT).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build());
+        ch.setDescription("Recordatorios de hábitos que aparecen en toda la pantalla, con un ding dong corto");
+        ch.enableVibration(false);
+        ch.setSound(null, null);
         ch.setLockscreenVisibility(NotificationCompat.VISIBILITY_PUBLIC);
         nm.createNotificationChannel(ch);
     }
+
+    /* "Ding dong" corto (~2,5 s, una sola vez) sintetizado aquí: dos campanadas (Mi5 → Do5) con armónicos y caída suave.
+       Sale por el canal de ALARMA (se oye aunque el celular esté en silencio o en vibración) y vibra una sola vez. */
+    static final AudioAttributes ALARM_ATTR = new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ALARM).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build();
+    static void ding(Context c) {
+        try {
+            final int rate = 22050, n = (int) (rate * 2.6);
+            short[] pcm = new short[n];
+            double[][] notes = { { 659.25, 0.0, 1.3 }, { 523.25, 0.55, 2.05 } };   // frecuencia, inicio (s), duración (s)
+            for (double[] nt : notes) {
+                int a = (int) (nt[1] * rate), len = (int) (nt[2] * rate);
+                for (int k = 0; k < len && a + k < n; k++) {
+                    double t = (double) k / rate, env = Math.min(1, t / 0.006) * Math.exp(-t * 2.6);
+                    double v = Math.sin(2 * Math.PI * nt[0] * t) + 0.45 * Math.sin(2 * Math.PI * nt[0] * 2.76 * t) * Math.exp(-t * 6) + 0.25 * Math.sin(2 * Math.PI * nt[0] * 2 * t);
+                    int x = pcm[a + k] + (int) (v * env * 0.42 * 32767 / 1.7);
+                    pcm[a + k] = (short) Math.max(-32767, Math.min(32767, x));
+                }
+            }
+            final AudioTrack tr = new AudioTrack(ALARM_ATTR, new AudioFormat.Builder().setSampleRate(rate).setEncoding(AudioFormat.ENCODING_PCM_16BIT).setChannelMask(AudioFormat.CHANNEL_OUT_MONO).build(), n * 2, AudioTrack.MODE_STATIC, 0);
+            tr.write(pcm, 0, n);
+            tr.play();
+            new Handler(Looper.getMainLooper()).postDelayed(() -> { try { tr.stop(); } catch (Throwable t) { } try { tr.release(); } catch (Throwable t) { } }, 3000);
+        } catch (Throwable t) { }
+        try {
+            Vibrator vib = (Vibrator) c.getSystemService(Context.VIBRATOR_SERVICE);
+            if (vib != null) {
+                if (Build.VERSION.SDK_INT >= 26) vib.vibrate(VibrationEffect.createOneShot(450, VibrationEffect.DEFAULT_AMPLITUDE), ALARM_ATTR);
+                else vib.vibrate(450);
+            }
+        } catch (Throwable t) { }
+    }
+    /** Menos de 30 s = ding dong corto (los recordatorios viejos traen ring 10); 30 o 60 = alarma en bucle en la pantalla completa. */
+    static boolean isDing(JSONObject o) { return o.optInt("ring", 3) < 30; }
 
     static PendingIntent actionPI(Context c, String action, int id, String item) {
         Intent i = new Intent(c, HabitAlarmReceiver.class).setAction(action).putExtra("item", item);
@@ -107,7 +146,9 @@ public class HabitAlarms {
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setDefaults(NotificationCompat.DEFAULT_ALL)
+            .setDefaults(0)
+            .setSound(null)
+            .setVibrate(null)
             .setAutoCancel(true)
             .setContentIntent(fullPI)
             .setFullScreenIntent(fullPI, true)
@@ -117,11 +158,17 @@ public class HabitAlarms {
         if (nm != null) nm.notify(id, b.build());
         /* Con el celular en uso Android solo muestra la notificación arriba. Si el usuario dio
            "Aparecer encima de otras apps", abrimos la pantalla completa igual (como la app Recordatorios). */
+        boolean opens = true;
         try {
             android.os.PowerManager pm = (android.os.PowerManager) c.getSystemService(Context.POWER_SERVICE);
             boolean on = pm == null || pm.isInteractive();
-            if (on && android.os.Build.VERSION.SDK_INT >= 23 && android.provider.Settings.canDrawOverlays(c)) c.startActivity(full);
+            boolean over = android.os.Build.VERSION.SDK_INT >= 23 && android.provider.Settings.canDrawOverlays(c);
+            if (on && over) c.startActivity(full);
+            opens = !on || over;
         } catch (Exception ignored) {}
+        /* Ding dong siempre en el modo corto. Con alarma de 30 s / 1 min suena el bucle de la pantalla completa;
+           si esta no se abre (celular en uso sin "Aparecer encima"), al menos el ding dong. */
+        if (isDing(o) || !opens) ding(c);
     }
 
     static void dismiss(Context c, int id) {
