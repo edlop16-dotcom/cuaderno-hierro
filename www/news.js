@@ -5,15 +5,12 @@
    Para la próxima versión: cambiar NEWS_KEY y la lista NEWS.
    No sale en el reloj, en una instalación nueva (tiene la bienvenida) ni durante una sesión.
    ========================================================================== */
-const NEWS_KEY = 'n2';   // se guarda en cdh.newsSeen (local: el celular y el reloj van por separado). n1 = 1.0.39, n2 = nueva organización
+const NEWS_KEY = 'n3';   // se guarda en cdh.newsSeen (local: el celular y el reloj van por separado). n1 = 1.0.39, n2 = nueva organización (tanda 1), n3 = tanda 2
 const NEWS = [
-  ['calendar-check', 'Hoy es tu inicio', 'Al abrir la app ves tu entreno, tus hábitos para marcar en un toque, tu semana y un solo aviso a la vez.', 'hoy', 'Ver Hoy'],
-  ['battery', '¿Cómo llegas hoy? en un toque', 'Cansado, Normal o Con todo, en la tarjeta de hoy: la rutina se ajusta sola. Empezar arranca directo; «Ver ejercicios y ajustar» abre la vista previa.', 'hoy-r'],
-  ['trending-up', 'Progreso tiene su pestaña', 'Semana (resumen, mapa muscular y coach semanal), Ejercicios (curvas, récords y rangos) e Historial.', 'prog'],
-  ['settings', 'Ajustes en ⚙', 'Arriba a la derecha en todas las pantallas. La barra queda para lo que usas cada día.', 'set'],
-  ['user', 'Perfil', 'Tu cuenta, tu cuerpo, tus logros y tus amigos.', 'perfil'],
-  ['clipboard-list', 'Coach semanal', 'El viernes, músculos que faltan o sobran y un entreno para completar el fin de semana; el domingo, propuesta para la semana siguiente.', 'wc', 'Ver reporte'],
-  ['alarm-clock', 'Ding dong en los hábitos', 'El recordatorio suena una vez (2-3 s) y vibra una vez, aunque el celular esté en silencio. En Ajustes puedes poner alarma de 30 s o 1 min.', 'al'],
+  ['clipboard-list', 'Rutinas: Mi plan', 'Rutinas abre tu plan activo con el día que te toca desplegado. Toca un ejercicio para cambiar series, peso o superserie; + Ejercicio y + Día a un toque.', 'rt', 'Ver mi plan'],
+  ['book-open', 'Biblioteca', 'Los ejercicios ahora están en Rutinas → Biblioteca. La barra queda con 4 pestañas: Hoy, Rutinas, Progreso y Perfil.', 'guide', 'Ver Biblioteca'],
+  ['user', 'Perfil completo', 'Tu cuerpo, nutrición, logros y amigos en una pantalla, con accesos arriba. El modo entrenador está en Amigos.', 'perfil'],
+  ['settings', 'Ajustes en 5 grupos', 'Cuenta, Avisos y sonidos, Entreno, Sensores y Datos. Toca un grupo para abrirlo.', 'set2'],
 ];
 const NEWS_PUB = ['target', 'Peso inicial sugerido y misiones', 'Las rutinas nuevas llegan con un peso prudente para empezar, y tienes misiones de inicio en Hoy.', null];
 
@@ -41,7 +38,7 @@ document.addEventListener('click', ev => {
   if (k === 'qk') { closeSheet(); return typeof qkSheet === 'function' && qkSheet(); }
   if (k === 'fs') return nwGo('settings', null, '.fs-set');
   if (k === 'ss') return nwGo('plans', null, null, 'Toca un día para abrirlo, luego el nombre del ejercicio, y marca "Superserie con el siguiente".');
-  if (k === 'guide') return nwGo('guide', null, null, 'Busca Burpees, Remo invertido o Sentarse y pararse de la silla.');
+  if (k === 'guide') return nwGo('guide', null, null, 'Busca un ejercicio o filtra por músculo y equipo.');
   if (k === 'rk') return nwGo('progress', 'ejercicios', '.rk-card');
   if (k === 'al') return nwGo('settings', null, '.ha-durrow');
   if (k === 'dd') return nwGo('train', null, '.streak-card', 'Toca un día con llama en tu racha.');
@@ -50,6 +47,8 @@ document.addEventListener('click', ev => {
   if (k === 'prog') return nwGo('progress', 'semana');
   if (k === 'set') return nwGo('settings', null, '#btn-settings', 'Ajustes se abre con ⚙ arriba a la derecha.');
   if (k === 'perfil') return nwGo('profile', 'body');
+  if (k === 'rt') return nwGo('plans', null, '.rt-now');
+  if (k === 'set2') return nwGo('settings', null, '.sg');
 }, true);
 
 /* Ajustes → Novedades */
