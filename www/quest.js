@@ -50,9 +50,11 @@ function wgRef(ex) {
   return ex.sugg && +ex.sugg.w || 0;
 }
 function wgCheck(ex, v) {
-  const ref = wgRef(ex); if (!(ref >= 4) || !(v > 0)) return null;
-  if (v >= ref * 2.2 && v - ref >= 15) return `¿${fmtKg(v)} kg en ${ex.name}? Tu referencia es ${fmtKg(ref)} kg. Revisa que no sobre un número.`;
-  if (v <= ref / 3 && ref - v >= 10) return `¿${fmtKg(v)} kg en ${ex.name}? Tu referencia es ${fmtKg(ref)} kg. Revisa que no falte un número.`;
+  /* En libras los pesos guardados ya están en lb: los márgenes (en kg) se pasan a lb y el texto dice "lb" */
+  const lb = typeof pbLb === 'function' && pbLb(), f = lb ? LB : 1, u = lb ? 'lb' : 'kg';
+  const ref = wgRef(ex); if (!(ref >= 4 * f) || !(v > 0)) return null;
+  if (v >= ref * 2.2 && v - ref >= 15 * f) return `¿${fmtKg(v)} ${u} en ${ex.name}? Tu referencia es ${fmtKg(ref)} ${u}. Revisa que no sobre un número.`;
+  if (v <= ref / 3 && ref - v >= 10 * f) return `¿${fmtKg(v)} ${u} en ${ex.name}? Tu referencia es ${fmtKg(ref)} ${u}. Revisa que no falte un número.`;
   return null;
 }
 document.addEventListener('change', ev => {

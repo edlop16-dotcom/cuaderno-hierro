@@ -73,15 +73,5 @@ exStats = function (name) {
   const b = lvBest(name), L = b && lvOf(name, b.v); if (!L) return;
   const h = document.querySelector('#sheet h2'); if (h) h.insertAdjacentHTML('afterend', `<button class="lvb-btn" data-act="lv-open" data-name="${esc(name)}">${lvBadge(L, true)}</button>`);
 };
-/* Subiste de nivel al terminar */
-const _finishLv = finishSession;
-finishSession = function () {
-  const d = state.draft, before = {};
-  if (d) d.exercises.forEach(e => { const b = lvBest(e.name), L = b && lvOf(e.name, b.v); if (L) before[e.name] = L.score; else if (lvStd(e.name)) before[e.name] = -99; });
-  _finishLv();
-  if (d && !state.draft) {
-    const ups = Object.keys(before).map(n => { const b = lvBest(n), L = b && lvOf(n, b.v); return L && L.score > before[n] && L.i >= 0 ? { n, L } : null; }).filter(Boolean);
-    if (ups.length) setTimeout(() => toast(`🏅 ¡Subiste a ${ups[0].L.name} en ${ups[0].n}!${ups.length > 1 ? ` (+${ups.length - 1} más)` : ''}`), 5200);
-  }
-};
+/* Subir de nivel al terminar: lo anuncia la medalla de ranks.js (rkReveal; en el reloj, un toast) */
 render();

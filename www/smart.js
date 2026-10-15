@@ -199,7 +199,7 @@ function returnCard() {
 const _startSessionS = startSession;
 startSession = function (planId, dayId) {
   _startSessionS(planId, dayId);
-  const d = state.draft; if (!d || state.settings.retDay !== dk(new Date()) || d.ret) return;
+  const d = state.draft; if (!d || state.settings.retDay !== dk(new Date()) || d.ret || d.planId === 'quick') return;
   d.ret = 1;
   d.exercises.forEach(e => {
     if (e.log && e.log.length > 2 && !e.log.some(x => x.done)) e.log.length = e.log.length - 1;

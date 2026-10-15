@@ -78,7 +78,7 @@ function mesoSheet() {
 const _startMeso = startSession;
 startSession = function (planId, dayId) {
   _startMeso(planId, dayId);
-  const d = state.draft, I = mesoInfo(); if (!d || !I || I.pre || d.meso) return;
+  const d = state.draft, I = mesoInfo(); if (!d || !I || I.pre || d.meso || d.planId === 'quick') return;   // el Entreno rápido no sigue el bloque
   d.meso = { wk: I.wk, deload: I.deload };
   let plusN = 0;
   d.exercises.forEach(e => {

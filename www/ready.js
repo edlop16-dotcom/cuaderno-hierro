@@ -41,7 +41,7 @@ previewSheet = function (pid, did) {
 const _startReady = startSession;
 startSession = function (planId, dayId) {
   _startReady(planId, dayId);
-  const d = state.draft, p = readyPlan(); if (!d || !p || d.readied) return;
+  const d = state.draft, p = readyPlan(); if (!d || !p || d.readied || d.planId === 'quick') return;   // el Entreno rápido ya es corto
   d.readied = p.lv;
   d.exercises.forEach(e => {
     const inc = w => increment(e, w);

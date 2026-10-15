@@ -55,7 +55,7 @@ function rkSheet(k) {
   const R = muscleRanks(), r = R[k];
   const cut = Date.now() - 120 * 864e5, names = new Set();
   state.sessions.forEach(s => { if (!s.approx && new Date(s.date) >= cut) s.exercises.forEach(e => names.add(e.name)); });
-  const list = [...names].filter(n => lvStd(n) && zoneShares(n)[k] === 1).map(n => { const b = lvBest(n); return { n, L: b && lvOf(n, b.v) }; }).filter(x => x.L).sort((a, b) => (b.L.score || -1) - (a.L.score || -1));
+  const list = [...names].filter(n => lvStd(n) && zoneShares(n)[k] === 1).map(n => { const b = lvBest(n); return { n, L: b && lvOf(n, b.v) }; }).filter(x => x.L).sort((a, b) => (b.L.score != null ? b.L.score : -1) - (a.L.score != null ? a.L.score : -1));
   const opts = LIB.filter(x => lvStd(x.name) && zoneShares(x.name)[k] === 1 && !names.has(x.name)).slice(0, 4).map(x => x.name);
   openSheet(`<div class="row"><h2 class="grow">${zoneName(k)}</h2><button class="icon-btn" data-act="sheet-close" aria-label="Cerrar">${ic('x', 18)}</button></div>
     ${r ? `<div class="lv-hero">${lvBadge({ i: Math.floor(Math.max(0, r.s) / 3), name: rkName(r.s), color: rkColor(r.s) })}<div class="muted">Por tu mejor ejercicio: <b>${esc(r.ex)}</b>.</div></div>` : '<div class="muted">Aún no tiene rango.</div>'}
