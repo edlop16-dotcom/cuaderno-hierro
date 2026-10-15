@@ -1519,6 +1519,7 @@ input.wg-warn{outline:2px solid var(--warn);outline-offset:1px}
 .prog-seg button{display:inline-flex;align-items:center;justify-content:center;gap:5px}
 
 /* ---------- Nueva organización, tanda 2 (nav3.js) ---------- */
+.nav-in{grid-template-columns:repeat(4,1fr)!important}
 .rt-seg,.rt-quick,.pf-jump,.pf-sec,.pf-set,.n3f{flex-shrink:0}
 .rt-quick{display:flex;gap:8px}
 .rt-quick .btn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px}
