@@ -98,6 +98,7 @@ public class HabitAlarmPlugin extends Plugin {
             o.put("body", call.getString("body", ""));
             o.put("time", call.getString("time", ""));
             o.put("habit", ""); o.put("day", ""); o.put("name", "");
+            o.put("ring", call.getInt("ring", 10));
             HabitAlarms.channel(getContext());
             HabitAlarms.arm(getContext(), o);
             call.resolve();

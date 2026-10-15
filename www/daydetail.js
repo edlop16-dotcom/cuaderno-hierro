@@ -12,21 +12,35 @@ function ddSetTxt(x, e) {
   const w = +x.w || 0, bar = e && e.bar ? '' : '';
   return `${fmtKg(w)}×${x.r || 0}${x.rir != null ? ' @' + x.rir : ''}${(x.drops || []).map(dr => ' ↓' + fmtKg(+dr.w || 0) + '×' + (dr.r || 0)).join('')}` + bar;
 }
+/* Tipo de día (fuerza o bombeo) y objetivo, para que el texto se entienda fuera de la app */
+const DD_KIND = { fuerza: 'Día de fuerza (pesado, pocas reps, descansos largos)', bombeo: 'Día de bombeo (más reps, descansos cortos)' };
+function ddGoal() {
+  const p = state.settings.prof || {};
+  if (p.goal && typeof PB_GOALS !== 'undefined' && PB_GOALS[p.goal]) return PB_GOALS[p.goal][0];
+  if (HISTORY.goal) return HISTORY.goal;
+  const g = typeof goalNow === 'function' ? goalNow() : '';
+  return (typeof PB_GOALS !== 'undefined' && PB_GOALS[g] && PB_GOALS[g][0]) || '';
+}
+function ddKindLine(s, noGoal) {
+  const k = sKind(s), t = s.planId === 'quick' ? 'Entreno rápido' : (DD_KIND[k] || KINDS[k] || ''), g = noGoal ? '' : ddGoal();
+  return [t, g ? 'Objetivo: ' + g : ''].filter(Boolean).join(' · ');
+}
 /* Texto completo de una sesión (para copiar o enviar a una IA) */
-function sessionText(s) {
+function sessionText(s, noGoal) {
   const d = new Date(s.date), u = ddUnit();
   const head = `${fmtDate(s.date, true)} · ${s.dayName}${s.gymName ? ' · ' + s.gymName : ''}${s.durationSec ? ' · ' + Math.round(s.durationSec / 60) + ' min' : ''}${s.hr && s.hr.avg ? ` · pulso ${s.hr.avg} prom / ${s.hr.max} máx · ~${s.hr.kcal} kcal` : ''}`;
   const lines = s.exercises.map(e => {
     const bar = BAR_DEFAULT && BAR_DEFAULT[e.name] && e.sets.length ? ` (${u} en discos, + barra)` : '';
     return `- ${e.name}${bar}: ${e.sets.length ? e.sets.map(x => ddSetTxt(x, e)).join(', ') : 'sin series'}${e.note ? `\n  Nota: ${e.note}` : ''}`;
   });
-  return `${head}\n${lines.join('\n')}${s.note ? '\nNota de la sesión: ' + s.note : ''}`;
+  const kl = ddKindLine(s, noGoal);
+  return `${head}${kl ? '\n' + kl : ''}\n${lines.join('\n')}${s.note ? '\nNota de la sesión: ' + s.note : ''}`;
 }
 function sessionPrompt(list) {
   const p = state.settings.prof || {}, G = typeof goalNow === 'function' ? goalNow() : '';
   return `Eres mi entrenador personal. Analiza mi entrenamiento (peso×reps por serie, @ = reps en reserva, ↓ = drop set, pesos en ${ddUnit()}).\n` +
-    `Sobre mí: ${HISTORY.age} años, ${HISTORY.kg} kg, ${HISTORY.cm} cm, objetivo: ${HISTORY.goal || G}.\n\n` +
-    list.map(sessionText).join('\n\n') +
+    `Sobre mí: ${HISTORY.age} años, ${HISTORY.kg} kg, ${HISTORY.cm} cm, objetivo: ${ddGoal() || G}.\n\n` +
+    list.map(s => sessionText(s, true)).join('\n\n') +
     `\n\nDime: 1) qué hice bien, 2) qué peso y reps hacer la próxima vez en cada ejercicio, 3) si algo indica fatiga o riesgo de lesión, 4) un consejo concreto de técnica o recuperación. Sé breve.`;
 }
 const _daySheetDD = daySheet;
@@ -53,7 +67,7 @@ document.addEventListener('click', ev => {
   const b = ev.target.closest && ev.target.closest('[data-dd]'); if (!b) return;
   ev.preventDefault(); ev.stopPropagation();
   const list = state.sessions.filter(s => dk(s.date) === b.dataset.k); if (!list.length) return;
-  const txt = sessionPrompt(list), plain = list.map(sessionText).join('\n\n');
+  const txt = sessionPrompt(list), plain = list.map(s => sessionText(s)).join('\n\n');
   if (b.dataset.dd === 'copy') ddCopy(plain).then(ok => toast(ok ? 'Entrenamiento copiado.' : 'No se pudo copiar.'));
   else if (b.dataset.dd === 'share') {
     const S = typeof CAP !== 'undefined' && CAP && CAP.Share;

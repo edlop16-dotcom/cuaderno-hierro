@@ -34,6 +34,9 @@ remText = function (r, d, at) { const k = habKeyOf(r); return k ? { title: r.lab
 
 /* Lista de alarmas de los próximos 14 días */
 state.haSnz = [];
+/* Cuánto suena la alarma nativa (HabitAlarmActivity lee `ring`): breve por defecto */
+const HA_DUR = [[10, 'Breve (10 s)'], [30, '30 s'], [60, '1 min']];
+const haRing = () => { const v = +state.settings.alarmSec; return HA_DUR.some(d => d[0] === v) ? v : 10; };
 function haItems() {
   const now = Date.now(), out = [];
   state.reminders.forEach((r, ri) => {
@@ -47,7 +50,8 @@ function haItems() {
     }
   });
   state.haSnz = state.haSnz.filter(x => x.at > now && !habDoneOn(x.habit, new Date(x.at)));
-  return out.concat(state.haSnz).slice(0, 200);
+  const ring = haRing();
+  return out.concat(state.haSnz).slice(0, 200).map(x => Object.assign({}, x, { ring }));
 }
 const _schedHA = scheduleAll;
 scheduleAll = async function () {
@@ -128,9 +132,10 @@ document.addEventListener('click', ev => {
     state.haSnz.push(it); haHide(); scheduleSoon(); toast(`Te lo recuerdo en ${haMin} min`);
   }
   if (a === 'ha-test') {
-    if (HA) HA.test({ sec: 8, title: 'Tomar suplementos, ¡no fallar!', body: 'Así se verá tu recordatorio de hábito', time: new Date(Date.now() + 8000).toTimeString().slice(0, 5) }).then(() => toast('Bloquea el teléfono: en 8 segundos aparece la pantalla.')).catch(() => toast('No se pudo programar la prueba.'));
+    if (HA) HA.test({ sec: 8, ring: haRing(), title: 'Tomar suplementos, ¡no fallar!', body: 'Así se verá tu recordatorio de hábito', time: new Date(Date.now() + 8000).toTimeString().slice(0, 5) }).then(() => toast('Bloquea el teléfono: en 8 segundos aparece la pantalla.')).catch(() => toast('No se pudo programar la prueba.'));
     else haShow({ title: 'Tomar suplementos, ¡no fallar!', body: 'Así se verá tu recordatorio de hábito', time: new Date().toTimeString().slice(0, 5), habit: '', name: '' });
   }
+  if (a === 'ha-dur') { state.settings.alarmSec = +b.dataset.v; savePlans(); scheduleSoon(); render(); toast(`La alarma sonará ${(HA_DUR.find(d => d[0] === haRing()) || [0, ''])[1].toLowerCase()}.`); }
   if (a === 'ha-perm' && HA) HA.openSettings({ type: b.dataset.t }).catch(() => {});
   if (a === 'ha-rem') { closeSheet(); remSheet(null); haPrefill(b.dataset.k); }
 }, true);
@@ -190,7 +195,9 @@ vSettings = function () {
     s.fullScreen === false ? `<div class="remind"><span>📱</span><span>Para verlo en toda la pantalla, permite <b>Notificaciones de pantalla completa</b>. <button class="btn small" data-act="ha-perm" data-t="fullScreen">Permitir</button></span></div>` : '',
   ].join('');
   const box = `<div class="ha-set">${warn}<div class="row"><div class="grow"><b>Hábitos a pantalla completa</b><div class="muted" style="font-size:12px">Los recordatorios de hábitos aparecen como en la app Recordatorios: ✓ hecho, ✕ descartar o aplazar.</div></div>
-    <button class="btn small" data-act="ha-test">Probar</button></div></div>`;
+    <button class="btn small" data-act="ha-test">Probar</button></div>
+    <div class="ha-durrow"><span class="label">Cuánto suena la alarma</span><div class="seg ha-dur" role="group" aria-label="Duración de la alarma">${HA_DUR.map(([v, l]) => `<button type="button" class="${haRing() === v ? 'on' : ''}" data-act="ha-dur" data-v="${v}" aria-pressed="${haRing() === v}">${l}</button>`).join('')}</div>
+    <div class="muted" style="font-size:12px">Se calla antes si tocas un botón o las teclas de volumen.</div></div></div>`;
   return h.replace('<button class="btn block" data-act="r-new">', box + '<button class="btn block" data-act="r-new">')
     .replace('Son notificaciones normales, no alarmas.', 'Los de hábitos aparecen en toda la pantalla; los demás son notificaciones normales.');
 };

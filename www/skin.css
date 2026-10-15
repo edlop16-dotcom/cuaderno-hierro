@@ -1377,3 +1377,19 @@ input.wg-warn{outline:2px solid var(--warn);outline-offset:1px}
 .ss-tag .ic{margin-right:6px}
 .w2-ss{font-size:12px;font-weight:700;color:var(--accent2);margin:0 0 4px;line-height:1.2}
 .w2-ssd{display:inline-block;padding:0 2px;margin:0 2px;border-radius:99px;background:rgba(255,176,32,.22);white-space:nowrap}
+/* Agregar / quitar series (setctl.js) */
+.st-ctl{display:flex;margin-top:10px;flex-shrink:0}
+.st-b{flex:1;display:flex;align-items:center;justify-content:center;padding:11px 8px;border-radius:12px;border:1.5px dashed var(--line);background:transparent;color:var(--fg);font:inherit;font-weight:700;font-size:14px;cursor:pointer}
+.st-b+.st-b{margin-left:8px}
+.st-b .ic{margin-right:6px}
+.st-b.add{border-color:rgba(46,229,157,.55);color:var(--ok);background:rgba(46,229,157,.07)}
+.st-b:disabled{opacity:.4;cursor:default}
+.w2-subs{display:flex;align-items:center;justify-content:center}
+.w2-sb{flex:none;width:34px;height:34px;border-radius:50%;margin:0 8px;padding:0;border:0;background:rgba(255,255,255,.12);color:var(--fg);font:inherit;font-size:22px;font-weight:800;line-height:34px}
+.w2-sb:disabled{opacity:.3}
+.w2-more1{display:block;width:100%;margin-top:8px}
+/* Duración de la alarma (habalarm.js) */
+.ha-durrow{margin-top:10px}
+.ha-durrow .label{display:block;margin-bottom:6px}
+.seg.ha-dur{display:flex;margin-bottom:4px}
+.seg.ha-dur button{flex:1}
