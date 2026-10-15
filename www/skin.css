@@ -1430,3 +1430,48 @@ input.wg-warn{outline:2px solid var(--warn);outline-offset:1px}
 .fs-set>*{flex-shrink:0}
 .fs-btns{flex-wrap:wrap}
 .fs-btns .btn{margin:0 6px 6px 0}
+
+/* Coach semanal (weekly.js) — sin grid ni gap */
+.wc-sheet>*{flex-shrink:0}
+.wc-goal{display:flex;align-items:flex-start;padding:9px 12px;border-radius:12px;background:rgba(255,176,32,.1);border:1px solid rgba(255,176,32,.35);font-size:13.5px;line-height:1.4}
+.wc-goal .ic{flex:none;margin:1px 8px 0 0;color:var(--accent2)}
+.wc-sub{font-size:12.5px;line-height:1.45}
+.wc-foot{font-size:11.5px}
+.wc-list{display:flex;flex-wrap:wrap;margin:-3px}
+.wc-chip{display:flex;flex-direction:column;margin:3px;padding:7px 11px;border-radius:12px;background:var(--surface2);border:1px solid var(--line);font-size:13px}
+.wc-chip span{font-size:12px;color:var(--muted)}
+.wc-chip.low{border-color:rgba(255,197,61,.45)}
+.wc-chip.low span{color:var(--warn)}
+.wc-chip.high{border-color:rgba(255,77,109,.45)}
+.wc-chip.high span{color:var(--bad)}
+.wc-bars{display:flex;flex-direction:column}
+.wc-row{display:flex;align-items:center;font-size:12.5px;margin-top:6px}
+.wc-n{flex:none;width:96px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wc-tr{position:relative;flex:1;height:10px;margin:0 8px;border-radius:6px;background:var(--surface2);overflow:hidden}
+.wc-tr i{position:absolute;top:0;bottom:0;left:0}
+.wc-zone{left:41.67%!important;width:41.67%;background:rgba(46,229,157,.16)}
+.wc-d{background:var(--ok);border-radius:6px}
+.wc-row.low .wc-d{background:var(--warn)}
+.wc-row.high .wc-d{background:var(--bad)}
+.wc-p{background:repeating-linear-gradient(135deg,rgba(255,255,255,.35) 0 3px,transparent 3px 6px);border-radius:0 6px 6px 0}
+.wc-v{flex:none;width:34px;text-align:right}
+.wc-day{margin-top:4px}
+.wc-dh{font-size:12px;font-weight:800;color:var(--muted);margin:6px 0 4px}
+.wc-px{padding:8px 10px;border-radius:12px;background:var(--surface2)}
+.wc-px+.wc-px{margin-top:5px}
+.wc-px.m-up .fs-t{color:var(--ok)}
+.wc-px.m-down .fs-t,.wc-px.m-pain .fs-t{color:var(--bad)}
+.wc-px .fs-t{color:var(--muted)}
+.wc-pw{flex:none;margin-left:8px;font-weight:800;color:var(--accent2)}
+.wc-pw s,.wc-px s{color:var(--muted);font-weight:500}
+.wc-ch{color:var(--accent2);font-weight:700}
+.wc-done{display:flex;align-items:center;padding:9px 12px;border-radius:12px;background:rgba(46,229,157,.08);border:1px solid rgba(46,229,157,.4);font-size:13px}
+.wc-done .ic{flex:none;margin-right:6px;color:var(--ok)}
+.wc-done .linkbtn{margin-left:6px}
+.wc-card{border-color:rgba(255,176,32,.35)!important}
+.wc-card.fill{border-color:rgba(46,229,157,.4)!important}
+.wc-card .pb-ic,.wc-links .pb-ic{width:34px;height:34px;margin-right:10px}
+.wc-links .row h3{margin:0}
+.wc-btns{flex-wrap:wrap}
+.wc-btns .btn{margin:0 6px 6px 0}
+.wc-set>*{flex-shrink:0}

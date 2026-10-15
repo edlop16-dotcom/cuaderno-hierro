@@ -15,9 +15,10 @@ function meso() {
   }
   return m;
 }
-function mesoInfo() {
+/* at (opcional): otra fecha, p. ej. el lunes de la semana siguiente para la propuesta del coach semanal */
+function mesoInfo(at) {
   const m = meso(); if (!m.on) return null;
-  const now = mondayOf(new Date()), st = new Date(m.start + 'T00:00:00');
+  const now = mondayOf(at || new Date()), st = new Date(m.start + 'T00:00:00');
   const W = 7 * 864e5;
   let wk = Math.round((now - st) / W), n = m.n || 1, from = st;
   let deloadWk = m.deloadFrom ? Math.round((new Date(m.deloadFrom + 'T00:00:00') - st) / W) : m.weeks - 1;
