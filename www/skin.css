@@ -1806,6 +1806,11 @@ body:not(.watch) .sx-fin{padding-inline:14px}
 .ns-txt{width:100%;box-sizing:border-box;min-height:150px;font:inherit;font-size:14px;background:var(--surface2);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:10px;flex-shrink:0;-webkit-user-select:text;user-select:text}
 .ns-ed{display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:12px;background:var(--surface2);flex-shrink:0}
 .ns-ed.off{opacity:.6}
+.ns-ed.nd{gap:2px;padding:10px 12px;background:transparent;border:1px dashed var(--line)}
+.ns-ed.nd .ns-name{font-size:15px}
+.ns-dayw{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;padding:10px 12px;border-radius:10px;border:1px solid var(--warn);font-size:13.5px;flex-shrink:0}
+.ns-dayw[hidden]{display:none}
+.ns-dayw .btn{min-height:44px}
 .ns-raw{font-size:12.5px;color:var(--muted)}
 .ns-ex{min-height:44px}
 .ns-ask{font-size:12.5px;font-weight:600;color:var(--warn)}
