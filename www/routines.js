@@ -194,7 +194,7 @@ document.addEventListener('submit', ev => {
   const kd = state.rtKind || 'fuerza', d = { id: uid(), name: typed || `${KINDS[kd]} · ${WDL[wd]}`, weekday: wd, kind: kd, exercises: [] };
   if (!typed) d.autoName = true;
   p.days.push(d); p.days.sort((x, y) => ((x.weekday + 6) % 7) - ((y.weekday + 6) % 7));
-  savePlans(); state.rtOpen[d.id] = true; state.tab = 'plans'; render();
+  savePlans(); state.rtOpen[d.id] = true; state.rtNewDay = d.id; state.tab = 'plans'; render();
   state.rtF = 'all'; state.rtQ = ''; rtAddSheet(p.id, d.id);
 }, true);
 render();

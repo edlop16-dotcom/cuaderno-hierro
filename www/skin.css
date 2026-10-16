@@ -1762,3 +1762,5 @@ body:not(.watch) .rt-newr{min-height:48px;margin-top:10px;background:var(--surfa
 body:not(.watch) .rt-newr .ic{color:var(--accent)}
 /* La rutina recién creada se muestra con aire arriba (no pegada ni cortada por el borde) */
 body:not(.watch) .rt-head{scroll-margin-top:32px}
+/* Selector de ejercicios: Cancelar / Crear en tiza y con toque cómodo */
+body:not(.watch) .pk-top .linkbtn{color:var(--fg);min-height:44px;padding:6px 4px}

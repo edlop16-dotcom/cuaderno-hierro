@@ -90,7 +90,11 @@ document.addEventListener('click', ev => {
   ev.stopPropagation(); ev.preventDefault();
   const P = state.pk; if (!P) return;
   const a = b.dataset.act, l = document.getElementById('pk-list'); if (l) P.scroll = l.scrollTop;
-  if (a === 'pk-cancel') { state.pk = null; closeSheet(); render(); }
+  if (a === 'pk-cancel') {
+    /* Rutina recién creada con "Nueva rutina" y sin ejercicios: Cancelar no la deja vacía */
+    if (state.rtNewDay === P.did) { const { p, d } = findDay(P.pid, P.did); if (p && d && !d.exercises.length) { p.days = p.days.filter(x => x !== d); savePlans(); } }
+    state.rtNewDay = null; state.pk = null; closeSheet(); render();
+  }
   else if (a === 'pk-tog') { const n = b.dataset.name, i = P.sel.indexOf(n); if (i >= 0) P.sel.splice(i, 1); else P.sel.push(n); pkView(); }
   else if (a === 'pk-info') { P.info = b.dataset.name; P.itab = 'res'; P.paused = false; pkView(); const c = document.querySelector('#sheet .sheet-card'); if (c) c.scrollTop = 0; }
   else if (a === 'pk-back') { P.info = null; pkView(); }
@@ -107,7 +111,7 @@ document.addEventListener('click', ev => {
       const nm = keys.length && typeof suggestName === 'function' ? suggestName(keys) : '';
       if (nm) d.name = nm; delete d.autoName;
     }
-    const n = P.sel.length; state.rtOpen[d.id] = true; state.pk = null; savePlans(); closeSheet(); state.tab = 'plans'; render();
+    const n = P.sel.length; state.rtOpen[d.id] = true; state.rtNewDay = null; state.pk = null; savePlans(); closeSheet(); state.tab = 'plans'; render();
     toast(`${n} ${n === 1 ? 'ejercicio agregado' : 'ejercicios agregados'} a ${d.name}`);
   }
 }, true);

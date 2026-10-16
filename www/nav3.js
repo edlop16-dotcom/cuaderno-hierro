@@ -71,18 +71,18 @@ function miPlanLayout(app) {
     const h = actCard.querySelector(`.rt-head[data-day="${t.d.id}"]`);
     if (h) { h.closest('.rt-day').classList.add('rt-now'); const b = h.querySelector('b'); if (b) b.insertAdjacentHTML('beforebegin', '<span class="rt-tag-now">Te toca</span>'); }
   }
-  const quick = actCard && t && t.d ? `<div class="rt-quick"><button type="button" class="btn" data-act="rt-add" data-plan="${t.p.id}" data-day="${t.d.id}">${ic('plus', 16)} Ejercicio</button><button type="button" class="btn" data-act="rt-new">${ic('calendar-plus', 16)} Día</button></div>` : '';
+  const quick = actCard && t && t.d ? `<div class="rt-quick"><button type="button" class="btn" data-act="rt-add" data-plan="${t.p.id}" data-day="${t.d.id}">${ic('plus', 16)} Ejercicio al día que toca</button></div>` : '';
   const balSum = bal ? `<span class="n3f-i ${bal.classList.contains('warn') ? 'warn' : 'ok'}">${ic('activity', 17)}</span><span class="grow"><b>Equilibrio de tu semana</b><small>${bal.classList.contains('warn') ? 'Hay algo para revisar' : 'Bien equilibrado'}</small></span>` : '';
   const others = cards.filter(c => c !== actCard);
   const moreSum = `<span class="n3f-i">${ic('layers', 17)}</span><span class="grow"><b>Otros planes y gimnasios</b><small>${[others.length ? `${others.length} ${others.length === 1 ? 'plan más' : 'planes más'}` : '', 'plantillas', 'plan nuevo', state.gyms.length > 1 ? `${state.gyms.length} gimnasios` : 'gimnasios'].filter(Boolean).join(' · ')}</small></span>`;
   ph.insertAdjacentHTML('afterend', rtSeg('plans') + quick + (bal ? n3Fold('rt-bal', bal.classList.contains('warn'), 'rt-balf', balSum) : '') + n3Fold('rt-more', !actCard, 'rt-moref', moreSum));
   const seg = app.querySelector(':scope > .rt-seg'), qk = app.querySelector(':scope > .rt-quick');
-  /* Orden: pestañas → bloque → plan activo (o vacío) → + Ejercicio · + Día → plegables */
+  /* Orden: pestañas → bloque → plan activo (o vacío) → + Ejercicio → plegables */
   const after = (ref, el) => { if (el && ref) ref.insertAdjacentElement('afterend', el); return el || ref; };
   let ref = after(seg, meso);
-  /* + Nueva rutina: el mismo flujo que la Biblioteca (rt-from-ex → elegir ejercicios → rtSheet → saveRoutine vuelve aquí).
-     Va al final de los días del plan activo; sin plan activo, arriba */
-  const nb = `<button type="button" class="btn block rt-newr" data-act="rt-from-ex">${ic('plus', 18)} Nueva rutina</button>`;
+  /* + Nueva rutina sin salir de Rutinas: rtNewSheet (nombre, tipo, día y plan) → rtAddSheet (buscar, filtrar y tocar
+     los ejercicios que quieras) → Listo vuelve aquí con el día abierto. Al final de los días del plan activo; sin plan, arriba */
+  const nb = `<button type="button" class="btn block rt-newr" data-act="rt-new">${ic('plus', 18)} Nueva rutina</button>`;
   if (!actCard) { ref.insertAdjacentHTML('afterend', nb); ref = ref.nextElementSibling; }
   ref = after(ref, actCard || empty);
   if (actCard) { const days = actCard.querySelector('.rt-days'); if (days) days.insertAdjacentHTML('afterend', nb); else actCard.insertAdjacentHTML('beforeend', nb); }
