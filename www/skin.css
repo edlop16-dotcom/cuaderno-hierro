@@ -1554,7 +1554,7 @@ input.wg-warn{outline:2px solid var(--warn);outline-offset:1px}
    Pulido visual "Acero y discos" (solo teléfono: todo bajo body:not(.watch))
    Superficies planas de acero, texto color tiza, un solo acento (brasa) para
    la acción principal y lo que toca hoy; los colores de datos son los de los
-   discos de competición. Barlow Condensed para títulos y cifras, Barlow para leer.
+   discos de competición. Títulos en Poppins con los tamaños de la v1.0.40 (ver el bloque "Títulos" al final); Barlow para leer; Barlow Condensed solo para kg, reps y reloj de la sesión.
    ========================================================================== */
 @font-face{font-family:'Barlow';font-weight:400;font-style:normal;font-display:swap;src:url(fonts/barlow-latin-400-normal.woff2) format('woff2')}
 @font-face{font-family:'Barlow';font-weight:500;font-style:normal;font-display:swap;src:url(fonts/barlow-latin-500-normal.woff2) format('woff2')}
@@ -1764,3 +1764,30 @@ body:not(.watch) .rt-newr .ic{color:var(--accent)}
 body:not(.watch) .rt-head{scroll-margin-top:32px}
 /* Selector de ejercicios: Cancelar / Crear en tiza y con toque cómodo */
 body:not(.watch) .pk-top .linkbtn{color:var(--fg);min-height:44px;padding:6px 4px}
+/* ==========================================================================
+   Títulos (16-oct-2026, opción B elegida por Edgar): Poppins con los tamaños de la v1.0.40.
+   El resto de "Acero y discos" sigue igual (colores, formas, etiquetas, tarjetas). La sesión
+   no cambia: kg, reps y reloj quedan en Barlow Condensed de ancho fijo. Solo teléfono.
+   ========================================================================== */
+body:not(.watch){--f-display:"Poppins",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--f-num:"Barlow",system-ui,sans-serif}
+body:not(.watch) h1{font-size:28px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+body:not(.watch) h2{font-size:21px;font-weight:700;letter-spacing:-.02em}
+body:not(.watch) h3{font-size:17px;font-weight:700;letter-spacing:-.01em}
+body:not(.watch) .hero .big{font-size:30px;font-weight:800;letter-spacing:-.03em;line-height:1.05}
+body:not(.watch) .label,body:not(.watch) .hoy-rq{font-size:12.5px}
+body:not(.watch) .hero .label{font-size:13.5px}
+body:not(.watch) .wordmark{font-size:20px;letter-spacing:.14em}
+body:not(.watch) .btn.primary{font-size:14.5px}
+body:not(.watch) .btn.primary.block{font-size:16px}
+body:not(.watch) .btn.primary.small{font-size:13.5px}
+body:not(.watch) .nav button{font-size:10.5px}
+body:not(.watch) .kind{font-size:11.5px}
+body:not(.watch) .pill,body:not(.watch) .pro-b{font-size:12px}
+body:not(.watch) .rt-tag-now{font-size:13px}
+body:not(.watch) .rt-newr{font-size:14.5px}
+body:not(.watch) .sets .h{font-size:12px}
+body:not(.watch) .sx-page .card.ex > .row:first-child::before{font-size:12.5px}
+body:not(.watch) .sets input,body:not(.watch) .sx-clock,body:not(.watch) .prev,body:not(.watch) .sets .n{font-family:"Barlow Condensed","Arial Narrow",sans-serif!important}
+/* Barra de la sesión: que quepa "Rutina · 0/24 series" junto a Terminar */
+body:not(.watch) .sx-sub{font-size:12.5px}
+body:not(.watch) .sx-fin{padding-inline:14px}
