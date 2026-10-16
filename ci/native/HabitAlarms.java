@@ -134,7 +134,7 @@ public class HabitAlarms {
 
     static void show(Context c, JSONObject o) {
         channel(c);
-        int id = o.optInt("id");
+        final int id = o.optInt("id");
         String item = o.toString();
         Intent full = new Intent(c, HabitAlarmActivity.class).putExtra("item", item)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_USER_ACTION);
@@ -158,72 +158,266 @@ public class HabitAlarms {
             .setDeleteIntent(actionPI(c, A_DISMISS, id, item));   // deslizar la notificación = ✕
         NotificationManager nm = (NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm != null) nm.notify(id, b.build());
-        /* Con el celular en uso Android solo muestra la notificación arriba; bloqueado, la pantalla completa
-           necesita el permiso "Notificaciones de pantalla completa" (Android 14+). Si el usuario dio
-           "Aparecer encima de otras apps", abrimos la pantalla completa igual (como la app Recordatorios). */
-        boolean opens = true;
+        /* Cómo se abre la pantalla completa:
+           - Bloqueado o con la pantalla apagada: la abre Android por la notificación (setFullScreenIntent), si la app
+             tiene "Notificaciones de pantalla completa" (Android 14+).
+           - Con "Aparecer encima de otras apps" la abrimos nosotros (Android lo permite desde segundo plano), con el
+             celular en uso o bloqueado. Si a los 2,2 s no se abrió, se muestra igual como ventana superpuesta.
+           - Sin ninguno de los dos, con el celular en uso Android solo muestra la notificación arriba.
+           Cada aviso queda en un registro (log) que la app muestra en Ajustes → Recordatorios con el motivo. */
+        final Context app = c.getApplicationContext();
+        final long fired = System.currentTimeMillis();
+        boolean on = true, locked = false, over = false, fsi = true, exact = true;
         try {
             android.os.PowerManager pm = (android.os.PowerManager) c.getSystemService(Context.POWER_SERVICE);
-            boolean on = pm == null || pm.isInteractive();
-            boolean over = Build.VERSION.SDK_INT >= 23 && android.provider.Settings.canDrawOverlays(c);
-            boolean fsi = Build.VERSION.SDK_INT < 34 || (nm != null && nm.canUseFullScreenIntent());
-            if (over) openOver(c, full);
-            opens = over || (!on && fsi);
+            on = pm == null || pm.isInteractive();
+            android.app.KeyguardManager km = (android.app.KeyguardManager) c.getSystemService(Context.KEYGUARD_SERVICE);
+            locked = km != null && km.isKeyguardLocked();
+            over = Build.VERSION.SDK_INT >= 23 && android.provider.Settings.canDrawOverlays(c);
+            fsi = Build.VERSION.SDK_INT < 34 || (nm != null && nm.canUseFullScreenIntent());
+            AlarmManager am = (AlarmManager) c.getSystemService(Context.ALARM_SERVICE);
+            exact = Build.VERSION.SDK_INT < 31 || (am != null && am.canScheduleExactAlarms());
         } catch (Exception ignored) {}
+        logFire(app, o, fired, on, locked, over, fsi, exact);
+        final boolean opens = over || ((!on || locked) && fsi);
         /* Ding dong siempre en el modo corto. Con alarma de 30 s / 1 min suena el bucle de la pantalla completa;
-           si esta no se abre (celular en uso sin "Aparecer encima"), al menos el ding dong. */
+           si esta no se abre, al menos el ding dong. */
         if (isDing(o) || !opens) ding(c);
+        if (over) openWithVeil(app, full);
+        final boolean ov = over;
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            String res;
+            if (openedSince(id, fired)) res = "act";
+            else if (ov && showOverlay(app, o)) res = "ovl";
+            else res = "notif";
+            removeVeil(app);
+            logResult(app, id, fired, res);
+            if (!"act".equals(res) && opens && !isDing(o)) ding(app);
+        }, 2200);
     }
 
-    /* Abrir la pantalla completa desde segundo plano. "Probar" funcionaba porque la app seguía a la vista
-       (Android deja abrir pantallas unos segundos después de usar la app); a la hora programada la app está
-       cerrada y, desde Android 15 (apuntamos a API 36), el permiso "Aparecer encima" ya no basta: hace falta
-       una ventana superpuesta visible. Ponemos una de 1 px, transparente y sin toques, esperamos a que se
-       dibuje, abrimos la pantalla y la quitamos (también al abrirse HabitAlarmActivity). */
+    /* ---------- ¿Se abrió la pantalla? (la marca HabitAlarmActivity al crearse) ---------- */
+    static volatile int openedId = -1;
+    static volatile long openedAt = 0;
+    static void markOpened(Context c, int id) {
+        openedId = id; openedAt = System.currentTimeMillis();
+        logOpened(c.getApplicationContext(), id);
+    }
+    static boolean openedSince(int id, long t) { return openedId == id && openedAt >= t - 1000; }
+
+    /* Abrir la pantalla desde segundo plano con "Aparecer encima": ya mismo y, por si el sistema pide además una
+       ventana visible (algunas versiones), otra vez a los 0,9 s con una ventana de 1 px transparente puesta. */
     static android.view.View veil;
-    static void openOver(Context c, Intent full) {
-        final Context app = c.getApplicationContext();
-        final Handler h = new Handler(Looper.getMainLooper());
+    static void openWithVeil(final Context app, final Intent full) {
+        final long t0 = System.currentTimeMillis();
+        try { app.startActivity(full); } catch (Exception ignored) { }
+        addVeil(app);
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            if (openedAt >= t0) return;
+            try { app.startActivity(full); } catch (Exception ignored) { }
+        }, 900);
+    }
+    static void addVeil(Context app) {
         try {
             removeVeil(app);
             android.view.WindowManager wm = (android.view.WindowManager) app.getSystemService(Context.WINDOW_SERVICE);
-            int type = Build.VERSION.SDK_INT >= 26 ? android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY : android.view.WindowManager.LayoutParams.TYPE_PHONE;
-            android.view.WindowManager.LayoutParams lp = new android.view.WindowManager.LayoutParams(1, 1, type,
+            android.view.WindowManager.LayoutParams lp = new android.view.WindowManager.LayoutParams(1, 1, overlayType(),
                 android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE | android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
                 android.graphics.PixelFormat.TRANSLUCENT);
             lp.gravity = android.view.Gravity.TOP | android.view.Gravity.START;
             android.view.View v = new android.view.View(app);
             wm.addView(v, lp);
             veil = v;
-            h.postDelayed(() -> { try { app.startActivity(full); } catch (Exception ignored) { } }, 300);
-            h.postDelayed(() -> removeVeil(app), 2800);
-        } catch (Exception e) {
-            try { app.startActivity(full); } catch (Exception ignored) { }
-        }
+        } catch (Throwable ignored) { }
     }
     static void removeVeil(Context c) {
         android.view.View v = veil; veil = null;
         if (v == null) return;
-        try { ((android.view.WindowManager) c.getApplicationContext().getSystemService(Context.WINDOW_SERVICE)).removeView(v); } catch (Exception ignored) { }
+        try { ((android.view.WindowManager) c.getApplicationContext().getSystemService(Context.WINDOW_SERVICE)).removeView(v); } catch (Throwable ignored) { }
+    }
+    @SuppressWarnings("deprecation")
+    static int overlayType() {
+        return Build.VERSION.SDK_INT >= 26 ? android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY : android.view.WindowManager.LayoutParams.TYPE_PHONE;
+    }
+
+    /* ---------- Respaldo: el recordatorio como ventana superpuesta a pantalla completa ---------- */
+    static android.view.View ovl;
+    static int ovlId = -1;
+    static boolean showOverlay(final Context app, JSONObject o) {
+        try {
+            removeOverlay(app);
+            android.view.WindowManager wm = (android.view.WindowManager) app.getSystemService(Context.WINDOW_SERVICE);
+            android.view.WindowManager.LayoutParams lp = new android.view.WindowManager.LayoutParams(
+                android.view.WindowManager.LayoutParams.MATCH_PARENT, android.view.WindowManager.LayoutParams.MATCH_PARENT, overlayType(),
+                android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | android.view.WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN | android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
+                android.graphics.PixelFormat.TRANSLUCENT);
+            android.view.View v = buildUi(app, o, () -> removeOverlay(app));
+            wm.addView(v, lp);
+            ovl = v; ovlId = o.optInt("id");
+            return true;
+        } catch (Throwable t) { ovl = null; ovlId = -1; return false; }
+    }
+    static void removeOverlay(Context c) {
+        android.view.View v = ovl; ovl = null; ovlId = -1;
+        if (v == null) return;
+        try { ((android.view.WindowManager) c.getApplicationContext().getSystemService(Context.WINDOW_SERVICE)).removeView(v); } catch (Throwable ignored) { }
+    }
+
+    /* ---------- La vista del recordatorio (la usan la pantalla completa y la ventana superpuesta) ---------- */
+    static int dp(Context c, float v) { return Math.round(android.util.TypedValue.applyDimension(android.util.TypedValue.COMPLEX_UNIT_DIP, v, c.getResources().getDisplayMetrics())); }
+    static android.widget.TextView text(Context c, String s, float sp, boolean bold) {
+        android.widget.TextView t = new android.widget.TextView(c);
+        t.setText(s); t.setTextColor(android.graphics.Color.WHITE); t.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, sp);
+        t.setGravity(android.view.Gravity.CENTER);
+        if (bold) t.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        return t;
+    }
+    static android.widget.TextView circle(Context c, String s, boolean filled) {
+        android.widget.TextView t = text(c, s, 34, false);
+        android.graphics.drawable.GradientDrawable g = new android.graphics.drawable.GradientDrawable();
+        g.setShape(android.graphics.drawable.GradientDrawable.OVAL);
+        if (filled) { g.setColor(0xFFFAFAFA); t.setTextColor(0xFFFF5A1F); }
+        else { g.setColor(0x33FFFFFF); g.setStroke(dp(c, 3), android.graphics.Color.WHITE); }
+        t.setBackground(g);
+        t.setLayoutParams(new android.widget.LinearLayout.LayoutParams(dp(c, 86), dp(c, 86)));
+        return t;
+    }
+    static String okText(JSONObject o) {
+        String ok = o.optString("ok", "");
+        return ok.length() > 0 ? ok : "¡Hecho! " + o.optString("name", "");
+    }
+    static void toast(Context c, String s) { try { android.widget.Toast.makeText(c, s, android.widget.Toast.LENGTH_SHORT).show(); } catch (Throwable ignored) { } }
+    static android.view.View buildUi(final Context c, final JSONObject item, final Runnable close) {
+        final int id = item.optInt("id");
+        android.widget.FrameLayout root = new android.widget.FrameLayout(c);
+        root.setBackground(new android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM, new int[] { 0xFF0B0D12, 0xFF2A1410, 0xFF8A3414, 0xFFFF6A1F }));
+        root.setClickable(true);   // la ventana superpuesta no deja pasar toques a la app de abajo
+
+        android.widget.LinearLayout top = new android.widget.LinearLayout(c);
+        top.setOrientation(android.widget.LinearLayout.VERTICAL);
+        top.setGravity(android.view.Gravity.CENTER_HORIZONTAL);
+        top.setPadding(dp(c, 28), dp(c, 140), dp(c, 28), 0);
+        android.widget.TextView title = text(c, item.optString("title", "Recordatorio"), 34, true);
+        title.setLineSpacing(0, 1.05f);
+        top.addView(title);
+        android.widget.TextView sub = text(c, "Hoy · " + item.optString("time", ""), 18, false);
+        sub.setPadding(0, dp(c, 14), 0, 0); sub.setAlpha(0.9f);
+        top.addView(sub);
+        String body = item.optString("body", "");
+        if (body.length() > 0) { android.widget.TextView bd = text(c, body, 15, false); bd.setPadding(0, dp(c, 18), 0, 0); bd.setAlpha(0.75f); top.addView(bd); }
+        root.addView(top, new android.widget.FrameLayout.LayoutParams(-1, -2, android.view.Gravity.TOP));
+
+        android.widget.LinearLayout bottom = new android.widget.LinearLayout(c);
+        bottom.setOrientation(android.widget.LinearLayout.VERTICAL);
+        bottom.setPadding(dp(c, 36), 0, dp(c, 36), dp(c, 56));
+
+        android.widget.LinearLayout row = new android.widget.LinearLayout(c);
+        row.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+        row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        android.widget.TextView no = circle(c, "✕", true);
+        no.setContentDescription("Descartar");
+        no.setOnClickListener(v -> {
+            if (again(c, item)) toast(c, "Te lo recuerdo en " + againText(item.optInt("again")));
+            else dismiss(c, id);
+            close.run();
+        });
+        android.widget.TextView yes = circle(c, "✓", false);
+        yes.setContentDescription("Hecho");
+        yes.setOnClickListener(v -> { done(c, item); toast(c, okText(item)); close.run(); });
+        row.addView(no);
+        row.addView(new android.view.View(c), new android.widget.LinearLayout.LayoutParams(0, 1, 1f));
+        row.addView(yes);
+        bottom.addView(row);
+
+        android.widget.LinearLayout sn = new android.widget.LinearLayout(c);
+        sn.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+        sn.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        sn.setPadding(0, dp(c, 44), 0, 0);
+        android.widget.TextView minus = text(c, "—", 30, false);
+        minus.setContentDescription("Menos minutos");
+        minus.setLayoutParams(new android.widget.LinearLayout.LayoutParams(dp(c, 56), dp(c, 56)));
+        android.widget.TextView plus = text(c, "+", 36, false);
+        plus.setContentDescription("Más minutos");
+        plus.setLayoutParams(new android.widget.LinearLayout.LayoutParams(dp(c, 56), dp(c, 56)));
+        final int[] snz = { 15 };
+        final android.widget.TextView snoozeBtn = text(c, "Aplazar 15 min", 18, true);
+        android.graphics.drawable.GradientDrawable pill = new android.graphics.drawable.GradientDrawable();
+        pill.setColor(0x33FFFFFF); pill.setCornerRadius(dp(c, 40));
+        snoozeBtn.setBackground(pill);
+        snoozeBtn.setPadding(dp(c, 22), dp(c, 14), dp(c, 22), dp(c, 14));
+        minus.setOnClickListener(v -> { snz[0] = Math.max(5, snz[0] - 5); snoozeBtn.setText("Aplazar " + snz[0] + " min"); });
+        plus.setOnClickListener(v -> { snz[0] = Math.min(120, snz[0] + 5); snoozeBtn.setText("Aplazar " + snz[0] + " min"); });
+        snoozeBtn.setOnClickListener(v -> { snooze(c, item, snz[0]); toast(c, "Te lo recuerdo en " + snz[0] + " min"); close.run(); });
+        sn.addView(minus);
+        android.widget.LinearLayout.LayoutParams mid = new android.widget.LinearLayout.LayoutParams(0, -2, 1f);
+        mid.leftMargin = dp(c, 10); mid.rightMargin = dp(c, 10);
+        sn.addView(snoozeBtn, mid);
+        sn.addView(plus);
+        bottom.addView(sn);
+
+        root.addView(bottom, new android.widget.FrameLayout.LayoutParams(-1, -2, android.view.Gravity.BOTTOM));
+        return root;
     }
 
     static void dismiss(Context c, int id) {
         NotificationManager nm = (NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm != null) nm.cancel(id);
+        if (ovl != null && ovlId == id) removeOverlay(c);
     }
 
-    /** Marca el hábito como hecho: la app lo lee al abrirse (takeEvents). */
+    /** Hecho: la app lo lee al abrirse (takeEvents). Hábito = lo marca; agua = suma un vaso (250 ml). */
     static void done(Context c, JSONObject o) {
         JSONArray ev = load(c, "events");
         try {
             JSONObject e = new JSONObject();
             e.put("habit", o.optString("habit"));
+            e.put("kind", o.optString("kind", ""));
+            if ("water".equals(o.optString("kind"))) e.put("water", 250);
             e.put("day", o.optString("day"));
             e.put("at", System.currentTimeMillis());
             ev.put(e);
         } catch (JSONException ignored) {}
         prefs(c).edit().putString("events", ev.toString()).apply();
         dismiss(c, o.optInt("id"));
+    }
+
+    /* ---------- Registro de los últimos avisos (para ver en la app por qué no se abrió) ---------- */
+    static void logFire(Context c, JSONObject o, long fired, boolean on, boolean locked, boolean over, boolean fsi, boolean exact) {
+        try {
+            JSONArray l = load(c, "log"), out = new JSONArray();
+            for (int k = Math.max(0, l.length() - 11); k < l.length(); k++) out.put(l.get(k));
+            JSONObject e = new JSONObject();
+            e.put("id", o.optInt("id")); e.put("title", o.optString("title")); e.put("kind", o.optString("kind", ""));
+            e.put("at", o.optLong("at")); e.put("fired", fired);
+            e.put("on", on); e.put("locked", locked); e.put("over", over); e.put("fsi", fsi); e.put("exact", exact);
+            e.put("sdk", Build.VERSION.SDK_INT); e.put("res", "");
+            out.put(e);
+            prefs(c).edit().putString("log", out.toString()).apply();
+        } catch (Exception ignored) {}
+    }
+    static void logResult(Context c, int id, long fired, String res) {
+        try {
+            JSONArray l = load(c, "log");
+            for (int k = l.length() - 1; k >= 0; k--) {
+                JSONObject e = l.optJSONObject(k);
+                if (e != null && e.optInt("id") == id && e.optLong("fired") == fired) { if (!"act".equals(e.optString("res"))) e.put("res", res); break; }
+            }
+            prefs(c).edit().putString("log", l.toString()).apply();
+        } catch (Exception ignored) {}
+    }
+    /* La pantalla se abrió (quizá tarde, al encender el celular): el último aviso de ese id queda como abierto */
+    static void logOpened(Context c, int id) {
+        try {
+            JSONArray l = load(c, "log");
+            long now = System.currentTimeMillis();
+            for (int k = l.length() - 1; k >= 0; k--) {
+                JSONObject e = l.optJSONObject(k);
+                if (e == null || e.optInt("id") != id) continue;
+                if (now - e.optLong("fired") < 30 * 60000L && !"act".equals(e.optString("res"))) { e.put("res", "act"); e.put("late", now - e.optLong("fired")); }
+                break;
+            }
+            prefs(c).edit().putString("log", l.toString()).apply();
+        } catch (Exception ignored) {}
     }
 
     /** ✕ (o deslizar la notificación): si el recordatorio pide "avisar de nuevo en N min" (`again`), se reprograma

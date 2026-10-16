@@ -57,7 +57,7 @@ async function open(dir, { seed, watch, first, init, block } = {}) {
   if (first) { await p.addInitScript(SPY); if (init) await p.addInitScript(init); await p.goto(url); await p.waitForTimeout(2500); }
   else {
     await p.goto(url); await p.waitForTimeout(2500);   /* 1.ª apertura: migraciones de una vez */
-    await p.evaluate(() => { if (state.settings.pub) { state.settings.onb = 1; LS.set('newsSeen', NEWS_KEY); } state.settings.healthOk = 1; savePlans(); });
+    await p.evaluate(() => { if (state.settings.pub) state.settings.onb = 1; LS.set('newsSeen', NEWS_KEY); state.settings.healthOk = 1; savePlans(); });
     await p.addInitScript(SPY); if (init) await p.addInitScript(init);
     await p.reload(); await p.waitForTimeout(2500);  /* la de todos los días */
   }

@@ -64,6 +64,14 @@ public class HabitAlarmPlugin extends Plugin {
         call.resolve(r);
     }
 
+    /** Últimos avisos: hora programada y real, estado del celular y permisos, y si se abrió la pantalla completa. */
+    @PluginMethod
+    public void log(PluginCall call) {
+        JSObject r = new JSObject();
+        try { r.put("log", new JSArray(HabitAlarms.load(getContext(), "log").toString())); } catch (Exception e) { r.put("log", new JSArray()); }
+        call.resolve(r);
+    }
+
     @PluginMethod
     public void dismiss(PluginCall call) {
         HabitAlarms.dismiss(getContext(), call.getInt("id", 0));
@@ -112,7 +120,7 @@ public class HabitAlarmPlugin extends Plugin {
             o.put("title", call.getString("title", "Así se verá tu recordatorio"));
             o.put("body", call.getString("body", ""));
             o.put("time", call.getString("time", ""));
-            o.put("habit", ""); o.put("day", ""); o.put("name", "");
+            o.put("habit", ""); o.put("day", ""); o.put("name", ""); o.put("ok", "¡Listo! Así se verán tus recordatorios");
             o.put("ring", call.getInt("ring", 10));
             HabitAlarms.channel(getContext());
             HabitAlarms.arm(getContext(), o);

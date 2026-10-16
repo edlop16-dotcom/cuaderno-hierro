@@ -25,9 +25,9 @@ public class HabitAlarmReceiver extends BroadcastReceiver {
         if (HabitAlarms.A_FIRE.equals(a)) {   // goAsync mantiene vivo el proceso mientras suena el ding dong
             final PendingResult pr = goAsync();
             HabitAlarms.show(c, o);
-            new Handler(Looper.getMainLooper()).postDelayed(pr::finish, 3200);
+            new Handler(Looper.getMainLooper()).postDelayed(pr::finish, 5000);   // 2,2 s: revisa si se abrió la pantalla (y si no, la ventana superpuesta)
         }
-        else if (HabitAlarms.A_DONE.equals(a)) { HabitAlarms.done(c, o); Toast.makeText(c, "¡Hecho! " + o.optString("name"), Toast.LENGTH_SHORT).show(); }
+        else if (HabitAlarms.A_DONE.equals(a)) { HabitAlarms.done(c, o); Toast.makeText(c, HabitAlarms.okText(o), Toast.LENGTH_SHORT).show(); }
         else if (HabitAlarms.A_DISMISS.equals(a)) { HabitAlarms.again(c, o); }
         else if (HabitAlarms.A_SNOOZE.equals(a)) { HabitAlarms.snooze(c, o, 15); Toast.makeText(c, "Te lo recuerdo en 15 min", Toast.LENGTH_SHORT).show(); }
     }

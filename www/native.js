@@ -139,7 +139,7 @@ function vSettings() {
   <div class="card"><div class="row" style="justify-content:space-between"><h3>Recordatorios</h3>${LN && state.notifPerm === 'granted' ? '<button class="btn small" data-act="n-test">Probar</button>' : ''}</div>
     <div class="muted" style="font-size:12.5px">Son notificaciones normales, no alarmas. Los de creatina, proteína y agua no suenan si ya cumpliste ese día.</div>
     ${state.reminders.map((r, i) => `<div class="remrow ${r.on ? '' : 'off'}">
-      <div class="row"><div class="grow"><div style="font-weight:700">${esc(r.label)}</div><div class="muted" style="font-size:12px">${REM_KINDS[r.kind].label} · ${r.days.length === 7 ? 'todos los días' : r.days.map(d => WDL[d].slice(0, 3)).join(', ')}</div></div>
+      <div class="row"><div class="grow"><div style="font-weight:700">${esc(r.label)}</div><div class="muted" style="font-size:12px">${REM_KINDS[r.kind].label} · ${r.days.length === 7 ? 'todos los días' : r.days.map(d => WDL[d].slice(0, 3)).join(', ')}${typeof remTag === 'function' ? remTag(r) : ''}</div></div>
         <span class="num" style="font-size:20px;font-weight:700">${r.time}</span>
         <button class="switch ${r.on ? 'on' : ''}" data-act="r-tog" data-i="${i}" role="switch" aria-checked="${r.on}" aria-label="Activar ${esc(r.label)}"><i></i></button></div>
       <button class="btn small" data-act="r-edit" data-i="${i}" style="align-self:flex-start">Editar</button></div>`).join('')}

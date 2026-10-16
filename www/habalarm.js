@@ -18,6 +18,21 @@ function habKeyOf(r) {
   return k && habOf(k) ? k : null;
 }
 const habDoneOn = (k, date) => !!((state.daily[dk(date)] || {})[k]);
+/* ¿Aparece en toda la pantalla? Hábitos: sí, salvo que lo apaguen (`fs:false`). Agua, entrenamiento y personalizados:
+   si lo eligen (`fs:true`); para el dueño, por defecto sí (16-oct-2026: Edgar quiere sus recordatorios en pantalla
+   completa, no solo los de hábitos). En el reloj, solo los hábitos, como antes. */
+const HA_FS_KINDS = { water: 1, train: 1, custom: 1 };
+function haFull(r) {
+  if (habKeyOf(r)) return r.fs !== false;
+  if (isWatch() || !HA_FS_KINDS[r.kind]) return false;
+  return r.fs != null ? !!r.fs : !pubUser();
+}
+function remTag(r) { return !isWatch() && haFull(r) ? ' · <span class="rem-fs">Pantalla completa</span>' : ''; }
+/* ✓ en agua = un vaso de 250 ml */
+function haWater(day, ml) {
+  const t = state.daily[day] = state.daily[day] || { water: 0 };
+  t.water = Math.max(0, (t.water || 0) + ml); t.edited = Date.now();
+}
 function habBody(k) {
   const h = habOf(k), st = typeof supStreak === 'function' ? supStreak(k) : 0;
   return [h && h.dose, st ? `🔥 ${st} ${st === 1 ? 'día' : 'días'} seguidos, ¡no cortes la racha!` : '¡Empieza tu racha hoy!'].filter(Boolean).join(' · ');
@@ -26,8 +41,8 @@ function habBody(k) {
 /* Notificaciones normales: los hábitos van por la pantalla completa */
 const _remSkipHA = remSkip;
 remSkip = function (r, d, at) {
+  if (HA && haFull(r)) return true;
   const k = habKeyOf(r);
-  if (k && HA) return true;
   if (k) return d === 0 && habDoneOn(k, at);
   return _remSkipHA(r, d, at);
 };
@@ -63,16 +78,27 @@ function haAgainAt(it) {
   const nx = new Date(Date.now() + m * 60000);
   return dk(nx) === (it.day || dk(new Date())) && nx.getHours() < 23 ? nx.getTime() : 0;
 }
+const HA_OK = { water: '+250 ml de agua 💧', train: '¡A entrenar! 💪', custom: 'Listo ✓' };
+/* El aviso de un recordatorio para ese día (null si ese día no toca: hábito ya hecho, ya tomaste 2,5 L, ya entrenaste…) */
+function haItemFor(r, ri, at, d) {
+  const k = habKeyOf(r);
+  if (k) {
+    if (d === 0 && habDoneOn(k, at)) return null;
+    return { id: 3000 + ri * 20 + d, at: at.getTime(), title: r.label || habOf(k).name, body: haBodyR(r, k), habit: k, kind: 'hab', day: dk(at), name: habOf(k).name, time: r.time, again: +r.again || 0 };
+  }
+  if (_remSkipHA(r, d, at)) return null;
+  const tx = _remTextHA(r, d, at);
+  return { id: 3000 + ri * 20 + d, at: at.getTime(), title: tx.title, body: tx.body, habit: '', kind: r.kind, day: dk(at), name: r.label, time: r.time, again: 0, ok: HA_OK[r.kind] || 'Listo ✓' };
+}
 function haItems() {
   const now = Date.now(), out = [];
   state.reminders.forEach((r, ri) => {
-    const k = habKeyOf(r); if (!r.on || !k) return;
+    if (!r.on || !haFull(r)) return;
     const [hh, mm] = r.time.split(':').map(Number);
     for (let d = 0; d < 14; d++) {
       const at = new Date(); at.setDate(at.getDate() + d); at.setHours(hh, mm, 0, 0);
       if (at.getTime() <= now + 5000 || r.days.indexOf(at.getDay()) < 0) continue;
-      if (d === 0 && habDoneOn(k, at)) continue;
-      out.push({ id: 3000 + ri * 20 + d, at: at.getTime(), title: r.label || habOf(k).name, body: haBodyR(r, k), habit: k, day: dk(at), name: habOf(k).name, time: r.time, again: +r.again || 0 });
+      const it = haItemFor(r, ri, at, d); if (it) out.push(it);
     }
   });
   state.haSnz = state.haSnz.filter(x => x.at > now && !habDoneOn(x.habit, new Date(x.at)));
@@ -100,14 +126,19 @@ async function haTake() {
   try {
     const r = await HA.takeEvents(), ev = (r && r.events) || [];
     const done = ev.filter(e => e.habit && e.day && haMark(e.habit, e.day));
-    if (done.length) { saveDaily(); render(); toast(`Marcado: ${done.map(e => (habOf(e.habit) || {}).name || e.habit).join(', ')} ✓`); }
+    const water = ev.filter(e => !e.habit && e.day && (e.water || e.kind === 'water'));
+    water.forEach(e => haWater(e.day, +e.water || 250));
+    if (done.length || water.length) {
+      saveDaily(); render();
+      toast([done.length ? `Marcado: ${done.map(e => (habOf(e.habit) || {}).name || e.habit).join(', ')} ✓` : '', water.length ? `+${water.length * 250} ml de agua 💧` : ''].filter(Boolean).join(' · '));
+    }
   } catch (e) {}
 }
 if (HA) {
   haTake();
   try { CAP.App.addListener('resume', () => { haTake(); haCheck(); }); } catch (e) {}
   try { CAP.App.addListener('appStateChange', s => { if (s && s.isActive) haTake(); }); } catch (e) {}
-  setTimeout(() => { try { HA.status().then(s => { state.haStatus = s; if (state.tab === 'settings') render(); }); } catch (e) {} }, 1200);
+  setTimeout(() => { try { HA.status().then(s => { state.haStatus = s; if (state.tab === 'settings') render(); }); } catch (e) {} haLogLoad(); }, 1200);
 }
 
 /* ---------- Pantalla completa dentro de la app ---------- */
@@ -130,12 +161,13 @@ function haCheck() {
   if (haCur || document.visibilityState === 'hidden') return;
   const now = new Date(), t = now.getTime();
   state.reminders.forEach((r, ri) => {
-    const k = habKeyOf(r); if (!r.on || !k || r.days.indexOf(now.getDay()) < 0) return;
+    if (!r.on || !haFull(r) || r.days.indexOf(now.getDay()) < 0) return;
     const [hh, mm] = r.time.split(':').map(Number), at = new Date(now); at.setHours(hh, mm, 0, 0);
     const key = ri + '@' + dk(at) + r.time;
-    if (haCur || haShown[key] || t < at.getTime() || t - at.getTime() > 120000 || habDoneOn(k, at)) return;
+    if (haCur || haShown[key] || t < at.getTime() || t - at.getTime() > 120000) return;
+    const it = haItemFor(r, ri, at, 0); if (!it) return;
     haShown[key] = 1;
-    haShow({ id: 3000 + ri * 20, title: r.label || habOf(k).name, body: haBodyR(r, k), habit: k, day: dk(at), name: habOf(k).name, time: r.time, again: +r.again || 0 });
+    haShow(it);
   });
   state.haSnz.forEach(x => {
     if (haCur || x.shown || t < x.at || t - x.at > 120000 || habDoneOn(x.habit, new Date(x.at))) return;
@@ -157,7 +189,8 @@ document.addEventListener('click', ev => {
   if (a === 'ha-yes' && haCur) {
     const it = haCur; haHide();
     if (it.habit && haMark(it.habit, it.day || dk(new Date()))) { saveDaily(); render(); }
-    toast(`¡Hecho! ${it.name || ''} ✓`);
+    else if (it.kind === 'water') { haWater(it.day || dk(new Date()), 250); saveDaily(); render(); }
+    toast(it.ok || `¡Hecho! ${it.name || ''} ✓`);
   }
   if (a === 'ha-min') { haMin = Math.max(5, Math.min(120, haMin + (+b.dataset.d))); const p = document.querySelector('#hab-alarm .ha-pill'); if (p) p.textContent = `Aplazar ${haMin} min`; }
   if (a === 'ha-snooze' && haCur) {
@@ -185,9 +218,14 @@ function haRemOf(k) {
   const L = state.reminders.map((r, i) => ({ r, i })).filter(x => habKeyOf(x.r) === k);
   const on = L.find(x => x.r.on); return on ? on.i : L.length ? L[0].i : -1;
 }
+function haFsField(r) {
+  if (isWatch()) return '';
+  const on = r && r.kind ? haFull(r) : !pubUser();
+  return `<label class="field rem-fsf" id="rm-fs-f"><span class="row" style="gap:10px"><input type="checkbox" id="rm-fs" ${on ? 'checked' : ''} style="width:22px;height:22px;flex-shrink:0"><span class="grow"><b>Aparecer en toda la pantalla</b><small class="muted" style="display:block;font-size:12px">Como un despertador: ✓ hecho, ✕ descartar o aplazar. Si no, llega como notificación normal.</small></span></span></label>`;
+}
 function haField(r) {
   const cur = r && habKeyOf(r), list = habList().filter(h => !h.hidden || h.k === cur), ag = r ? +r.again || 0 : 0, hid = cur ? '' : 'hidden';
-  return `<div class="field" id="rm-hab-f" ${hid}><label class="label" for="rm-hab">¿Qué hábito?</label>
+  return haFsField(r) + `<div class="field" id="rm-hab-f" ${hid}><label class="label" for="rm-hab">¿Qué hábito?</label>
     <select id="rm-hab">${list.map(h => `<option value="${h.k}" ${h.k === cur ? 'selected' : ''}>${esc(h.name)}</option>`).join('')}</select></div>
     <div class="field" id="rm-again-f" ${hid}><label class="label" for="rm-again">Si lo cierras con ✕</label>
     <select id="rm-again">${HA_AGAIN.map(([v, l]) => `<option value="${v}" ${v === ag ? 'selected' : ''}>${l}</option>`).join('')}</select>
@@ -215,24 +253,27 @@ function haSync(force) {
   if (!kind || !f) return;
   f.hidden = kind.value !== 'hab';
   const fa = document.getElementById('rm-again-f'); if (fa) fa.hidden = kind.value !== 'hab';
+  const fs = document.getElementById('rm-fs'); if (fs && !fs.dataset.touched) fs.checked = kind.value === 'hab' || !pubUser();   // si no lo tocaste, sigue al tipo
   const hint = document.getElementById('rm-hint'); if (hint) hint.textContent = REM_KINDS[kind.value].hint;
   if (kind.value === 'hab' && hab && lab) { const h = habOf(hab.value); if (h && (force || !lab.value.trim() || lab.value === haAuto)) { lab.value = haAuto = 'Toma tu ' + h.name.toLowerCase(); } }
 }
 document.addEventListener('change', ev => { if (ev.target.id === 'rm-kind' || ev.target.id === 'rm-hab') haSync(false); });
+document.addEventListener('change', ev => { if (ev.target.id === 'rm-fs') ev.target.dataset.touched = '1'; });
 
 /* Guardar el hábito elegido junto con el recordatorio */
 let haPending = null;
 window.addEventListener('submit', ev => {
   const f = ev.target; if (!f || f.id !== 'f-rem') return;
   const kind = document.getElementById('rm-kind'), hab = document.getElementById('rm-hab'), ag = document.getElementById('rm-again');
-  haPending = { i: f.dataset.i === '' ? null : +f.dataset.i, n: state.reminders.length, hab: kind && kind.value === 'hab' && hab ? hab.value : null, again: ag ? +ag.value || 0 : 0 };
+  const fsb = document.getElementById('rm-fs');
+  haPending = { i: f.dataset.i === '' ? null : +f.dataset.i, n: state.reminders.length, hab: kind && kind.value === 'hab' && hab ? hab.value : null, again: ag ? +ag.value || 0 : 0, fs: fsb ? fsb.checked : null };
 }, true);
 const _saveRemHA = saveReminders;
 saveReminders = function () {
   if (haPending) {
     const p = haPending; haPending = null;
     const r = p.i != null ? state.reminders[p.i] : (state.reminders.length > p.n ? state.reminders[state.reminders.length - 1] : null);
-    if (r) { if (p.hab) r.hab = p.hab; else delete r.hab; if (p.hab && p.again) r.again = p.again; else delete r.again; }
+    if (r) { if (p.hab) r.hab = p.hab; else delete r.hab; if (p.hab && p.again) r.again = p.again; else delete r.again; if (p.fs != null) r.fs = p.fs; }
   }
   _saveRemHA();
 };
@@ -255,9 +296,45 @@ vSettings = function () {
     <button class="btn small" data-act="ha-test">Probar</button></div>
     <div class="ha-durrow"><span class="label">Sonido del recordatorio</span><div class="seg ha-dur" role="group" aria-label="Sonido del recordatorio">${HA_DUR.map(([v, l]) => `<button type="button" class="${haRing() === v ? 'on' : ''}" data-act="ha-dur" data-v="${v}" aria-pressed="${haRing() === v}">${l}</button>`).join('')}</div>
     <div class="muted" style="font-size:12px">${haRing() < 30 ? 'Suena una vez (2-3 s) y vibra una vez, aunque el celular esté en silencio.' : 'Suena en bucle aunque el celular esté en silencio; se calla antes si tocas un botón o las teclas de volumen.'}</div></div></div>`;
-  return h.replace('<button class="btn block" data-act="r-new">', box + '<button class="btn block" data-act="r-new">')
+  if (isWatch()) return h.replace('<button class="btn block" data-act="r-new">', box + '<button class="btn block" data-act="r-new">')
     .replace('Son notificaciones normales, no alarmas.', 'Los de hábitos aparecen en toda la pantalla; los demás son notificaciones normales.');
+  /* Teléfono: ya no son solo los hábitos, dos botones de prueba con nombre distinto y el registro de los últimos avisos */
+  const boxP = box.replace('<b>Hábitos a pantalla completa</b>', '<b>Pantalla completa</b>')
+    .replace('Los recordatorios de hábitos aparecen como en la app Recordatorios', 'Los que dicen «Pantalla completa» aparecen como en la app Recordatorios')
+    .replace('data-act="ha-test">Probar<', 'data-act="ha-test">Probar pantalla completa<') + haLogHtml();
+  return h.replace('<button class="btn block" data-act="r-new">', boxP + '<button class="btn block" data-act="r-new">')
+    .replace('data-act="n-test">Probar<', 'data-act="n-test">Probar notificación<')
+    .replace('Son notificaciones normales, no alarmas.', 'Los que dicen «Pantalla completa» aparecen en toda la pantalla, como un despertador; los demás son notificaciones normales.');
 };
+
+/* ---------- Últimos avisos: qué pasó en cada uno y por qué (registro del lado nativo, HA.log) ---------- */
+function haWhen(ms) {
+  const d = new Date(ms), y = new Date(); y.setDate(y.getDate() - 1);
+  const day = dk(d) === dk(new Date()) ? 'Hoy' : dk(d) === dk(y) ? 'Ayer' : `${d.getDate()}/${d.getMonth() + 1}`;
+  return `${day} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+function haWhy(e) {
+  let s, fix = '';
+  const ok = e.res === 'act' || e.res === 'ovl';
+  if (e.res === 'act') s = e.late > 60000 ? 'Se abrió en toda la pantalla al encender el celular' : 'Apareció en toda la pantalla';
+  else if (e.res === 'ovl') s = 'Apareció en toda la pantalla, encima de lo que estabas usando';
+  else if (e.res === 'notif') {
+    if (!e.on || e.locked) {
+      if (!e.fsi) { s = `Solo notificación: el celular estaba bloqueado y falta «Notificaciones de pantalla completa»${e.over ? '' : ' (o «Aparecer encima de otras apps»)'}`; fix = 'fullScreen'; }
+      else s = 'Solo notificación: Android no la abrió con el celular bloqueado';
+    } else if (!e.over) { s = 'Solo notificación: con el celular en uso Android solo la muestra arriba; falta «Aparecer encima de otras apps»'; fix = 'overlay'; }
+    else s = 'Solo notificación: Android no dejó abrirla';
+  } else s = 'Llegó el aviso';
+  const late = e.at && e.fired - e.at > 90000 ? Math.round((e.fired - e.at) / 60000) : 0;
+  if (late) { s += ` · llegó ${late} min tarde${e.exact === false ? ': falta «Alarmas y recordatorios»' : ''}`; if (!fix && e.exact === false) fix = 'exact'; }
+  return { s, ok, fix };
+}
+function haLogHtml() {
+  const L = (state.haLog || []).slice(-5).reverse(), st = state.haStatus || {};
+  if (!HA || !L.length) return '';
+  return `<div class="ha-log"><span class="label">Últimos avisos</span>${L.map(e => { const w = haWhy(e);
+    return `<div class="ha-log-r${w.ok ? ' ok' : ''}"><span class="ha-ck-i">${w.ok ? ic('check', 14) : '!'}</span><span class="grow"><b>${haWhen(e.at || e.fired)} · ${esc(e.id === 2999 ? 'Prueba' : e.title || 'Recordatorio')}</b><small>${esc(w.s)}</small></span>${w.fix && st[w.fix] === false ? `<button class="btn small" data-act="ha-perm" data-t="${w.fix}">Permitir</button>` : ''}</div>`; }).join('')}</div>`;
+}
 
 /* En "Tus hábitos": campanita para crear su recordatorio */
 const _habManageHA = habManage;
@@ -272,6 +349,10 @@ habManage = function (edit) {
 scheduleSoon();
 
 /* Al volver de los ajustes del sistema (o reabrir la app), releer los permisos: el aviso desaparece si ya se dieron */
-function haRefresh() { if (!HA) return; try { HA.status().then(s => { const ch = JSON.stringify(s) !== JSON.stringify(state.haStatus || {}); state.haStatus = s; if (ch && state.tab === 'settings' && $('#sheet').hidden) render(); }).catch(() => {}); } catch (e) {} }
+function haRefresh() { if (!HA) return; try { HA.status().then(s => { const ch = JSON.stringify(s) !== JSON.stringify(state.haStatus || {}); state.haStatus = s; if (ch && state.tab === 'settings' && $('#sheet').hidden) render(); }).catch(() => {}); } catch (e) {} haLogLoad(); }
+function haLogLoad() {
+  if (!HA || !HA.log || isWatch()) return;
+  try { HA.log().then(r => { const l = (r && r.log) || [], ch = JSON.stringify(l) !== JSON.stringify(state.haLog || []); state.haLog = l; if (ch && state.tab === 'settings' && $('#sheet').hidden) render(); }).catch(() => {}); } catch (e) {}
+}
 document.addEventListener('visibilitychange', () => { if (!document.hidden) setTimeout(haRefresh, 600); });
 try { if (CAP && CAP.App) CAP.App.addListener('resume', () => setTimeout(haRefresh, 600)); } catch (e) {}

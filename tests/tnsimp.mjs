@@ -42,7 +42,7 @@ async function open(dir, { owner, watch } = {}) {
   p.on('pageerror', e => p.errs.push(e.message));
   await p.clock.install({ time: MON });
   await p.addInitScript(o => {
-    if (o.owner && !localStorage.getItem('cdh.settings')) { localStorage.setItem('cdh.settings', JSON.stringify({ owner: 1, healthOk: 1 })); localStorage.setItem('cdh.newsSeen', '"n4"'); }
+    if (o.owner && !localStorage.getItem('cdh.settings')) { localStorage.setItem('cdh.settings', JSON.stringify({ owner: 1, healthOk: 1 })); localStorage.setItem('cdh.newsSeen', '"n5"'); }
   }, { owner });
   await p.goto(`http://127.0.0.1:${srv.address().port}/index.html`);
   await p.waitForTimeout(1500);

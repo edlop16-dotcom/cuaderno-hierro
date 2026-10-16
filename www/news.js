@@ -5,8 +5,14 @@
    Para la próxima versión: cambiar NEWS_KEY y la lista NEWS.
    No sale en el reloj, en una instalación nueva (tiene la bienvenida) ni durante una sesión.
    ========================================================================== */
-const NEWS_KEY = 'n4';   // se guarda en cdh.newsSeen (local: el celular y el reloj van por separado). n1 = 1.0.39, n2 = nueva organización (tanda 1), n3 = tanda 2, n4 = Próxima sesión (Coach e importada) y la ✕ de los hábitos
+const NEWS_KEY = 'n5';   // se guarda en cdh.newsSeen (local: el celular y el reloj van por separado). n1 = 1.0.39, n2 = nueva organización (tanda 1), n3 = tanda 2, n4 = Próxima sesión (Coach e importada) y la ✕ de los hábitos, n5 = recordatorios en toda la pantalla (también agua) y últimos avisos
 const NEWS = [
+  ['bell', 'Recordatorios en toda la pantalla', 'Ahora también los de agua: aparecen como un despertador, con ✓, ✕ y aplazar. En cada recordatorio eliges si sale en toda la pantalla o como notificación normal.', 'rem', 'Ver'],
+  ['droplet', 'Agua con un toque', 'En el recordatorio de agua, ✓ suma un vaso de 250 ml, aunque la app esté cerrada.', null],
+  ['shield', 'Revisa los permisos', 'En Ajustes → Recordatorios ves si falta algún permiso para que salgan en toda la pantalla, y en «Últimos avisos» qué pasó con cada uno y por qué.', 'remperm', 'Revisar'],
+];
+/* Quien no vio la n4 la ve también */
+const NEWS_N4 = [
   ['sparkles', 'Próxima sesión: el Coach', 'En Hoy y en Mi plan eliges Plan o Coach con un toque. El Coach arma cada ejercicio con peso, reps y RIR por serie según tu historial, y te dice por qué. Tu plan no cambia.', 'ns', 'Ver en Hoy'],
   ['clipboard-list', 'Importa la recomendación de tu IA', 'Al analizar con Claude o compartir, se pide un formato fijo. Pega la respuesta en "Importar": la revisas, la editas y queda como Próxima sesión de ese día.', 'nsi', 'Importar'],
   ['bell', 'Hábitos: qué hace la ✕', 'En cada recordatorio de hábito eliges si al cerrarlo te avisa de nuevo en 30 min a 4 h, o solo una vez al día.', 'hab'],
@@ -22,8 +28,8 @@ const NEWS_N3 = [
 const NEWS_PUB = ['target', 'Peso inicial sugerido y misiones', 'Las rutinas nuevas llegan con un peso prudente para empezar, y tienes misiones de inicio en Hoy.', null];
 
 function newsSheet(all) {
-  const seen = LS.get('newsSeen', ''), old = all || (seen !== 'n3' && seen !== NEWS_KEY);
-  const list = NEWS.concat(old ? NEWS_N3 : [], pubUser() ? [NEWS_PUB] : []);
+  const seen = LS.get('newsSeen', ''), n4 = all || ['n4', NEWS_KEY].indexOf(seen) < 0, old = all || ['n3', 'n4', NEWS_KEY].indexOf(seen) < 0;
+  const list = NEWS.concat(n4 ? NEWS_N4 : [], old ? NEWS_N3 : [], pubUser() ? [NEWS_PUB] : []);
   openSheet(`<div class="row"><span class="nw-ic">${ic('sparkles', 22)}</span><h2 class="grow">Lo nuevo en Forja</h2><button class="icon-btn" data-act="sheet-close" aria-label="Cerrar">${ic('x', 18)}</button></div>
     <div class="muted nw-sub">Toca <b>Ver</b> para ir a cada función. Algunas salen en su momento: el reporte el viernes y el resumen al terminar una sesión.</div>
     <div class="nw-list">${list.map(([icon, t, d, k, b]) => `<div class="nw-it"><span class="nw-i">${ic(icon, 18)}</span><span class="grow"><b>${t}</b><small>${d}</small></span>${k ? `<button type="button" class="btn small" data-nw="${k}">${b || 'Ver'}</button>` : ''}</div>`).join('')}</div>
@@ -61,6 +67,8 @@ document.addEventListener('click', ev => {
   if (k === 'nsi') { nwGo('train'); const g = document.querySelector('#btn-start'); if (g && typeof nsImportSheet === 'function') nsImportSheet(g.dataset.plan, g.dataset.day); return; }
   if (k === 'hab') return nwGo('settings', null, '.ha-set', 'Abre un recordatorio de hábito y elige "Si lo cierras con ✕".');
   if (k === 'nsset') return nwGo('settings', null, '.ns-set');
+  if (k === 'rem') return nwGo('settings', null, '.ha-set', 'Los que dicen «Pantalla completa» salen como despertador. Toca Editar para cambiarlo.');
+  if (k === 'remperm') return nwGo('settings', null, '.ha-set', 'Revisa que los permisos digan «Listo». Si alguno dice «Permitir», tócalo.');
 }, true);
 
 /* Ajustes → Novedades */
