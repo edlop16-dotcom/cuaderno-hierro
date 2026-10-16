@@ -210,4 +210,4 @@ window.addEventListener('click', ev => {
   const sure = a === 'rt-del' ? state.rtDel === b.dataset.day + ':' + k : state.confirm === 'exdel';
   if (sure && k > 0 && L[k - 1].ss && !L[k].ss) delete L[k - 1].ss;
 }, true);
-render();
+bootRender();

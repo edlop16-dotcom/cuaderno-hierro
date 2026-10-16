@@ -84,4 +84,4 @@ document.addEventListener('click', ev => {
   nav.addEventListener('contextmenu', ev => ev.preventDefault());
   nav.addEventListener('click', ev => { if (fired) { fired = false; ev.stopPropagation(); ev.preventDefault(); } }, true);
 })();
-render();
+bootRender();

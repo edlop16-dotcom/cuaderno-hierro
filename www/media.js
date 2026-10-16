@@ -122,7 +122,7 @@ const VID = {
     try {
       const db = await this.open(); const set = new Set();
       const cur = db.transaction('videos').objectStore('videos').index('ex').openKeyCursor();
-      cur.onsuccess = () => { const c = cur.result; if (c) { set.add(c.key); c.continue(); } else { this.index = set; safeRender(); } };
+      cur.onsuccess = () => { const c = cur.result; if (c) { set.add(c.key); c.continue(); } else { const was = this.index.size; this.index = set; if (set.size || was) safeRender(); } };
     } catch (e) {}
   },
 };

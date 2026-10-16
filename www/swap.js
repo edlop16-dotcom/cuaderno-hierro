@@ -105,4 +105,4 @@ document.addEventListener('click', ev => {
   if (b.dataset.act === 'swap') swapSheet(+b.dataset.ex);
   else { const k = document.getElementById('sw-keep'); swapDo(+b.dataset.ex, b.dataset.name, !!(k && k.checked)); }
 }, true);
-render();
+bootRender();

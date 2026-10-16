@@ -69,4 +69,4 @@ function decorateReady() {
 }
 const _renderReady = render;
 render = function () { _renderReady(); decorateReady(); };
-render();
+bootRender();

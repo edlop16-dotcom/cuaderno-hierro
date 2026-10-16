@@ -582,4 +582,4 @@ vSettings = function () {
 };
 (function () { const g = typeof SET_GRP !== 'undefined' && SET_GRP.find(x => x[0] === 'entreno'); if (g && g[4].indexOf('.ns-set') < 0) { g[4].push('.ns-set'); g[3] = g[3].replace('Coach semanal', 'Coach semanal, Próxima sesión'); } })();
 /* Como nav2.js y nav3.js: dibujar de nuevo al cargar, para que "Plan · Coach · Importada" e "Importar" salgan desde la primera pantalla */
-render();
+bootRender();

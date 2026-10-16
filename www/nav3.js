@@ -197,4 +197,4 @@ render = function () {
   const cur = state.tab === 'guide' ? 'plans' : state.tab === 'settings' ? '' : state.tab;
   document.querySelectorAll('#nav button').forEach(b => b.setAttribute('aria-current', b.dataset.tab === cur ? 'page' : 'false'));
 };
-render();
+bootRender();

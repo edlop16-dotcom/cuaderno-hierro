@@ -143,4 +143,4 @@ document.addEventListener('click', ev => {
   else if (a === 'share-x') { state.settings.shareSeen = b.dataset.id; saveLocal(); render(); }
   else if (a === 'share-go' && shareSheet.cv) { const s = state.sessions.find(x => x.id === b.dataset.id); state.settings.shareSeen = b.dataset.id; saveLocal(); shareOut(shareSheet.cv, s); }
 }, true);
-render();
+bootRender();

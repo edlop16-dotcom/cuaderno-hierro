@@ -267,4 +267,4 @@ document.addEventListener('click', ev => {
 }, true);
 
 if (state.draft && !isWatch()) state.sessMin = state.tab !== 'train';
-render();
+bootRender();

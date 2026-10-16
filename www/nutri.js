@@ -95,4 +95,4 @@ vBody = function () { const h = _vBodyN(), k = h.indexOf('<div class="card bd-ca
 
 /* El texto para Claude incluye tu objetivo */
 if (typeof claudePrompt === 'function') { const _cpN = claudePrompt; claudePrompt = function () { const c = nutriCalc(); return _cpN() + `\nNutrición: objetivo ${NU_GOALS[nutri().goal][0].toLowerCase()}, ${c.kcal} kcal y ${c.prot} g de proteína al día; proteína registrada hoy: ${protOf(today())} g.`; }; }
-render();
+bootRender();

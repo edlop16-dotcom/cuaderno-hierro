@@ -129,4 +129,4 @@ exPoints = function (name, gym) { return _exPointsSafe(name, gym).filter(p => !p
 const _bestSafe = bestE1rm;
 bestE1rm = function (name, gymId) { const keep = state.sessions; state.sessions = keep.filter(s => !s.approx); try { return _bestSafe(name, gymId); } finally { state.sessions = keep; } };
 
-render();
+bootRender();

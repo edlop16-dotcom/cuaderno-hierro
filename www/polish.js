@@ -85,4 +85,4 @@ function settingsOrder() {
 /* ---------- Tras cada dibujo ---------- */
 const _renderP = render;
 render = function () { _renderP(); trainOrder(); settingsOrder(); sxCur(); };
-render();
+bootRender();

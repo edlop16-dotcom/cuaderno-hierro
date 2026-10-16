@@ -297,4 +297,4 @@ document.addEventListener('click', ev => {
 /* Tras "Agregar" desde la lista completa en el reloj, volver a la pantalla de la serie */
 const _addToDraftW2 = addToDraft;
 addToDraft = function (names, at) { _addToDraftW2(names, at); w2.menu = null; };
-render();
+bootRender();

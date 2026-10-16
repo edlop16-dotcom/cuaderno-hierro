@@ -454,4 +454,4 @@ pbSetUnit = function (u, q) { _setUnitPb(u, q); pbWatchLb(); };
 
 /* Usuario nuevo: bienvenida (en el reloj se configura desde el celular) */
 if (pubUser() && !state.settings.onb && !isWatch()) pbStart(0);
-render();
+bootRender();

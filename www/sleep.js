@@ -141,4 +141,4 @@ if (PS) {
   psBoot();
   try { CAP.App.addListener('resume', psBoot); } catch (e) {}
 }
-render();
+bootRender();

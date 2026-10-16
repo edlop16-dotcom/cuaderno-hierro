@@ -193,4 +193,4 @@ document.addEventListener('click', ev => {
 /* Al cerrar la hoja del dolor, la fila "Otro entreno" muestra las zonas marcadas */
 const _closeSheetN2 = closeSheet;
 closeSheet = function () { const sore = !!document.querySelector('#sheet #sorecard'); _closeSheetN2(); if (sore && state.tab === 'train' && !state.draft) render(); };
-render();
+bootRender();

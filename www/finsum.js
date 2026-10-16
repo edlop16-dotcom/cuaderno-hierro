@@ -162,4 +162,4 @@ document.addEventListener('click', ev => {
     S.music = v; savePlans(); render(); toast('Enlace guardado: 🎵 aparece en tu sesión.');
   }
 }, true);
-render();
+bootRender();

@@ -80,4 +80,4 @@ document.addEventListener('click', ev => {
   if (b.dataset.act === 'mm-open') { state.tab = 'profile'; state.profSub = 'progress'; render(); setTimeout(() => { const c = document.querySelector('.mm-card'); c && c.scrollIntoView({ block: 'start', behavior: 'smooth' }); }, 60); return; }
   state.mmWeek = +b.dataset.v; const c = document.querySelector('.mm-card'); if (c) c.outerHTML = mmCard();
 }, true);
-render();
+bootRender();

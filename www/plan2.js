@@ -45,9 +45,9 @@ function planFix2() {
 /* Aplicar después de sincronizar (o ya, si no hay cuenta) */
 if (typeof sync !== 'undefined') {
   const _runP2 = sync.run.bind(sync);
-  sync.run = async function () { await _runP2(); if (this.status === 'ok' && planFix2()) { render(); toast('Tu rutina se ajustó: días pesados de verdad, más isquios y hombro lateral'); } };
-  if (!sync.on() && planFix2()) render();
-} else if (planFix2()) render();
+  sync.run = async function () { await _runP2(); if (this.status === 'ok' && planFix2()) { bootRender(); toast('Tu rutina se ajustó: días pesados de verdad, más isquios y hombro lateral'); } };
+  if (!sync.on() && planFix2()) bootRender();
+} else if (planFix2()) bootRender();
 
 /* Coach: si te sobran muchas reps para el rango nuevo, sube el peso de una vez (calculado con tu 1RM) */
 const _coachP2 = coachFor;
@@ -65,4 +65,4 @@ coachFor = function (ex, gymId, kind) {
   c.tips.unshift(`La última vez hiciste ${Math.round(avg)} reps con ${fmtKg(top)} kg: para el rango de ${ex.repsMin}-${ex.repsMax} ese peso te queda liviano. Calculé ${fmtKg(w)} kg con tu 1RM estimado; si la 1ª serie se siente muy pesada, baja 5-10 %.`);
   return c;
 };
-render();
+bootRender();

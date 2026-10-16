@@ -245,4 +245,4 @@ render = function () {
     const ds = app.querySelector('.day-strip'); if (ds) ds.insertAdjacentHTML('afterend', weekCard());
   }
 };
-render();
+bootRender();

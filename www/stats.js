@@ -278,7 +278,7 @@ document.addEventListener('click', ev => {
   if (a === 'hab-newrem') { if (typeof remSheet === 'function') remSheet(null); }
 }, true);
 
-render();
+bootRender();
 
 /* ---------- Hábitos personalizados (con racha cada uno) ---------- */
 const HAB_ICONS = ['pill', 'zap', 'coffee', 'fish', 'droplet', 'sun', 'moon', 'book-open', 'heart-pulse', 'activity', 'dumbbell', 'star', 'target', 'brain'];
@@ -380,12 +380,12 @@ if (!state.settings.importSym3) {
   learnWeights(s);
   state.settings.importSym3 = 1; saveLocal();
 }
-render();
+bootRender();
 
 /* Corrección: tu sesión de piernas en Roka'z fue el viernes 9 de octubre (no el lunes 5) */
 if (!state.settings.symDate9) {
   const SID = 'sym-rokaz-2026-10-05', when = new Date('2026-10-09T19:00:00-05:00').toISOString();
   const s = state.sessions.find(x => x.id === SID);
   if (s && s.date !== when) { s.date = when; state.sessions.sort((a, b) => b.date.localeCompare(a.date)); }
-  state.settings.symDate9 = 1; saveLocal(); render();
+  state.settings.symDate9 = 1; saveLocal(); bootRender();
 }

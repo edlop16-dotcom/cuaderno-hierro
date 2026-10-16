@@ -197,4 +197,4 @@ document.addEventListener('submit', ev => {
   savePlans(); state.rtOpen[d.id] = true; state.rtNewDay = d.id; state.tab = 'plans'; render();
   state.rtF = 'all'; state.rtQ = ''; rtAddSheet(p.id, d.id);
 }, true);
-render();
+bootRender();

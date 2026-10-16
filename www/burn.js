@@ -36,4 +36,4 @@ vWatchSession = function () {
   const at = h.indexOf('<div class="w-fig">');
   return at < 0 ? h + line : h.slice(0, at) + line + h.slice(at);
 };
-render();
+bootRender();

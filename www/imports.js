@@ -121,7 +121,7 @@ if (!state.settings.hevyImport1) {
   importSessions(list);
   /* Las rutinas de cada gimnasio toman tus últimos pesos reales */
   if (typeof learnWeights === 'function') list.slice().sort((a, b) => a.date.localeCompare(b.date)).forEach(s => learnWeights(state.sessions.find(x => x.id === s.id)));
-  state.settings.hevyImport1 = 1; saveLocal(); render();
+  state.settings.hevyImport1 = 1; saveLocal(); bootRender();
 }
 
 /* ---------- Tu historial de Symmetry (capturas, agosto–septiembre en Raydac) ---------- */
@@ -148,5 +148,5 @@ if (!state.settings.symImport2) {
   const list = symSessions(MY_SYM);
   importSessions(list);
   if (typeof learnWeights === 'function') state.sessions.slice().sort((a, b) => a.date.localeCompare(b.date)).forEach(s => learnWeights(s));
-  state.settings.symImport2 = 1; saveLocal(); savePlans(); render();
+  state.settings.symImport2 = 1; saveLocal(); savePlans(); bootRender();
 }

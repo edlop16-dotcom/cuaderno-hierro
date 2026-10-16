@@ -130,4 +130,4 @@ function confetti() {
 const _finishSkin = finishSession;
 finishSession = function () { const had = !!state.draft; _finishSkin(); if (had && !state.draft) setTimeout(confetti, 380); };
 
-render();
+bootRender();

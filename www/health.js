@@ -201,4 +201,4 @@ if (HCN) hcBoot();
 setTimeout(() => autoGym(true), 2500);
 try { if (CAP && CAP.App) CAP.App.addListener('resume', () => { if (HCN) hcBoot(); autoGym(); }); } catch (e) {}
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') autoGym(); });
-render();
+bootRender();

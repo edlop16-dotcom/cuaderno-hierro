@@ -88,4 +88,4 @@ if (_fmtSetsRir) claudePrompt = function () {
   return _fmtSetsRir().replace('(peso×reps por serie, ↓ = drop set)', '(peso×reps por serie, ↓ = drop set; RIR = reps que me sobraban)') +
     (state.sessions.some(s => s.exercises.some(e => e.sets.some(x => x.rir != null))) ? '\nRIR de mis últimas series: ' + state.sessions.filter(s => s.exercises.some(e => e.sets.some(x => x.rir != null))).slice(0, 6).map(s => dk(s.date) + ' ' + s.exercises.map(e => e.name + ' ' + e.sets.map(x => rirTxt(x.rir) || '?').join('/')).join(', ')).join(' | ') : '');
 };
-render();
+bootRender();

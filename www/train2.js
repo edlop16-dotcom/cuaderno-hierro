@@ -242,4 +242,4 @@ vTrain = function () {
   if (state.draft || isWatch() || state.settings.watch !== false || typeof watchGeom !== 'function' || !watchGeom()) return h;
   return `<button class="card w2-back-watch" data-act="watch">⌚ <b>Usar el modo reloj</b><small class="muted">Botones grandes, una serie por pantalla</small></button>` + h;
 };
-render();
+bootRender();

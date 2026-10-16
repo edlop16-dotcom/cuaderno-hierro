@@ -76,4 +76,4 @@ document.addEventListener('click', ev => {
 }, true);
 document.addEventListener('click', ev => { if (ev.target.closest('[data-act="sheet-close"]')) state.confirm = null; }, true);
 
-render();
+bootRender();

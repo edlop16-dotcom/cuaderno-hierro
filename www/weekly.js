@@ -395,4 +395,4 @@ document.addEventListener('change', ev => {
   state.settings.wcoach = Object.assign(wcCfg(), id === 'wc-fri' ? { fri: +ev.target.value } : { sun: +ev.target.value });
   savePlans(); toast(`Listo: ${id === 'wc-fri' ? 'el reporte' : 'el resumen'} llegará el ${WDL[+ev.target.value].toLowerCase()}.`);
 });
-render();
+bootRender();

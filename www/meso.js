@@ -124,4 +124,4 @@ document.addEventListener('click', ev => {
   if (a === 'meso-off') m.on = !m.on;
   savePlans(); if (!$('#sheet').hidden) mesoSheet(); render();
 }, true);
-meso(); render();
+meso(); bootRender();

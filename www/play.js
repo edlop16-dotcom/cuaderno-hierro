@@ -194,4 +194,4 @@ document.addEventListener('click', ev => {
 
 /* Primera vez: aviso de salud */
 if (!state.settings.healthOk && !isWatch() && !(pubUser() && !state.settings.onb)) setTimeout(() => { if ($('#sheet').hidden) healthSheet(true); }, 600);
-render();
+bootRender();

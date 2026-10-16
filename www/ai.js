@@ -127,4 +127,4 @@ document.addEventListener('click', ev => {
 }, true);
 document.addEventListener('submit', ev => { if (ev.target.id !== 'f-ai') return; ev.preventDefault(); aiAsk($('#ai-in').value); }, true);
 document.addEventListener('keydown', ev => { if (ev.target.id === 'ai-in' && ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); aiAsk(ev.target.value); } });
-render();
+bootRender();

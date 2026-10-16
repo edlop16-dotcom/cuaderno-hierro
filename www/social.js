@@ -287,4 +287,4 @@ render = function () {
 };
 setTimeout(() => socRefresh(true), 5000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) setTimeout(() => socRefresh(false), 2000); });
-render();
+bootRender();

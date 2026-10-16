@@ -288,4 +288,4 @@ if (!state.settings.importSym2) {
   }
   state.settings.importSym2 = 1; saveLocal();
 }
-render();
+bootRender();

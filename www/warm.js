@@ -99,4 +99,4 @@ document.addEventListener('input', ev => {
   const live = document.querySelector(`.plates-live[data-ex="${t.dataset.ex}"] .pl-chips`); if (!live) return;
   const v = parseFloat(String(t.value).replace(',', '.')); live.innerHTML = v > 0 ? plateChips(v) : '';
 });
-render();
+bootRender();

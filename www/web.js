@@ -73,5 +73,5 @@ if (IS_WEB) {
   /* --- Instalable y sin internet --- */
   if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
 
-  render();
+  bootRender();
 }

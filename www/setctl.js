@@ -64,4 +64,4 @@ document.addEventListener('click', ev => {
   const e = state.draft.exercises[i];
   toast(add ? `Serie agregada: ${e.log.length} en total` : `Serie quitada: quedan ${e.log.length}`);
 }, true);
-render();
+bootRender();

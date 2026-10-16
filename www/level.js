@@ -74,4 +74,4 @@ exStats = function (name) {
   const h = document.querySelector('#sheet h2'); if (h) h.insertAdjacentHTML('afterend', `<button class="lvb-btn" data-act="lv-open" data-name="${esc(name)}">${lvBadge(L, true)}</button>`);
 };
 /* Subir de nivel al terminar: lo anuncia la medalla de ranks.js (rkReveal; en el reloj, un toast) */
-render();
+bootRender();

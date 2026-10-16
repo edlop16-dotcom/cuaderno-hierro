@@ -323,4 +323,4 @@ const _renderBody = render;
 render = function () { _renderBody(); if (document.getElementById('bd-photos')) fillPhotos(); };
 
 syncHistory();
-render();
+bootRender();

@@ -285,7 +285,7 @@ vTrain = function () {
   return i < 0 ? updBanner(false) + html : html.slice(0, i) + updBanner(false) + html.slice(i);
 };
 
-render();
+bootRender();
 applyAwake();
 initNotifications();
 initUpdates();

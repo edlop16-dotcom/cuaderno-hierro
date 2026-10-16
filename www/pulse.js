@@ -224,12 +224,12 @@ if (BS) {
     if (!i) return;
     if (i.steps && !i.stepsPerm && !state.settings.stepAsk) { state.settings.stepAsk = 1; saveLocal(); BS.request({ what: 'steps' }).then(j => { state.bs = j; stepsRefresh(true); render(); }).catch(() => {}); }
     else stepsRefresh(true);
-    render();
+    bootRender();
   });
   try { CAP.App.addListener('resume', () => { bsInfo().then(() => stepsRefresh()); }); } catch (e) {}
   setInterval(() => { if (document.visibilityState !== 'hidden') stepsRefresh(); }, 120000);
 }
-render();
+bootRender();
 
 /* Ahorro de batería: el sensor de pulso se apaga cuando la pantalla se apaga o la app queda atrás */
 document.addEventListener('visibilitychange', () => {
