@@ -93,13 +93,13 @@ public class HabitAlarmActivity extends Activity {
     @Override
     protected void onCreate(Bundle b) {
         super.onCreate(b);
+        HabitAlarms.removeVeil(this);
         try { item = new JSONObject(getIntent().getStringExtra("item")); } catch (Exception e) { finish(); return; }
         Window w = getWindow();
         if (Build.VERSION.SDK_INT >= 27) {
+            /* Encima de la pantalla de bloqueo, como una alarma: sin pedir el PIN (✓, ✕ y aplazar no lo necesitan) */
             setShowWhenLocked(true);
             setTurnScreenOn(true);
-            KeyguardManager km = (KeyguardManager) getSystemService(Context.KEYGUARD_SERVICE);
-            if (km != null) km.requestDismissKeyguard(this, null);
         } else {
             w.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON | WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD);
         }

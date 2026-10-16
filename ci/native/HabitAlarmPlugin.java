@@ -80,6 +80,7 @@ public class HabitAlarmPlugin extends Plugin {
         r.put("fullScreen", Build.VERSION.SDK_INT < 34 || (nm != null && nm.canUseFullScreenIntent()));
         r.put("notif", NotificationManagerCompat.from(c).areNotificationsEnabled());
         r.put("overlay", Build.VERSION.SDK_INT < 23 || Settings.canDrawOverlays(c));
+        r.put("sdk", Build.VERSION.SDK_INT);
         call.resolve(r);
     }
 

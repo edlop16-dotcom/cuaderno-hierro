@@ -1836,3 +1836,14 @@ body:not(.watch) .sx-fin{padding-inline:14px}
 .ns-name{font-size:16px}
 .ns-why{font-size:13px;line-height:1.4;color:var(--muted)}
 .ns-set .switch{flex:none}
+
+/* Recordatorios de hábitos: lista de permisos (solo teléfono) */
+body:not(.watch) .ha-ck{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+body:not(.watch) .ha-ck-r{display:flex;align-items:center;gap:10px;padding:10px 12px;min-height:48px}
+body:not(.watch) .ha-ck-r+.ha-ck-r{border-top:1px solid var(--line)}
+body:not(.watch) .ha-ck-r b{display:block;font-size:13.5px}
+body:not(.watch) .ha-ck-r small{display:block;font-size:12px;color:var(--muted)}
+body:not(.watch) .ha-ck-i{width:24px;height:24px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:var(--ok);color:var(--ok-ink);font-weight:800}
+body:not(.watch) .ha-ck-r.no .ha-ck-i{background:var(--warn);color:#1c1400}
+body:not(.watch) .ha-ck-ok{flex-shrink:0;color:var(--ok)!important}
+body:not(.watch) .ha-ck-r .btn{flex-shrink:0}

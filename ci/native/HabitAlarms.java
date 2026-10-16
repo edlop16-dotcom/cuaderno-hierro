@@ -158,19 +158,53 @@ public class HabitAlarms {
             .setDeleteIntent(actionPI(c, A_DISMISS, id, item));   // deslizar la notificación = ✕
         NotificationManager nm = (NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm != null) nm.notify(id, b.build());
-        /* Con el celular en uso Android solo muestra la notificación arriba. Si el usuario dio
+        /* Con el celular en uso Android solo muestra la notificación arriba; bloqueado, la pantalla completa
+           necesita el permiso "Notificaciones de pantalla completa" (Android 14+). Si el usuario dio
            "Aparecer encima de otras apps", abrimos la pantalla completa igual (como la app Recordatorios). */
         boolean opens = true;
         try {
             android.os.PowerManager pm = (android.os.PowerManager) c.getSystemService(Context.POWER_SERVICE);
             boolean on = pm == null || pm.isInteractive();
-            boolean over = android.os.Build.VERSION.SDK_INT >= 23 && android.provider.Settings.canDrawOverlays(c);
-            if (on && over) c.startActivity(full);
-            opens = !on || over;
+            boolean over = Build.VERSION.SDK_INT >= 23 && android.provider.Settings.canDrawOverlays(c);
+            boolean fsi = Build.VERSION.SDK_INT < 34 || (nm != null && nm.canUseFullScreenIntent());
+            if (over) openOver(c, full);
+            opens = over || (!on && fsi);
         } catch (Exception ignored) {}
         /* Ding dong siempre en el modo corto. Con alarma de 30 s / 1 min suena el bucle de la pantalla completa;
            si esta no se abre (celular en uso sin "Aparecer encima"), al menos el ding dong. */
         if (isDing(o) || !opens) ding(c);
+    }
+
+    /* Abrir la pantalla completa desde segundo plano. "Probar" funcionaba porque la app seguía a la vista
+       (Android deja abrir pantallas unos segundos después de usar la app); a la hora programada la app está
+       cerrada y, desde Android 15 (apuntamos a API 36), el permiso "Aparecer encima" ya no basta: hace falta
+       una ventana superpuesta visible. Ponemos una de 1 px, transparente y sin toques, esperamos a que se
+       dibuje, abrimos la pantalla y la quitamos (también al abrirse HabitAlarmActivity). */
+    static android.view.View veil;
+    static void openOver(Context c, Intent full) {
+        final Context app = c.getApplicationContext();
+        final Handler h = new Handler(Looper.getMainLooper());
+        try {
+            removeVeil(app);
+            android.view.WindowManager wm = (android.view.WindowManager) app.getSystemService(Context.WINDOW_SERVICE);
+            int type = Build.VERSION.SDK_INT >= 26 ? android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY : android.view.WindowManager.LayoutParams.TYPE_PHONE;
+            android.view.WindowManager.LayoutParams lp = new android.view.WindowManager.LayoutParams(1, 1, type,
+                android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE | android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+                android.graphics.PixelFormat.TRANSLUCENT);
+            lp.gravity = android.view.Gravity.TOP | android.view.Gravity.START;
+            android.view.View v = new android.view.View(app);
+            wm.addView(v, lp);
+            veil = v;
+            h.postDelayed(() -> { try { app.startActivity(full); } catch (Exception ignored) { } }, 300);
+            h.postDelayed(() -> removeVeil(app), 2800);
+        } catch (Exception e) {
+            try { app.startActivity(full); } catch (Exception ignored) { }
+        }
+    }
+    static void removeVeil(Context c) {
+        android.view.View v = veil; veil = null;
+        if (v == null) return;
+        try { ((android.view.WindowManager) c.getApplicationContext().getSystemService(Context.WINDOW_SERVICE)).removeView(v); } catch (Exception ignored) { }
     }
 
     static void dismiss(Context c, int id) {

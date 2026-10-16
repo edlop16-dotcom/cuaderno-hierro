@@ -20,7 +20,7 @@ function habitCard() {
   const t = today(), ml = t.water || 0, pct = Math.min(1, ml / WATER_MIN);
   return `<div class="card habits2" id="habits">
     <div class="row" style="justify-content:space-between"><h3>Hábitos de hoy</h3>
-      <div class="row" style="gap:6px"><button class="icon-btn sm" data-act="hab-edit" aria-label="Editar rachas">${ic('calendar-check', 17)}</button><button class="icon-btn sm" data-act="hab-rem" aria-label="Recordatorios">${ic('bell', 17)}</button></div></div>
+      <div class="row" style="gap:6px"><button class="icon-btn sm" data-act="hab-edit" aria-label="Editar rachas">${ic('calendar-check', 17)}</button><button class="icon-btn sm" data-act="hab-rem" aria-label="Ajustes de los recordatorios" title="Ajustes de los recordatorios">${ic('settings', 17)}</button></div></div>
     <div class="hab-row">${SUPS.map(s => { const on = !!t[s.k], st = supStreak(s.k);
       return `<button class="hab ${on ? 'on' : ''}" data-act="sup" data-k="${s.k}" aria-pressed="${on}"><span class="hab-ic">${on ? ic('check', 18) : ic(HAB_IC2[s.k] || 'pill', 18)}</span><b>${s.name}</b><small>${st ? `🔥 ${st} ${st === 1 ? 'día' : 'días'}` : esc(s.dose)}</small></button>`; }).join('')}</div>
     <div class="hab-water"><span class="hab-ic w">${ic('droplet', 18)}</span>
@@ -274,7 +274,7 @@ document.addEventListener('click', ev => {
   if (a === 'hab-edit') habSheet();
   if (a === 'hab-day') { const k = b.dataset.d; state.daily[k] = state.daily[k] || { water: 0 }; state.daily[k][b.dataset.k] = !state.daily[k][b.dataset.k]; state.daily[k].edited = Date.now(); saveDaily(); const sc = document.querySelector('#sheet .sheet-card'), top = sc ? sc.scrollTop : 0; habSheet(); const n = document.querySelector('#sheet .sheet-card'); if (n) n.scrollTop = top; render(); }
   if (a === 'hab-streak') { const n = Math.max(0, Math.min(180, +document.getElementById('hs-' + b.dataset.k).value || 0)); setStreak(b.dataset.k, n); habSheet(); render(); toast(`Racha de ${SUPS.find(s => s.k === b.dataset.k).name}: ${n} ${n === 1 ? 'día' : 'días'}.`); }
-  if (a === 'hab-rem') { closeSheet(); state.tab = 'settings'; render(); setTimeout(() => { const t = [...document.querySelectorAll('#app h3')].find(x => /Recordatorios/.test(x.textContent)); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60); }
+  if (a === 'hab-rem') { closeSheet(); state.tab = 'settings'; render(); setTimeout(() => { const t = [...document.querySelectorAll('#app h3')].find(x => /Recordatorios/.test(x.textContent)); if (t) { const c = t.closest('.card') || t; c.style.scrollMarginTop = '12px'; c.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }, 60); }
   if (a === 'hab-newrem') { if (typeof remSheet === 'function') remSheet(null); }
 }, true);
 

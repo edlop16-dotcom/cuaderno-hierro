@@ -165,7 +165,10 @@ document.addEventListener('click', ev => {
     state.haSnz.push(it); haHide(); scheduleSoon(); toast(`Te lo recuerdo en ${haMin} min`);
   }
   if (a === 'ha-test') {
-    if (HA) HA.test({ sec: 8, ring: haRing(), title: 'Tomar suplementos, ¡no fallar!', body: 'Así se verá tu recordatorio de hábito', time: new Date(Date.now() + 8000).toTimeString().slice(0, 5) }).then(() => toast('Bloquea el teléfono: en 8 segundos aparece la pantalla.')).catch(() => toast('No se pudo programar la prueba.'));
+    /* 20 s: Android deja abrir pantallas unos 10 s después de salir de la app, así que con 8 s la prueba salía
+       bien aunque a la hora programada (app cerrada) no. Así la prueba se comporta como la hora real. */
+    const sec = isWatch() ? 8 : 20;
+    if (HA) HA.test({ sec, ring: haRing(), title: 'Tomar suplementos, ¡no fallar!', body: 'Así se verá tu recordatorio de hábito', time: new Date(Date.now() + sec * 1000).toTimeString().slice(0, 5) }).then(() => toast(isWatch() ? 'Bloquea el teléfono: en 8 segundos aparece la pantalla.' : 'Sal de Forja o bloquea el celular: en 20 segundos aparece como a la hora programada.')).catch(() => toast('No se pudo programar la prueba.'));
     else haShow({ title: 'Tomar suplementos, ¡no fallar!', body: 'Así se verá tu recordatorio de hábito', time: new Date().toTimeString().slice(0, 5), habit: '', name: '' });
   }
   if (a === 'ha-dur') { state.settings.alarmSec = +b.dataset.v; savePlans(); scheduleSoon(); render(); toast(`Sonido del recordatorio: ${(HA_DUR.find(d => d[0] === haRing()) || [0, ''])[1].toLowerCase()}.`); if (haRing() < 30 && !HA) haDing(); }
@@ -244,7 +247,11 @@ vSettings = function () {
     s.overlay === false ? `<div class="remind"><span>🔔</span><span>Para verlo en toda la pantalla <b>aunque estés usando el celular</b>, permite <b>Aparecer encima de otras apps</b>. <button class="btn small" data-act="ha-perm" data-t="overlay">Permitir</button></span></div>` : '',
     s.fullScreen === false ? `<div class="remind"><span>📱</span><span>Para verlo en toda la pantalla, permite <b>Notificaciones de pantalla completa</b>. <button class="btn small" data-act="ha-perm" data-t="fullScreen">Permitir</button></span></div>` : '',
   ].join('');
-  const box = `<div class="ha-set">${warn}<div class="row"><div class="grow"><b>Hábitos a pantalla completa</b><div class="muted" style="font-size:12px">Los recordatorios de hábitos aparecen como en la app Recordatorios: ✓ hecho, ✕ descartar o aplazar.</div></div>
+  /* Teléfono: lista de los 3 permisos con ✓ o Permitir, para ver de un vistazo por qué no aparece en toda la pantalla */
+  const HA_CK = [['exact', 'Alarmas y recordatorios', 'que suene a la hora exacta'], ['overlay', 'Aparecer encima de otras apps', 'verlo en toda la pantalla aunque estés usando el celular'], ['fullScreen', 'Notificaciones de pantalla completa', 'verlo en toda la pantalla con el celular bloqueado']];
+  const checks = !HA || isWatch() || !state.haStatus ? warn : `<div class="ha-ck">${HA_CK.map(([k, n, d]) => { const no = s[k] === false;
+    return `<div class="ha-ck-r${no ? ' no' : ''}"><span class="ha-ck-i">${no ? '!' : ic('check', 14)}</span><span class="grow"><b>${n}</b><small>Para ${d}</small></span>${no ? `<button class="btn small" data-act="ha-perm" data-t="${k}">Permitir</button>` : '<small class="ha-ck-ok">Listo</small>'}</div>`; }).join('')}</div>`;
+  const box = `<div class="ha-set">${checks}<div class="row"><div class="grow"><b>Hábitos a pantalla completa</b><div class="muted" style="font-size:12px">Los recordatorios de hábitos aparecen como en la app Recordatorios: ✓ hecho, ✕ descartar o aplazar.</div></div>
     <button class="btn small" data-act="ha-test">Probar</button></div>
     <div class="ha-durrow"><span class="label">Sonido del recordatorio</span><div class="seg ha-dur" role="group" aria-label="Sonido del recordatorio">${HA_DUR.map(([v, l]) => `<button type="button" class="${haRing() === v ? 'on' : ''}" data-act="ha-dur" data-v="${v}" aria-pressed="${haRing() === v}">${l}</button>`).join('')}</div>
     <div class="muted" style="font-size:12px">${haRing() < 30 ? 'Suena una vez (2-3 s) y vibra una vez, aunque el celular esté en silencio.' : 'Suena en bucle aunque el celular esté en silencio; se calla antes si tocas un botón o las teclas de volumen.'}</div></div></div>`;
