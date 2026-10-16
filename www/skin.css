@@ -1549,3 +1549,194 @@ input.wg-warn{outline:2px solid var(--warn);outline-offset:1px}
 .pf-set b{display:block}
 .pf-set small{display:block;color:var(--muted);font-size:12.5px}
 .pf-set>.ic:first-child{color:var(--accent2)}
+
+/* ==========================================================================
+   Pulido visual "Acero y discos" (solo teléfono: todo bajo body:not(.watch))
+   Superficies planas de acero, texto color tiza, un solo acento (brasa) para
+   la acción principal y lo que toca hoy; los colores de datos son los de los
+   discos de competición. Barlow Condensed para títulos y cifras, Barlow para leer.
+   ========================================================================== */
+@font-face{font-family:'Barlow';font-weight:400;font-style:normal;font-display:swap;src:url(fonts/barlow-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:'Barlow';font-weight:500;font-style:normal;font-display:swap;src:url(fonts/barlow-latin-500-normal.woff2) format('woff2')}
+@font-face{font-family:'Barlow';font-weight:600;font-style:normal;font-display:swap;src:url(fonts/barlow-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'Barlow';font-weight:700;font-style:normal;font-display:swap;src:url(fonts/barlow-latin-700-normal.woff2) format('woff2')}
+@font-face{font-family:'Barlow Condensed';font-weight:500;font-style:normal;font-display:swap;src:url(fonts/barlow-condensed-latin-500-normal.woff2) format('woff2')}
+@font-face{font-family:'Barlow Condensed';font-weight:600;font-style:normal;font-display:swap;src:url(fonts/barlow-condensed-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'Barlow Condensed';font-weight:700;font-style:normal;font-display:swap;src:url(fonts/barlow-condensed-latin-700-normal.woff2) format('woff2')}
+@font-face{font-family:'Barlow Condensed';font-weight:800;font-style:normal;font-display:swap;src:url(fonts/barlow-condensed-latin-800-normal.woff2) format('woff2')}
+
+body:not(.watch){
+  --bg:#15171a; --bg2:#15171a;
+  --surface:#1f2226; --surface2:#292d32; --surface3:#33383e;
+  --line:#353a41; --line2:#2c3036;
+  /* textos secundarios con contraste ≥ 4,5:1 sobre el fondo y las tarjetas */
+  --fg:#eeece6; --muted:#a9acb2; --dim:#90949b;
+  --accent:#ff6a2b; --accent2:#ff6a2b; --accent-ink:#1c0b02;
+  --grad:linear-gradient(#ff6a2b,#ff6a2b);
+  --grad-soft:linear-gradient(rgba(255,106,43,.12),rgba(255,106,43,.12));
+  --glow:transparent;
+  --ok:#35b26a; --ok-ink:#06210f; --bad:#ff7466; --warn:#f2c230;
+  /* grupos con los colores de los discos; Empuje tira a carmesí para no confundirse con el naranja de acción.
+     Cada grupo lleva además su forma: Piernas ●, Empuje ▲, Tracción ▼, Core ◆ */
+  --legs:#35b26a; --push:#e8466e; --pull:#4a8be8; --core:#f2c230;
+  --f-display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"Barlow",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-num:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --r:14px; --r-sm:10px;
+  --shadow:none;
+  background:var(--bg);
+  font-size:15.5px; letter-spacing:0;
+}
+body:not(.watch) h1,body:not(.watch) h2,body:not(.watch) h3{letter-spacing:0;font-weight:700}
+body:not(.watch) h1{font-size:34px;line-height:1}
+body:not(.watch) h2{font-size:23px}
+body:not(.watch) h3{font-size:19px}
+/* Etiquetas: sin mayúsculas ni tracking; tipografía condensada */
+body:not(.watch) .label{font-family:var(--f-display);text-transform:none;letter-spacing:0;font-size:15px;font-weight:600;color:var(--muted)}
+
+/* Encabezado */
+body:not(.watch) .wordmark{background:none;-webkit-text-fill-color:var(--fg);color:var(--fg);letter-spacing:.06em;font-weight:800;font-size:22px}
+body:not(.watch) .brand img,body:not(.watch) .brand svg{filter:none}
+body:not(.watch) .avatar{background:var(--accent);box-shadow:none;border-radius:50%}
+body:not(.watch) .userchip,body:not(.watch) .icon-btn{background:var(--surface);border-color:var(--line2)}
+body:not(.watch) .gympill{border-color:var(--line);color:var(--fg)}
+
+/* Tarjetas: planas, sin brillo ni sombra; las de adentro sin borde */
+body:not(.watch) .card{background:var(--surface);border:1px solid var(--line2);box-shadow:none;border-radius:var(--r)}
+body:not(.watch) .card .card{background:var(--surface2);border-color:transparent}
+
+/* Botones */
+body:not(.watch) .btn{border-radius:var(--r-sm)}
+body:not(.watch) .btn.primary{background:var(--accent);color:var(--accent-ink);box-shadow:none;font-family:var(--f-display);font-weight:700;font-size:17px;letter-spacing:.01em}
+body:not(.watch) .btn.primary.block{min-height:56px;font-size:21px;border-radius:12px}
+
+/* Hoy: la tarjeta de lo que toca es la única con acento */
+body:not(.watch) .hero{background:var(--surface);border:0;border-left:4px solid var(--accent);border-radius:6px 16px 16px 6px;box-shadow:none;padding:20px 18px 18px}
+body:not(.watch) .hero::after{display:none}
+body:not(.watch) .hero .label{color:var(--accent);font-size:17px}
+body:not(.watch) .hero .big{font-size:40px;font-weight:700;letter-spacing:0;line-height:.98}
+body:not(.watch) .kind{font-family:var(--f-display);text-transform:none;letter-spacing:.02em;font-size:14px;font-weight:600;border-radius:4px;padding:2px 8px}
+body:not(.watch) .stat{background:none;border:0;padding:0 14px 0 0;font-size:14px;color:var(--muted)}
+body:not(.watch) .stat .ic{color:var(--muted)}
+/* La fila de colores se lee como discos cargados en la barra */
+body:not(.watch) .hero .bars{gap:4px;align-items:center;margin-top:4px}
+body:not(.watch) .hero .bars i{height:14px;border-radius:2px}
+body:not(.watch) .hoy-rq{font-family:var(--f-display);font-size:15px;font-weight:600}
+body:not(.watch) .hoy-chip{background:var(--surface2);border-color:transparent;border-radius:8px;font-weight:600}
+body:not(.watch) .hoy-chip.on{background:rgba(255,106,43,.14);border-color:var(--accent);color:var(--fg)}
+body:not(.watch) .hoy-chip.on .ic{color:var(--accent)}
+body:not(.watch) .hoy-pv{color:var(--fg);text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:4px}
+
+/* Barra inferior: pegada al borde, sólida, la pestaña actual marcada arriba */
+body:not(.watch) .nav{left:0;right:0;bottom:0;border:0;border-top:1px solid var(--line2);border-radius:0;background:var(--bg);-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:none;padding-bottom:env(safe-area-inset-bottom,0px)}
+body:not(.watch) .nav-in{padding:0 8px}
+body:not(.watch) .nav button{border-radius:0;padding:10px 2px 9px;font-family:var(--f-display);font-size:13px;font-weight:600;color:var(--dim)}
+body:not(.watch) .nav button[aria-current="page"]{background:none;color:var(--fg)}
+body:not(.watch) .nav button[aria-current="page"] .ic{color:var(--accent);transform:none}
+body:not(.watch) .nav button[aria-current="page"]::after{top:-1px;width:32px;margin-left:-16px;height:3px;border-radius:0 0 2px 2px;background:var(--accent)}
+body:not(.watch) .app{padding-bottom:104px}
+
+/* Sesión */
+body:not(.watch) .sx{background:var(--bg)}
+body:not(.watch) .sx-clock{font-family:var(--f-display);font-size:30px;font-weight:700}
+body:not(.watch) .sx-sub{font-size:13.5px}
+body:not(.watch) .sx-th{border-radius:10px;background:var(--surface)}
+body:not(.watch) .sx-th.on{transform:none;box-shadow:none}
+body:not(.watch) .sx-th-add{border-radius:10px}
+body:not(.watch) .sets .h{font-family:var(--f-display);text-transform:none;letter-spacing:0;font-size:14px;font-weight:600}
+body:not(.watch) .sets input{font-family:var(--f-display)!important;font-weight:700;font-size:24px!important;background:var(--surface2);border:1px solid transparent;border-radius:8px}
+body:not(.watch) .sets input:focus{border-color:var(--accent)}
+body:not(.watch) .sets .prev{border-radius:8px;border-color:var(--line2)}
+body:not(.watch) .check{border-radius:8px;background:var(--surface2);border-color:transparent}
+body:not(.watch) .check.on{background:var(--ok);box-shadow:none}
+body:not(.watch) .st-b{border-radius:8px;border-style:solid;border-width:1px;border-color:var(--line)}
+body:not(.watch) .st-b.add{background:transparent;border-color:var(--ok)}
+body:not(.watch) .coach,body:not(.watch) .safe,body:not(.watch) .note-prev,body:not(.watch) details.warm{border-radius:10px;box-shadow:none}
+/* Hábitos y avisos de Hoy */
+body:not(.watch) .hab,body:not(.watch) .hab-water,body:not(.watch) .habit,body:not(.watch) .hm-row{border-color:transparent;border-radius:10px}
+body:not(.watch) .hab-add{border-color:var(--line)}
+body:not(.watch) .hab-ic{border-radius:8px}
+body:not(.watch) .streak-card{background:var(--surface);border:1px solid var(--line2);border-radius:var(--r)}
+body:not(.watch) .hoy-ab,body:not(.watch) .hoy-more{border-radius:10px}
+
+/* ---- El color de un grupo nunca va solo: forma por grupo ---- */
+body:not(.watch) .dot[class*="t-"]{width:11px;height:11px;border-radius:0}
+body:not(.watch) .dot.t-Piernas{border-radius:50%}
+body:not(.watch) .dot.t-Empuje{-webkit-clip-path:polygon(50% 0,100% 100%,0 100%);clip-path:polygon(50% 0,100% 100%,0 100%)}
+body:not(.watch) .dot.t-Tracción{-webkit-clip-path:polygon(0 0,100% 0,50% 100%);clip-path:polygon(0 0,100% 0,50% 100%)}
+body:not(.watch) .dot.t-Core{-webkit-clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}
+/* Segmentos de color: la forma del grupo va dentro de cada uno */
+body:not(.watch) .bars i{position:relative;min-height:10px;border-radius:2px}
+body:not(.watch) .bars i::after{content:"";position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;background:rgba(10,11,13,.7)}
+body:not(.watch) .bars i.t-Piernas::after{border-radius:50%}
+body:not(.watch) .bars i.t-Empuje::after{-webkit-clip-path:polygon(50% 0,100% 100%,0 100%);clip-path:polygon(50% 0,100% 100%,0 100%)}
+body:not(.watch) .bars i.t-Tracción::after{-webkit-clip-path:polygon(0 0,100% 0,50% 100%);clip-path:polygon(0 0,100% 0,50% 100%)}
+body:not(.watch) .bars i.t-Core::after{-webkit-clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}
+body:not(.watch) .hero .bars i::after{width:8px;height:8px;margin:-4px 0 0 -4px}
+/* Leyenda (Mi plan y bajo "Te toca") */
+body:not(.watch) .rt-leg{font-size:14px;color:var(--fg);gap:6px 16px}
+body:not(.watch) .rt-leg .num{font-family:var(--f-display);font-weight:700;color:var(--muted);margin-left:2px}
+body:not(.watch) .lk-leg{margin-top:-2px}
+/* Tipo de ejercicio en Mi plan: forma + nombre, sin color de texto */
+body:not(.watch) .rt-ty{color:var(--fg);font-weight:700}
+body:not(.watch) .rt-ty[class*="t-"]::before{content:"";display:inline-block;width:9px;height:9px;margin-right:5px;background:var(--tc);vertical-align:0}
+body:not(.watch) .rt-ty.t-Piernas::before{border-radius:50%}
+body:not(.watch) .rt-ty.t-Empuje::before{-webkit-clip-path:polygon(50% 0,100% 100%,0 100%);clip-path:polygon(50% 0,100% 100%,0 100%)}
+body:not(.watch) .rt-ty.t-Tracción::before{-webkit-clip-path:polygon(0 0,100% 0,50% 100%);clip-path:polygon(0 0,100% 0,50% 100%)}
+body:not(.watch) .rt-ty.t-Core::before{-webkit-clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}
+/* Sesión: el grupo con su nombre sobre el ejercicio; anillos y fondo sin color de grupo */
+body:not(.watch) .sx-page .card.ex > .row:first-child::before{flex:0 0 100%;margin-bottom:-8px;font-family:var(--f-display);font-size:14px;font-weight:600;color:var(--muted)}
+body:not(.watch) .sx-page .card.ex.t-Piernas > .row:first-child::before{content:"Piernas"}
+body:not(.watch) .sx-page .card.ex.t-Empuje > .row:first-child::before{content:"Empuje"}
+body:not(.watch) .sx-page .card.ex.t-Tracción > .row:first-child::before{content:"Tracción"}
+body:not(.watch) .sx-page .card.ex.t-Core > .row:first-child::before{content:"Core"}
+body:not(.watch) .sx-th .th-ring circle{stroke:var(--fg)}
+body:not(.watch) .sx-th.on{border-color:var(--accent)}
+body:not(.watch) .sx-th.done .th-ring circle{stroke:var(--ok)}
+body:not(.watch) .sx-hero{box-shadow:none}
+
+/* ---- Etiquetas que no parecen botones: sin relleno de color, esquinas rectas ---- */
+body:not(.watch) .kind,body:not(.watch) .k-fuerza,body:not(.watch) .k-bombeo,body:not(.watch) .kind.k-mine{background:transparent;border:1px solid var(--line);color:var(--fg)}
+body:not(.watch) .pill,body:not(.watch) .pro-b{background:transparent;border:1px solid var(--line);color:var(--fg);text-transform:none;letter-spacing:0;font-family:var(--f-display);font-size:14px;font-weight:600;border-radius:4px;padding:1px 7px}
+body:not(.watch) .rt-tag-now{background:transparent;color:var(--accent);padding:0;border-radius:0;text-transform:none;letter-spacing:0;font-family:var(--f-display);font-size:15px;font-weight:700}
+body:not(.watch) .rt-tag{background:transparent;border-color:var(--line);color:var(--fg);border-radius:4px}
+/* Filtros elegidos: tiza, no naranja (el naranja es solo para acciones) */
+body:not(.watch) .gchip{background:var(--surface);border-color:var(--line2);color:var(--fg);border-radius:8px;min-height:44px}
+body:not(.watch) .gchip.on{background:var(--fg);color:var(--bg);border-color:transparent;box-shadow:none}
+body:not(.watch) .gchip.add{background:transparent;border-color:var(--line);color:var(--muted)}
+body:not(.watch) .streak-n{background:none;-webkit-text-fill-color:var(--fg);color:var(--fg)}
+
+/* ---- Sesión: cifras de ancho fijo y toques ≥ 44 px ---- */
+body:not(.watch) .sets input,body:not(.watch) .sx-clock,body:not(.watch) .prev,body:not(.watch) .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+body:not(.watch) .sets input{height:52px;font-size:27px!important;color:var(--fg)}
+body:not(.watch) .sets input::placeholder{color:var(--muted);opacity:1;font-weight:600}
+body:not(.watch) .sets .n{font-family:var(--f-display);font-size:18px;font-weight:700}
+body:not(.watch) .prev{min-height:52px;font-family:var(--f-display);font-size:16px;color:var(--muted)}
+body:not(.watch) .prev small{font-size:13px}
+body:not(.watch) .check{width:52px;height:52px}
+body:not(.watch) .st-b{min-height:48px}
+body:not(.watch) .btn.small{min-height:44px}
+body:not(.watch) .sx-ic{width:44px;height:44px}
+body:not(.watch) .sx-fin{min-height:44px}
+body:not(.watch) .sx-st{min-height:44px;padding:6px 12px}
+body:not(.watch) .rest-chip{padding:0 0 0 10px;min-height:44px}
+body:not(.watch) .rest-chip button{min-width:44px;min-height:44px}
+body:not(.watch) details.warm > summary{min-height:44px}
+body:not(.watch) .tag{min-height:44px;padding:6px 12px;border-radius:8px;color:var(--fg)}
+/* Discos de la barra con texto legible */
+body:not(.watch) .pl.p20{background:#2563eb}
+body:not(.watch) .pl.p2_5{background:#d42a2a}
+body:not(.watch) .btn.danger{color:var(--bad)}
+body:not(.watch) .drop-btn{color:var(--fg)}
+body:not(.watch) .pl-q{color:var(--fg)!important}
+body:not(.watch) .plates-live{color:var(--fg)}
+/* Mi plan: la mezcla de grupos de cada día también lleva la forma de cada grupo */
+body:not(.watch) .rt-comp{height:10px;border-radius:2px;background:transparent}
+body:not(.watch) .rt-comp i{position:relative;margin-right:2px;border-radius:2px}
+body:not(.watch) .rt-comp i:last-child{margin-right:0}
+body:not(.watch) .rt-comp i::after{content:"";position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;background:rgba(10,11,13,.7)}
+body:not(.watch) .rt-comp i.t-Piernas::after{border-radius:50%}
+body:not(.watch) .rt-comp i.t-Empuje::after{-webkit-clip-path:polygon(50% 0,100% 100%,0 100%);clip-path:polygon(50% 0,100% 100%,0 100%)}
+body:not(.watch) .rt-comp i.t-Tracción::after{-webkit-clip-path:polygon(0 0,100% 0,50% 100%);clip-path:polygon(0 0,100% 0,50% 100%)}
+body:not(.watch) .rt-comp i.t-Core::after{-webkit-clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}
+body:not(.watch) .rt-rec span,body:not(.watch) .barinfo b{color:var(--fg)}

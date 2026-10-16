@@ -28,6 +28,8 @@ jobs:
         mkdir -p www/fonts
         for w in 500 600 700 800; do cp "node_modules/@fontsource/poppins/files/poppins-latin-$w-normal.woff2" www/fonts/; done
         for w in 400 500 600 700 800; do cp "node_modules/@fontsource/inter/files/inter-latin-$w-normal.woff2" www/fonts/; done
+        for w in 400 500 600 700; do cp "node_modules/@fontsource/barlow/files/barlow-latin-$w-normal.woff2" www/fonts/; done
+        for w in 500 600 700 800; do cp "node_modules/@fontsource/barlow-condensed/files/barlow-condensed-latin-$w-normal.woff2" www/fonts/; done
         node ci/legacy.mjs www
         mkdir -p site && cp -r www/. site/
         sed -i "s/forja-web-v1/forja-web-${GITHUB_SHA::8}/" site/sw.js

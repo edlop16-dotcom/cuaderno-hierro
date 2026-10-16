@@ -19,6 +19,8 @@
     "@capacitor/local-notifications": "6.1.1",
     "@capacitor/share": "6.0.3",
     "@capgo/capacitor-social-login": "6.0.1",
+    "@fontsource/barlow": "5.1.0",
+    "@fontsource/barlow-condensed": "5.1.0",
     "@fontsource/inter": "5.1.0",
     "@fontsource/poppins": "5.1.0"
   },
