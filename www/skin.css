@@ -1740,3 +1740,20 @@ body:not(.watch) .rt-comp i.t-Empuje::after{-webkit-clip-path:polygon(50% 0,100%
 body:not(.watch) .rt-comp i.t-Tracción::after{-webkit-clip-path:polygon(0 0,100% 0,50% 100%);clip-path:polygon(0 0,100% 0,50% 100%)}
 body:not(.watch) .rt-comp i.t-Core::after{-webkit-clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}
 body:not(.watch) .rt-rec span,body:not(.watch) .barinfo b{color:var(--fg)}
+/* Bienvenida · Tus datos: unidad dentro de cada campo y mensaje debajo si el dato no sirve */
+.pb-data .pb-f{flex:1 1 100%}
+.pb-in{position:relative;display:block}
+.pb-in input{padding-right:58px!important}
+.pb-u{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-style:normal;font-size:15px;font-weight:600;color:var(--muted);pointer-events:none}
+.pb-err{display:block;margin-top:6px;font-size:13.5px;line-height:1.35;font-weight:600;color:var(--bad)}
+.pb-err[hidden]{display:none}
+.pb-f input[aria-invalid="true"]{border-color:var(--bad)!important}
+/* Siguiente se ve apagado pero se puede tocar: al tocarlo explica qué falta */
+#onb .pb-foot .btn[data-off="1"]{opacity:.45;box-shadow:none}
+.bd-err{display:block;margin-top:6px;font-size:13.5px;font-weight:600;color:var(--bad)}
+.bd-err[hidden]{display:none}
+.bd-in{position:relative;display:block}
+.bd-in input{width:100%}
+body:not(.watch) .bd-in input{padding-right:44px}
+.bd-in .pb-u{right:12px}
+body.watch .bd-in .pb-u{display:none}

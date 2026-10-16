@@ -18,6 +18,9 @@ const MEAS = [
 const MEAS_NAME = k => (MEAS.find(m => m[0] === k) || [k, k])[1];
 const num = v => { const n = parseFloat(String(v == null ? '' : v).replace(',', '.')); return isFinite(n) && n > 0 ? n : null; };
 const r1 = v => Math.round(v * 10) / 10;
+/* Estatura: acepta cm (170) o metros con punto o coma (1,70 · 1.7) y devuelve cm; null si no está entre 120 y 230 cm */
+const parseCm = v => { const n = num(v); if (!n) return null; const cm = n >= 1 && n <= 2.5 ? Math.round(n * 100) : n; return cm >= 120 && cm <= 230 ? r1(cm) : null; };
+const CM_MSG = 'Escribe tu estatura en cm, ej. 170 (o en metros, 1,70)';
 
 function body() {
   const b = state.settings.body = state.settings.body || {};
@@ -102,7 +105,7 @@ function vBody() {
     <div class="row" style="justify-content:space-between"><h3>${ic('activity', 17)} Peso corporal</h3><button class="btn small ghost" data-act="bd-data">${ic('settings', 14)} Tus datos</button></div>
     <div class="bd-big"><div><b class="num">${cur ? fmtKg(r1(cur.v)) : '—'}</b><span> kg</span></div>
       <div class="muted">${cur ? `Promedio ${thisWk ? 'de esta semana' : 'de tu última semana'} · ${cur.n} ${cur.n === 1 ? 'pesaje' : 'pesajes'}` : 'Aún no registras tu peso'}${prev ? `<br>vs semana anterior ${delta(cur.v - prev.v, ' kg')}` : ''}</div></div>
-    <form class="row bd-wform" id="f-bdw"><input id="bd-kg" inputmode="decimal" placeholder="${tw ? fmtKg(tw.kg) : fmtKg(HISTORY.kg)}" aria-label="Peso de hoy en kg"><button class="btn primary" type="submit">${tw ? 'Cambiar hoy' : 'Guardar peso de hoy'}</button></form>
+    <form class="row bd-wform" id="f-bdw"><span class="bd-in grow"><input id="bd-kg" inputmode="decimal" placeholder="${tw ? fmtKg(tw.kg) : fmtKg(HISTORY.kg)}" aria-label="Peso de hoy en kg" aria-describedby="bd-e-kg"><i class="pb-u bw" aria-hidden="true">kg</i></span><button class="btn primary" type="submit">${tw ? 'Cambiar hoy' : 'Guardar peso de hoy'}</button></form><small class="bd-err" id="bd-e-kg" role="alert" hidden></small>
     <div class="muted bd-tip">Pésate 3-4 veces por semana, en ayunas y después del baño. Mira el <b>promedio semanal</b>: el número de un día sube o baja 1-2 kg por agua y sal.</div>
     ${wa.length ? bodyChart(wa.map(x => ({ d: x.d, v: r1(x.v) })), 'kg', daily) + '<div class="bd-leg"><span><i class="a"></i>Promedio semanal</span><span><i class="m"></i>Pesajes</span></div>' : ''}
   </div>
@@ -221,14 +224,34 @@ document.addEventListener('change', ev => {
 });
 
 /* ---------- Hojas: datos y medidas ---------- */
+/* Validación con mensaje bajo el campo (estatura en cm o metros, muñeca, tobillo y peso de hoy) */
+const BD_CHK = {
+  h: [v => parseCm(v) != null, CM_MSG],
+  wr: [v => { const n = num(v); return !!n && n < 30; }, 'Escribe la muñeca en cm, ej. 17'],
+  an: [v => { const n = num(v); return !!n && n < 40; }, 'Escribe el tobillo en cm, ej. 22'],
+  kg: [v => { const n = num(v); return !!n && n >= 25 && n <= 300; }, 'Escribe tu peso en kg, ej. 72,5'],
+};
+/* Vacío no es error salvo en el peso al guardarlo (estatura vacía = se deja la que había) */
+const bdErr = k => { const el = $('#bd-' + k); if (!el) return ''; const v = el.value.trim(); if (!v) return k === 'kg' ? BD_CHK.kg[1] : ''; return BD_CHK[k][0](v) ? '' : BD_CHK[k][1]; };
+function bdShowErr(k, force) {
+  const el = $('#bd-e-' + k), inp = $('#bd-' + k); if (!el || !inp) return;
+  const m = bdErr(k), show = !!m && (force || !!inp.value.trim());
+  el.textContent = show ? m : ''; el.hidden = !show; inp.setAttribute('aria-invalid', show ? 'true' : 'false');
+}
+document.addEventListener('input', ev => { const k = { 'bd-h': 'h', 'bd-wr': 'wr', 'bd-an': 'an', 'bd-kg': 'kg' }[ev.target.id]; if (k && !bdErr(k)) bdShowErr(k); });
+document.addEventListener('focusout', ev => {
+  const k = { 'bd-h': 'h', 'bd-wr': 'wr', 'bd-an': 'an' }[ev.target.id]; if (!k) return;
+  if (k === 'h') { const c = parseCm(ev.target.value); if (c != null) ev.target.value = String(c).replace('.', ','); }
+  bdShowErr(k);
+});
 function dataSheet() {
   const b = body();
   openSheet(`<div class="row"><h2 class="grow">Tus datos</h2><button class="icon-btn" data-act="sheet-close" aria-label="Cerrar">${ic('x', 18)}</button></div>
     <form id="f-bdd" class="bd-form">
-      <label class="field"><span class="label">Estatura (cm)</span><input id="bd-h" inputmode="decimal" value="${b.h || ''}"></label>
+      <label class="field"><span class="label">Estatura</span><span class="bd-in"><input id="bd-h" inputmode="decimal" maxlength="5" value="${b.h ? String(b.h).replace('.', ',') : ''}" placeholder="170" aria-describedby="bd-e-h"><i class="pb-u" aria-hidden="true">cm</i></span><small class="bd-err" id="bd-e-h" role="alert" hidden></small></label>
       <div class="field"><span class="label">Sexo (para la fórmula de grasa)</span><div class="seg"><button type="button" class="${b.sex !== 'f' ? 'on' : ''}" data-act="bd-sex" data-v="m">Hombre</button><button type="button" class="${b.sex === 'f' ? 'on' : ''}" data-act="bd-sex" data-v="f">Mujer</button></div></div>
-      <label class="field"><span class="label">Muñeca (cm) · bajo el hueso, del lado de la mano</span><input id="bd-wr" inputmode="decimal" value="${b.wrist || ''}" placeholder="Ej. 17"></label>
-      <label class="field"><span class="label">Tobillo (cm) · la parte más delgada</span><input id="bd-an" inputmode="decimal" value="${b.ankle || ''}" placeholder="Ej. 22"></label>
+      <label class="field"><span class="label">Muñeca (cm) · bajo el hueso, del lado de la mano</span><span class="bd-in"><input id="bd-wr" inputmode="decimal" value="${b.wrist || ''}" placeholder="Ej. 17" aria-describedby="bd-e-wr"><i class="pb-u" aria-hidden="true">cm</i></span><small class="bd-err" id="bd-e-wr" role="alert" hidden></small></label>
+      <label class="field"><span class="label">Tobillo (cm) · la parte más delgada</span><span class="bd-in"><input id="bd-an" inputmode="decimal" value="${b.ankle || ''}" placeholder="Ej. 22" aria-describedby="bd-e-an"><i class="pb-u" aria-hidden="true">cm</i></span><small class="bd-err" id="bd-e-an" role="alert" hidden></small></label>
       <button class="btn primary block" type="submit">Guardar</button></form>
     ${b.w.length || b.m.length ? `<div class="label" style="margin-top:6px">Tus registros</div><div class="bd-recs">
       ${b.w.slice().sort((x, y) => y.d.localeCompare(x.d)).map(x => `<div class="bd-rec"><span>${fmtDate(x.d + 'T12:00:00')}</span><b class="num">${fmtKg(x.kg)} kg</b><button class="icon-btn" data-act="bd-del" data-t="w" data-d="${x.d}" aria-label="Borrar peso">${ic('trash-2', 14)}</button></div>`).join('')}
@@ -246,7 +269,7 @@ document.addEventListener('submit', ev => {
   const f = ev.target;
   if (f.id === 'f-bdw') {
     ev.preventDefault();
-    const kg = num($('#bd-kg').value); if (!kg || kg < 25 || kg > 300) { toast('Escribe tu peso en kg, por ejemplo 72,5'); return; }
+    const kg = num($('#bd-kg').value); if (bdErr('kg')) { bdShowErr('kg', true); $('#bd-kg').focus(); return; }
     const b = body(), d = dk(new Date()); b.w = b.w.filter(x => x.d !== d).concat([{ d, kg: r1(kg) }]);
     saveBody(); toast(`Peso guardado: ${fmtKg(r1(kg))} kg`); render();
   } else if (f.id === 'f-bdm') {
@@ -257,8 +280,9 @@ document.addEventListener('submit', ev => {
     b.m = b.m.filter(x => x.d !== d).concat([o]); saveBody(); closeSheet(); toast('Medidas guardadas'); render();
   } else if (f.id === 'f-bdd') {
     ev.preventDefault();
-    const b = body(), h = num($('#bd-h').value), wr = num($('#bd-wr').value), an = num($('#bd-an').value);
-    if (h && h > 120 && h < 230) b.h = r1(h);
+    const bad = ['h', 'wr', 'an'].filter(k => bdErr(k)); if (bad.length) { bad.forEach(k => bdShowErr(k, true)); $('#bd-' + bad[0]).focus(); return; }
+    const b = body(), h = parseCm($('#bd-h').value), wr = num($('#bd-wr').value), an = num($('#bd-an').value);
+    if (h) b.h = h;
     if (wr && wr < 30) b.wrist = r1(wr); else if (!$('#bd-wr').value.trim()) delete b.wrist;
     if (an && an < 40) b.ankle = r1(an); else if (!$('#bd-an').value.trim()) delete b.ankle;
     saveBody(); closeSheet(); toast('Datos guardados'); render();

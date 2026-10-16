@@ -170,6 +170,10 @@ function pbStart(step, edit) {
   const p = pbProf() || {}, b = body();
   pb.o = Object.assign({ name: p.name || (pubUser() ? '' : HISTORY.name), goal: null, exp: null, days: 3, mins: 60, equip: 'gym', age: '', sex: b.sex || 'm', cm: state.settings.pub && !p.cm ? '' : b.h, kg: state.settings.pub && !p.kg ? '' : r1(curWeight()), unit: state.settings.unit || 'kg', inj: [], parq: [], preg: false }, JSON.parse(JSON.stringify(p)));
   if (!pubUser() && !p.age) pb.o.age = HISTORY.age;
+  const o = pb.o;
+  o.cmIn = o.cm === '' || o.cm == null ? '' : String(o.cm).replace('.', ',');
+  o.kgIn = o.kg === '' || o.kg == null ? '' : String(o.unit === 'lb' ? r1(o.kg * PB_LB) : o.kg).replace('.', ',');
+  o.kgTyped = false; pb.showErr = false;
   pb.step = step || 0; pb.edit = !!edit; pbRender();
 }
 function pbClose() { const el = $('#onb'); if (el) el.remove(); document.body.classList.remove('onb-open'); }
@@ -179,9 +183,28 @@ function pbOk() {
   if (pb.step === 1) return !!o.goal;
   if (pb.step === 2) return o.exp != null;
   if (pb.step === 7) return !!o.consent;
-  if (pb.step === 5) return +o.age >= LEGAL.minAge && +o.age <= 100 && +o.cm >= 120 && +o.cm <= 230 && +o.kg >= 30 && +o.kg <= 300;
+  if (pb.step === 5) return !pbErr('age') && !pbErr('cm') && !pbErr('kg');
   return true;
 }
+/* Tus datos (paso 6): el peso se escribe en la unidad elegida y se guarda siempre en kg; la estatura acepta cm o metros */
+const PB_LB = 2.20462;
+const pbKg = (v, unit) => { const n = num(v); if (!n) return null; if (unit === 'lb') return n >= 66 && n <= 660 ? r1(n / PB_LB) : null; return n >= 30 && n <= 300 ? r1(n) : null; };
+function pbErr(k) {
+  const o = pb.o;
+  if (k === 'age') return +o.age >= LEGAL.minAge && +o.age <= 100 ? '' : o.age !== '' && +o.age > 0 && +o.age < LEGAL.minAge ? `Forja es para personas de ${LEGAL.minAge} años o más` : 'Escribe tu edad en años, ej. 30';
+  if (k === 'cm') return o.cm !== '' && o.cm != null ? '' : CM_MSG;
+  if (k === 'kg') return o.kg !== '' && o.kg != null ? '' : o.unit === 'lb' ? 'Escribe tu peso en lb, ej. 165' : 'Escribe tu peso en kg, ej. 70';
+  return '';
+}
+/* El mensaje sale al salir del campo o al tocar Siguiente; mientras escribes solo se quita si ya es válido */
+function pbShowErr(k, force) {
+  const el = $('#pb-e-' + k); if (!el) return;
+  const raw = k === 'age' ? pb.o.age : pb.o[k + 'In'], m = pbErr(k), show = !!m && (force || pb.showErr || String(raw || '') !== '');
+  if (k === 'age' && +pb.o.age > 0 && +pb.o.age < LEGAL.minAge) { el.hidden = true; return; }
+  el.textContent = show ? m : ''; el.hidden = !show;
+  const inp = $('#pb-' + k); if (inp) inp.setAttribute('aria-invalid', show ? 'true' : 'false');
+}
+function pbNextState() { const btn = $('#onb [data-pb="next"]'); if (!btn) return; if (pb.step === 5) { btn.disabled = false; btn.dataset.off = pbOk() ? 0 : 1; } else btn.disabled = !pbOk(); }
 function pbBody() {
   const o = pb.o, s = pb.step;
   if (s === 0) return `<div class="pb-hero"><div class="pb-logo">${ic('dumbbell', 34)}</div><h1>Te damos la bienvenida</h1>
@@ -197,9 +220,7 @@ function pbBody() {
     <h2 style="margin-top:22px">¿Cuánto tiempo por sesión?</h2><div class="pb-pills">${[30, 45, 60, 90].map(n => `<button type="button" class="pb-pill ${+o.mins === n ? 'on' : ''}" data-pb="set" data-k="mins" data-v="${n}" data-n="1">${n}<small>min</small></button>`).join('')}</div>`;
   if (s === 4) return `<h2>¿Dónde vas a entrenar?</h2><div class="pb-list">${Object.keys(PB_EQ).map(k => pbChip(o.equip === k, `data-pb="set" data-k="equip" data-v="${k}"`, PB_EQ[k][0], PB_EQ[k][1], { gym: 'dumbbell', basic: 'layers', home: 'user', body: 'person-standing' }[k])).join('')}</div>`;
   if (s === 5) return `<h2>Tus datos</h2><p class="pb-sub">Sirven para calcular calorías, proteína y tu nivel de fuerza. Se guardan en tu cuenta.</p>
-    <div class="pb-grid"><label class="pb-f"><span>Edad</span><input id="pb-age" inputmode="numeric" maxlength="3" value="${esc(o.age)}" placeholder="años"></label>
-    <label class="pb-f"><span>Estatura</span><input id="pb-cm" inputmode="numeric" maxlength="3" value="${esc(o.cm)}" placeholder="cm"></label>
-    <label class="pb-f"><span>Peso corporal</span><input id="pb-kg" inputmode="decimal" maxlength="5" value="${esc(o.kg === '' ? '' : String(o.kg).replace('.', ','))}" placeholder="kg"></label></div>
+    <div class="pb-grid pb-data">${[['age', 'Edad', 'años', 'numeric', 3, o.age, '30'], ['cm', 'Estatura', 'cm', 'decimal', 5, o.cmIn, '170'], ['kg', 'Peso corporal', o.unit === 'lb' ? 'lb' : 'kg', 'decimal', 5, o.kgIn, o.unit === 'lb' ? '165' : '70']].map(([k, l, u, im, ml, v, ph]) => `<label class="pb-f"><span>${l}</span><span class="pb-in"><input id="pb-${k}" inputmode="${im}" maxlength="${ml}" value="${esc(v == null ? '' : v)}" placeholder="${ph}" aria-describedby="pb-e-${k}"><i class="pb-u" aria-hidden="true">${u}</i></span><small class="pb-err" id="pb-e-${k}" role="alert" hidden></small></label>`).join('')}</div>
     ${o.age !== '' && +o.age < LEGAL.minAge ? `<p class="pb-note bad">Forja es para personas de ${LEGAL.minAge} años o más.</p>` : +o.age >= LEGAL.minAge && +o.age < 18 ? '<p class="pb-note">Como eres menor de edad, entrena con la guía de un adulto o un entrenador. No te mostraremos dietas ni calorías.</p>' : ''}
     <div class="pb-lab">Sexo (para las fórmulas de calorías y fuerza)</div><div class="pb-pills">${[['m', 'Hombre'], ['f', 'Mujer']].map(([k, l]) => `<button type="button" class="pb-pill wide ${o.sex === k ? 'on' : ''}" data-pb="set" data-k="sex" data-v="${k}">${l}</button>`).join('')}</div>
     <div class="pb-lab">Pesas y máquinas en</div><div class="pb-pills">${[['kg', 'Kilos (kg)'], ['lb', 'Libras (lb)']].map(([k, l]) => `<button type="button" class="pb-pill wide ${o.unit === k ? 'on' : ''}" data-pb="set" data-k="unit" data-v="${k}">${l}</button>`).join('')}</div>`;
@@ -224,8 +245,9 @@ function pbRender() {
   el.innerHTML = `<div class="pb-top">${s ? `<button type="button" class="icon-btn" data-pb="back" aria-label="Atrás">${ic('arrow-left', 20)}</button>` : (pb.edit ? `<button type="button" class="icon-btn" data-pb="x" aria-label="Cerrar">${ic('x', 20)}</button>` : '<span></span>')}
     <div class="pb-bar"><i style="width:${Math.round((s + 1) / PB_STEPS * 100)}%"></i></div><small class="num">${s + 1}/${PB_STEPS}</small></div>
     <div class="pb-body">${pbBody()}</div>
-    <div class="pb-foot"><button type="button" class="btn primary block" data-pb="next" ${pbOk() ? '' : 'disabled'}>${s === 0 ? 'Empezar' : last ? (pb.edit ? 'Usar este plan' : 'Empezar a entrenar') : 'Siguiente'}</button></div>`;
+    <div class="pb-foot"><button type="button" class="btn primary block" data-pb="next" ${s === 5 ? `data-off="${pbOk() ? 0 : 1}"` : pbOk() ? '' : 'disabled'}>${s === 0 ? 'Empezar' : last ? (pb.edit ? 'Usar este plan' : 'Empezar a entrenar') : 'Siguiente'}</button></div>`;
   const sc = el.querySelector('.pb-body'); if (sc) sc.scrollTop = 0;
+  if (s === 5) ['age', 'cm', 'kg'].forEach(k => pbShowErr(k));
 }
 function pbFinish() {
   const o = pb.o, S = state.settings, wasPub = !!S.pub;
@@ -249,19 +271,35 @@ function pbFinish() {
 document.addEventListener('input', ev => {
   const t = ev.target; if (!pb.o || !t.closest || !t.closest('#onb')) return;
   const k = { 'pb-name': 'name', 'pb-age': 'age', 'pb-cm': 'cm', 'pb-kg': 'kg' }[t.id]; if (!k) return;
-  pb.o[k] = k === 'name' ? t.value : (t.value.replace(',', '.').replace(/[^\d.]/g, ''));
-  const btn = $('#onb [data-pb="next"]'); if (btn) btn.disabled = !pbOk();
+  if (k === 'cm') { pb.o.cmIn = t.value; const c = parseCm(t.value); pb.o.cm = c == null ? '' : c; }
+  else if (k === 'kg') { pb.o.kgIn = t.value; pb.o.kgTyped = true; const g = pbKg(t.value, pb.o.unit); pb.o.kg = g == null ? '' : g; }
+  else pb.o[k] = k === 'name' ? t.value : t.value.replace(/[^\d]/g, '');
+  if (k !== 'name' && !pbErr(k)) pbShowErr(k);
+  pbNextState();
   if (k === 'age') { const notes = $('#onb .pb-note'); const want = +pb.o.age > 0 && +pb.o.age < 18; if (!!notes !== want && pb.o.age.length >= 2) { const pos = t.selectionStart; pbRender(); const ni = $('#pb-age'); if (ni) { ni.focus(); try { ni.setSelectionRange(pos, pos); } catch (e) {} } } }
+});
+document.addEventListener('focusout', ev => {
+  const t = ev.target; if (!pb.o || !t.closest || !t.closest('#onb')) return;
+  const k = { 'pb-age': 'age', 'pb-cm': 'cm', 'pb-kg': 'kg' }[t.id]; if (!k) return;
+  /* Estatura escrita en metros: al salir del campo se muestra en cm (1,70 → 170) */
+  if (k === 'cm' && pb.o.cm !== '' && t.value !== String(pb.o.cm)) { pb.o.cmIn = String(pb.o.cm).replace('.', ','); t.value = pb.o.cmIn; }
+  pbShowErr(k);
 });
 document.addEventListener('click', ev => {
   const b = ev.target.closest && ev.target.closest('[data-pb]'); if (!b) return;
   ev.preventDefault(); ev.stopPropagation();
   const a = b.dataset.pb, o = pb.o;
-  if (a === 'next') { if (!pbOk()) return; if (pb.step >= PB_STEPS - 1) return pbFinish(); pb.step++; return pbRender(); }
+  if (a === 'next') { if (!pbOk()) { if (pb.step === 5) { pb.showErr = true; const bad = ['age', 'cm', 'kg'].filter(k => pbErr(k)); bad.forEach(k => pbShowErr(k, true)); const f = $('#pb-' + bad[0]); if (f) f.focus(); } return; } if (pb.step >= PB_STEPS - 1) return pbFinish(); pb.step++; return pbRender(); }
   if (a === 'back') { pb.step = Math.max(0, pb.step - 1); return pbRender(); }
   if (a === 'x') return pbClose();
   if (a === 'have') { state.settings.onb = 1; savePlans(); pbClose(); state.tab = 'settings'; render(); toast('Inicia sesión en "Tu cuenta" para traer tus datos.'); if (!state.settings.healthOk) setTimeout(() => healthSheet(true), 400); return; }
-  if (a === 'set') { o[b.dataset.k] = b.dataset.n ? +b.dataset.v : b.dataset.v; if (b.dataset.k === 'sex' && o.sex !== 'f') o.parq = o.parq.filter(i => i < PARQ.length); return pbRender(); }
+  if (a === 'set') {
+    if (b.dataset.k === 'unit' && o.unit !== b.dataset.v) {
+      /* El peso escrito a mano se lee en la unidad nueva; el que venía guardado se convierte para mostrarlo */
+      if (o.kgTyped) { const g = pbKg(o.kgIn, b.dataset.v); o.kg = g == null ? '' : g; }
+      else if (o.kg !== '' && o.kg != null) o.kgIn = String(b.dataset.v === 'lb' ? r1(o.kg * PB_LB) : o.kg).replace('.', ',');
+    }
+    o[b.dataset.k] = b.dataset.n ? +b.dataset.v : b.dataset.v; if (b.dataset.k === 'sex' && o.sex !== 'f') o.parq = o.parq.filter(i => i < PARQ.length); return pbRender(); }
   if (a === 'inj') { const v = b.dataset.v; o.inj = !v ? [] : o.inj.includes(v) ? o.inj.filter(x => x !== v) : o.inj.concat([v]); return pbRender(); }
   if (a === 'consent') { o.consent = !o.consent; return pbRender(); }
   if (a === 'priv') return privacySheet();
