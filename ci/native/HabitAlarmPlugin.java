@@ -26,12 +26,26 @@ public class HabitAlarmPlugin extends Plugin {
     @PluginMethod
     public void schedule(PluginCall call) {
         Context c = getContext();
-        JSArray items = call.getArray("items");
+        JSArray items = call.getArray("items"), done = call.getArray("done");
+        JSONArray prev = HabitAlarms.load(c, "items");
         HabitAlarms.cancelAll(c);
         JSONArray keep = new JSONArray();
+        java.util.HashSet<Integer> ids = new java.util.HashSet<>();
+        java.util.HashSet<String> doneK = new java.util.HashSet<>();
         try {
+            if (done != null) for (int k = 0; k < done.length(); k++) doneK.add(done.getString(k));
             if (items != null) for (int k = 0; k < items.length(); k++) {
                 JSONObject o = items.getJSONObject(k);
+                ids.add(o.optInt("id"));
+                keep.put(o);
+                HabitAlarms.arm(c, o);
+            }
+            /* Repeticiones creadas aquí (✕ con "avisar de nuevo" o Aplazar desde la notificación): siguen vivas
+               al reprogramar desde la app, salvo que ese hábito ya esté hecho hoy */
+            long now = System.currentTimeMillis();
+            for (int k = 0; k < prev.length(); k++) {
+                JSONObject o = prev.optJSONObject(k);
+                if (o == null || !o.optBoolean("snoozed") || o.optLong("at") <= now || ids.contains(o.optInt("id")) || doneK.contains(o.optString("habit"))) continue;
                 keep.put(o);
                 HabitAlarms.arm(c, o);
             }

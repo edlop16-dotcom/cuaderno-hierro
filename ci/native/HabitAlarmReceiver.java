@@ -28,6 +28,7 @@ public class HabitAlarmReceiver extends BroadcastReceiver {
             new Handler(Looper.getMainLooper()).postDelayed(pr::finish, 3200);
         }
         else if (HabitAlarms.A_DONE.equals(a)) { HabitAlarms.done(c, o); Toast.makeText(c, "¡Hecho! " + o.optString("name"), Toast.LENGTH_SHORT).show(); }
+        else if (HabitAlarms.A_DISMISS.equals(a)) { HabitAlarms.again(c, o); }
         else if (HabitAlarms.A_SNOOZE.equals(a)) { HabitAlarms.snooze(c, o, 15); Toast.makeText(c, "Te lo recuerdo en 15 min", Toast.LENGTH_SHORT).show(); }
     }
 }

@@ -30,6 +30,7 @@ public class HabitAlarms {
     static final String A_FIRE = "pe.edgwr.cuadernohierro.HABIT_FIRE";
     static final String A_DONE = "pe.edgwr.cuadernohierro.HABIT_DONE";
     static final String A_SNOOZE = "pe.edgwr.cuadernohierro.HABIT_SNOOZE";
+    static final String A_DISMISS = "pe.edgwr.cuadernohierro.HABIT_DISMISS";
 
     static SharedPreferences prefs(Context c) { return c.getSharedPreferences(PREFS, Context.MODE_PRIVATE); }
 
@@ -127,7 +128,7 @@ public class HabitAlarms {
 
     static PendingIntent actionPI(Context c, String action, int id, String item) {
         Intent i = new Intent(c, HabitAlarmReceiver.class).setAction(action).putExtra("item", item);
-        int rc = id * 4 + (A_DONE.equals(action) ? 1 : 2);
+        int rc = id * 4 + (A_DONE.equals(action) ? 1 : A_SNOOZE.equals(action) ? 2 : 0);
         return PendingIntent.getBroadcast(c, rc, i, flags(PendingIntent.FLAG_UPDATE_CURRENT));
     }
 
@@ -153,7 +154,8 @@ public class HabitAlarms {
             .setContentIntent(fullPI)
             .setFullScreenIntent(fullPI, true)
             .addAction(0, "✓ Hecho", actionPI(c, A_DONE, id, item))
-            .addAction(0, "Aplazar 15 min", actionPI(c, A_SNOOZE, id, item));
+            .addAction(0, "Aplazar 15 min", actionPI(c, A_SNOOZE, id, item))
+            .setDeleteIntent(actionPI(c, A_DISMISS, id, item));   // deslizar la notificación = ✕
         NotificationManager nm = (NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm != null) nm.notify(id, b.build());
         /* Con el celular en uso Android solo muestra la notificación arriba. Si el usuario dio
@@ -189,6 +191,21 @@ public class HabitAlarms {
         prefs(c).edit().putString("events", ev.toString()).apply();
         dismiss(c, o.optInt("id"));
     }
+
+    /** ✕ (o deslizar la notificación): si el recordatorio pide "avisar de nuevo en N min" (`again`), se reprograma
+        para ese mismo día y antes de las 23:00. Devuelve false si no hay repetición (queda descartado). */
+    static boolean again(Context c, JSONObject o) {
+        int min = o.optInt("again", 0);
+        if (min <= 0) return false;
+        long next = System.currentTimeMillis() + min * 60000L;
+        java.util.Calendar cal = java.util.Calendar.getInstance();
+        cal.setTimeInMillis(next);
+        String day = String.format(java.util.Locale.US, "%04d-%02d-%02d", cal.get(java.util.Calendar.YEAR), cal.get(java.util.Calendar.MONTH) + 1, cal.get(java.util.Calendar.DAY_OF_MONTH));
+        if (!day.equals(o.optString("day")) || cal.get(java.util.Calendar.HOUR_OF_DAY) >= 23) return false;
+        snooze(c, o, min);
+        return true;
+    }
+    static String againText(int min) { return min >= 60 ? (min / 60) + (min == 60 ? " hora" : " horas") : min + " min"; }
 
     static void snooze(Context c, JSONObject o, int min) {
         dismiss(c, o.optInt("id"));

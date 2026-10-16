@@ -157,7 +157,11 @@ public class HabitAlarmActivity extends Activity {
         row.setGravity(Gravity.CENTER_VERTICAL);
         TextView no = circle("✕", true);
         no.setContentDescription("Descartar");
-        no.setOnClickListener(v -> { HabitAlarms.dismiss(this, item.optInt("id")); finish(); });
+        no.setOnClickListener(v -> {
+            if (HabitAlarms.again(this, item)) Toast.makeText(this, "Te lo recuerdo en " + HabitAlarms.againText(item.optInt("again")), Toast.LENGTH_SHORT).show();
+            else HabitAlarms.dismiss(this, item.optInt("id"));
+            finish();
+        });
         View gap = new View(this);
         TextView yes = circle("✓", false);
         yes.setContentDescription("Hecho");
