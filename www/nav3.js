@@ -30,6 +30,19 @@ Object.assign(ICONS, {
   NAV_ALL.forEach(k => { if (o.indexOf(k) < 0) o.push(k); });
   S.navOrder = o; S.navMig3 = 1; savePlans();
 })();
+/* El orden de la barra lo cambia solo quien la mueve a mano (Ajustes o mantener presionado): queda en `navCustom`.
+   navMig4 (16-oct-2026): un orden viejo que no se movió a mano en esta versión vuelve a Hoy · Rutinas · Progreso · Perfil.
+   Pasó con Edgar: su orden guardado era Perfil · Rutinas · Entrenar (un toque de "bajar" en la hoja de ordenar),
+   la migración de la tanda 1 lo tomó como propio y quedó Progreso · Perfil · Rutinas · Hoy. */
+(function () {
+  const S = state.settings; if (S.navMig4) return;
+  if (!S.navCustom) S.navOrder = NAV_ALL.slice();
+  S.navMig4 = 1; savePlans();
+})();
+document.addEventListener('click', ev => {
+  const b = ev.target.closest && ev.target.closest('[data-act="nav-mv"],[data-act="nav-reset"]'); if (!b) return;
+  state.settings.navCustom = b.dataset.act === 'nav-mv' ? 1 : 0; savePlans();
+}, true);
 
 /* ---------- Plegables: se recuerdan mientras la app está abierta ---------- */
 state.n3Open = state.n3Open || {};
