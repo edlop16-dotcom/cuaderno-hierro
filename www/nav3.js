@@ -80,7 +80,12 @@ function miPlanLayout(app) {
   /* Orden: pestañas → bloque → plan activo (o vacío) → + Ejercicio · + Día → plegables */
   const after = (ref, el) => { if (el && ref) ref.insertAdjacentElement('afterend', el); return el || ref; };
   let ref = after(seg, meso);
+  /* + Nueva rutina: el mismo flujo que la Biblioteca (rt-from-ex → elegir ejercicios → rtSheet → saveRoutine vuelve aquí).
+     Va al final de los días del plan activo; sin plan activo, arriba */
+  const nb = `<button type="button" class="btn block rt-newr" data-act="rt-from-ex">${ic('plus', 18)} Nueva rutina</button>`;
+  if (!actCard) { ref.insertAdjacentHTML('afterend', nb); ref = ref.nextElementSibling; }
   ref = after(ref, actCard || empty);
+  if (actCard) { const days = actCard.querySelector('.rt-days'); if (days) days.insertAdjacentHTML('afterend', nb); else actCard.insertAdjacentHTML('beforeend', nb); }
   if (actCard && leg) actCard.appendChild(leg);
   if (qk) after(ref, qk);
   const fb = app.querySelector('details.rt-balf > .n3f-b'); if (fb) fb.appendChild(bal);
@@ -156,7 +161,8 @@ function settingsGroups(app) {
 }
 
 /* ---------- Dibujo ---------- */
-/* Día recién creado fuera del plan activo (p. ej. desde la Biblioteca va a "Mis rutinas"): se abre y se muestra */
+/* Día recién creado (p. ej. "+ Nueva rutina" o la Biblioteca, que lo guardan en "Mis rutinas"): se abre y se muestra;
+   si no es del plan activo, también se abre "Otros planes" */
 function n3DayIds() { const s = {}; state.plans.forEach(p => p.days.forEach(d => { s[d.id] = p.id; })); return s; }
 const _renderN3 = render;
 render = function () {
@@ -165,8 +171,8 @@ render = function () {
   if (!w && state.tab === 'plans') {
     const t = rtTodayDay(); if (t && t.d && state.rtOpen[t.d.id] == null) state.rtOpen[t.d.id] = true;
     const act = activePlan();
-    if (prev) for (const k in ids) if (!prev[k] && (!act || ids[k] !== act.id)) fresh = k;
-    if (fresh) { state.rtOpen[fresh] = true; state.n3Open['rt-more'] = true; }
+    if (prev) for (const k in ids) if (!prev[k]) fresh = k;
+    if (fresh) { state.rtOpen[fresh] = true; if (!act || ids[fresh] !== act.id) state.n3Open['rt-more'] = true; }
   }
   _renderN3();
   const app = $('#app'); if (!app || w || state.draft && app.querySelector('#sx')) return;

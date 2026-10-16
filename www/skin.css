@@ -1757,3 +1757,8 @@ body:not(.watch) .rt-rec span,body:not(.watch) .barinfo b{color:var(--fg)}
 body:not(.watch) .bd-in input{padding-right:44px}
 .bd-in .pb-u{right:12px}
 body.watch .bd-in .pb-u{display:none}
+/* Mi plan · "+ Nueva rutina" (mismo flujo que la Biblioteca) */
+body:not(.watch) .rt-newr{min-height:48px;margin-top:10px;background:var(--surface2);border:1px dashed var(--line);color:var(--fg);font-family:var(--f-display);font-size:17px;font-weight:700;flex-shrink:0}
+body:not(.watch) .rt-newr .ic{color:var(--accent)}
+/* La rutina recién creada se muestra con aire arriba (no pegada ni cortada por el borde) */
+body:not(.watch) .rt-head{scroll-margin-top:32px}
