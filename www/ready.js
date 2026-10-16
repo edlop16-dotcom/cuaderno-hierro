@@ -8,6 +8,8 @@ const READY_Q = [
 ];
 function readyToday() { const r = state.settings.ready; return r && r.d === dk(new Date()) ? r : null; }
 function readyScore() { const r = readyToday(); if (!r) return null; return (r.sleep || 0) + (r.energy || 0) - (Object.values(soreMap()).some(s => s.lvl >= 2) ? 1 : 0); }
+/* Título con punto final, salvo que ya termine en signo ("¡Llegas fuerte!" no lleva "!.") */
+const rpTitle = t => /[.!?…]$/.test(t) ? t : t + '.';
 function readyPlan() {
   const s = readyScore(); if (s == null) return null;
   if (s <= -2) return { lv: 'low', t: 'Día de recuperación', m: 'Hoy haremos <b>1 serie menos</b> por ejercicio y <b>−10 % de peso</b>, dejando 2 reps de sobra. Entrenar suave también suma y te recuperas mejor.' };
@@ -19,7 +21,7 @@ function readyCard() {
   const r = readyToday() || {}, p = readyPlan();
   return `<div class="card readycard" id="readycard"><h3>${ic('battery', 17)} ¿Cómo llegas hoy?</h3>
     ${READY_Q.map(([k, l, opts]) => `<div class="rd-q"><span class="label">${l}</span><div class="rd-opts">${opts.map(([v, t, sub]) => `<button type="button" class="rd ${r[k] === v ? 'on v' + (v + 1) : ''}" data-act="ready" data-k="${k}" data-v="${v}" aria-pressed="${r[k] === v}">${t}${sub ? `<small>${sub}</small>` : ''}</button>`).join('')}</div></div>`).join('')}
-    ${p ? `<div class="rd-plan ${p.lv}"><b>${p.t}.</b> ${p.m}</div>` : '<div class="muted" style="font-size:12px">Marca cómo dormiste y tu energía: la rutina se ajusta sola si llegas cansado.</div>'}</div>`;
+    ${p ? `<div class="rd-plan ${p.lv}"><b>${rpTitle(p.t)}</b> ${p.m}</div>` : '<div class="muted" style="font-size:12px">Marca cómo dormiste y tu energía: la rutina se ajusta sola si llegas cansado.</div>'}</div>`;
 }
 document.addEventListener('click', ev => {
   const b = ev.target.closest('[data-act="ready"]'); if (!b) return;

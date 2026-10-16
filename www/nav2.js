@@ -104,7 +104,7 @@ function hoyReady() {
   const r = (typeof readyToday === 'function' && readyToday()) || {}, p = typeof readyPlan === 'function' ? readyPlan() : null;
   const on = v => r.sleep === v && r.energy === v;
   return `<div class="hoy-ready"><span class="hoy-rq">¿Cómo llegas hoy?</span><div class="hoy-chips">${HOY_READY.map(([v, l, i]) => `<button type="button" class="hoy-chip ${on(v) ? 'on' : ''}" data-act="hoy-ready" data-v="${v}" aria-pressed="${on(v)}">${ic(i, 15)} ${l}</button>`).join('')}</div>
-    ${p ? `<div class="hoy-rp ${p.lv}"><b>${p.t}.</b> ${HOY_RP[p.lv] || ''}</div>` : ''}</div>`;
+    ${p ? `<div class="hoy-rp ${p.lv}"><b>${rpTitle(p.t)}</b> ${HOY_RP[p.lv] || ''}</div>` : ''}</div>`;
 }
 function hoyAlt() {
   const n = typeof soreMap === 'function' ? Object.keys(soreMap()).length : 0;
