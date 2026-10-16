@@ -5,8 +5,15 @@
    Para la próxima versión: cambiar NEWS_KEY y la lista NEWS.
    No sale en el reloj, en una instalación nueva (tiene la bienvenida) ni durante una sesión.
    ========================================================================== */
-const NEWS_KEY = 'n3';   // se guarda en cdh.newsSeen (local: el celular y el reloj van por separado). n1 = 1.0.39, n2 = nueva organización (tanda 1), n3 = tanda 2
+const NEWS_KEY = 'n4';   // se guarda en cdh.newsSeen (local: el celular y el reloj van por separado). n1 = 1.0.39, n2 = nueva organización (tanda 1), n3 = tanda 2, n4 = Próxima sesión (Coach e importada) y la ✕ de los hábitos
 const NEWS = [
+  ['sparkles', 'Próxima sesión: el Coach', 'En Hoy y en Mi plan eliges Plan o Coach con un toque. El Coach arma cada ejercicio con peso, reps y RIR por serie según tu historial, y te dice por qué. Tu plan no cambia.', 'ns', 'Ver en Hoy'],
+  ['clipboard-list', 'Importa la recomendación de tu IA', 'Al analizar con Claude o compartir, se pide un formato fijo. Pega la respuesta en "Importar": la revisas, la editas y queda como Próxima sesión de ese día.', 'nsi', 'Importar'],
+  ['bell', 'Hábitos: qué hace la ✕', 'En cada recordatorio de hábito eliges si al cerrarlo te avisa de nuevo en 30 min a 4 h, o solo una vez al día.', 'hab'],
+  ['dumbbell', 'Coach por defecto', 'Si quieres que el Coach salga siempre, actívalo en Ajustes → Entreno → Próxima sesión.', 'nsset'],
+];
+/* Quien no vio la tanda 2 (n3) la ve también */
+const NEWS_N3 = [
   ['clipboard-list', 'Rutinas: Mi plan', 'Rutinas abre tu plan activo con el día que te toca desplegado. Toca un ejercicio para cambiar series, peso o superserie; + Ejercicio y + Día a un toque.', 'rt', 'Ver mi plan'],
   ['book-open', 'Biblioteca', 'Los ejercicios ahora están en Rutinas → Biblioteca. La barra queda con 4 pestañas: Hoy, Rutinas, Progreso y Perfil.', 'guide', 'Ver Biblioteca'],
   ['user', 'Perfil completo', 'Tu cuerpo, nutrición, logros y amigos en una pantalla, con accesos arriba. El modo entrenador está en Amigos.', 'perfil'],
@@ -14,8 +21,9 @@ const NEWS = [
 ];
 const NEWS_PUB = ['target', 'Peso inicial sugerido y misiones', 'Las rutinas nuevas llegan con un peso prudente para empezar, y tienes misiones de inicio en Hoy.', null];
 
-function newsSheet() {
-  const list = NEWS.concat(pubUser() ? [NEWS_PUB] : []);
+function newsSheet(all) {
+  const seen = LS.get('newsSeen', ''), old = all || (seen !== 'n3' && seen !== NEWS_KEY);
+  const list = NEWS.concat(old ? NEWS_N3 : [], pubUser() ? [NEWS_PUB] : []);
   openSheet(`<div class="row"><span class="nw-ic">${ic('sparkles', 22)}</span><h2 class="grow">Lo nuevo en Forja</h2><button class="icon-btn" data-act="sheet-close" aria-label="Cerrar">${ic('x', 18)}</button></div>
     <div class="muted nw-sub">Toca <b>Ver</b> para ir a cada función. Algunas salen en su momento: el reporte el viernes y el resumen al terminar una sesión.</div>
     <div class="nw-list">${list.map(([icon, t, d, k, b]) => `<div class="nw-it"><span class="nw-i">${ic(icon, 18)}</span><span class="grow"><b>${t}</b><small>${d}</small></span>${k ? `<button type="button" class="btn small" data-nw="${k}">${b || 'Ver'}</button>` : ''}</div>`).join('')}</div>
@@ -33,7 +41,7 @@ document.addEventListener('click', ev => {
   const b = ev.target.closest && ev.target.closest('[data-nw]'); if (!b) return;
   ev.preventDefault(); ev.stopPropagation();
   const k = b.dataset.nw;
-  if (k === 'open') return newsSheet();
+  if (k === 'open') return newsSheet(true);
   if (k === 'wc') { closeSheet(); return typeof wcSheet === 'function' && wcSheet('f'); }
   if (k === 'qk') { closeSheet(); return typeof qkSheet === 'function' && qkSheet(); }
   if (k === 'fs') return nwGo('settings', null, '.fs-set');
@@ -49,6 +57,10 @@ document.addEventListener('click', ev => {
   if (k === 'perfil') return nwGo('profile', 'body');
   if (k === 'rt') return nwGo('plans', null, '.rt-now');
   if (k === 'set2') return nwGo('settings', null, '.sg');
+  if (k === 'ns') return nwGo('train', null, '.hoy-hero .ns-box', 'Toca Coach para ver la Próxima sesión; "Ver o editar" muestra el porqué.');
+  if (k === 'nsi') { nwGo('train'); const g = document.querySelector('#btn-start'); if (g && typeof nsImportSheet === 'function') nsImportSheet(g.dataset.plan, g.dataset.day); return; }
+  if (k === 'hab') return nwGo('settings', null, '.ha-set', 'Abre un recordatorio de hábito y elige "Si lo cierras con ✕".');
+  if (k === 'nsset') return nwGo('settings', null, '.ns-set');
 }, true);
 
 /* Ajustes → Novedades */
