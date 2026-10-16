@@ -1826,3 +1826,8 @@ body:not(.watch) .sx-fin{padding-inline:14px}
 .ns-rir span{margin-right:4px}
 .ns-rir input{width:44px;min-height:44px;text-align:center;font-size:17px;font-variant-numeric:tabular-nums}
 .coach.ns{background:var(--surface2)!important;border-color:var(--line)!important}
+/* Próxima sesión · Coach */
+.ns-links{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:0 12px}
+.ns-name{font-size:16px}
+.ns-why{font-size:13px;line-height:1.4;color:var(--muted)}
+.ns-set .switch{flex:none}
