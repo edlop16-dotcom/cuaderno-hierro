@@ -53,10 +53,11 @@ function haDing() {
     }));
   } catch (e) {}
 }
-/* ✕: no volver a avisar hoy, o avisar de nuevo en N minutos (mismo día, hasta las 23:00) */
-const HA_AGAIN = [[0, 'No volver a avisar hoy (una vez al día)'], [30, 'Avisar de nuevo en 30 min'], [60, 'Avisar de nuevo en 1 hora'], [120, 'Avisar de nuevo en 2 horas'], [180, 'Avisar de nuevo en 3 horas'], [240, 'Avisar de nuevo en 4 horas']];
+/* ✕: no volver a avisar hoy, o repetir cada N minutos: cada ✕ lo reprograma otra vez (varias veces), solo ese día,
+   hasta las 23:00 y mientras el hábito no esté hecho */
+const HA_AGAIN = [[0, 'No volver a avisar hoy (una vez al día)'], [30, 'Repetir cada 30 min hasta que lo marques'], [60, 'Repetir cada 1 hora hasta que lo marques'], [120, 'Repetir cada 2 horas hasta que lo marques'], [180, 'Repetir cada 3 horas hasta que lo marques'], [240, 'Repetir cada 4 horas hasta que lo marques']];
 const haAgainTxt = m => m >= 60 ? (m / 60) + (m === 60 ? ' hora' : ' horas') : m + ' min';
-const haBodyR = (r, k) => [habBody(k), +r.again > 0 ? `✕ te lo recuerda en ${haAgainTxt(+r.again)}` : ''].filter(Boolean).join(' · ');
+const haBodyR = (r, k) => [habBody(k), +r.again > 0 ? `✕ te lo vuelve a recordar cada ${haAgainTxt(+r.again)}` : ''].filter(Boolean).join(' · ');
 function haAgainAt(it) {
   const m = +it.again || 0; if (m <= 0) return 0;
   const nx = new Date(Date.now() + m * 60000);
@@ -169,23 +170,36 @@ document.addEventListener('click', ev => {
   }
   if (a === 'ha-dur') { state.settings.alarmSec = +b.dataset.v; savePlans(); scheduleSoon(); render(); toast(`Sonido del recordatorio: ${(HA_DUR.find(d => d[0] === haRing()) || [0, ''])[1].toLowerCase()}.`); if (haRing() < 30 && !HA) haDing(); }
   if (a === 'ha-perm' && HA) HA.openSettings({ type: b.dataset.t }).catch(() => {});
-  if (a === 'ha-rem') { closeSheet(); remSheet(null); haPrefill(b.dataset.k); }
+  if (a === 'ha-rem') {   // la campanita: si ese hábito ya tiene recordatorio, se edita ese; si no, uno nuevo
+    const k = b.dataset.k, ri = haRemOf(k); closeSheet(); state.confirm = null;
+    if (ri >= 0) remSheet(ri); else { remSheet(null); haPrefill(k); }
+  }
 }, true);
 
 /* ---------- Formulario del recordatorio: elegir el hábito ---------- */
+/* Recordatorio que ya tiene ese hábito (el activo primero); -1 si no hay */
+function haRemOf(k) {
+  const L = state.reminders.map((r, i) => ({ r, i })).filter(x => habKeyOf(x.r) === k);
+  const on = L.find(x => x.r.on); return on ? on.i : L.length ? L[0].i : -1;
+}
 function haField(r) {
-  const list = habList().filter(h => !h.hidden || (r && r.hab === h.k)), cur = r && habKeyOf(r), ag = r ? +r.again || 0 : 0, hid = r && r.kind === 'hab' ? '' : 'hidden';
+  const cur = r && habKeyOf(r), list = habList().filter(h => !h.hidden || h.k === cur), ag = r ? +r.again || 0 : 0, hid = cur ? '' : 'hidden';
   return `<div class="field" id="rm-hab-f" ${hid}><label class="label" for="rm-hab">¿Qué hábito?</label>
     <select id="rm-hab">${list.map(h => `<option value="${h.k}" ${h.k === cur ? 'selected' : ''}>${esc(h.name)}</option>`).join('')}</select></div>
     <div class="field" id="rm-again-f" ${hid}><label class="label" for="rm-again">Si lo cierras con ✕</label>
     <select id="rm-again">${HA_AGAIN.map(([v, l]) => `<option value="${v}" ${v === ag ? 'selected' : ''}>${l}</option>`).join('')}</select>
-    <small class="muted" style="font-size:12px">Solo ese día, hasta las 23:00. Si lo marcas como hecho, ya no vuelve.</small></div>`;
+    <small class="muted" style="font-size:12px">Cada vez que lo cierras con ✕ vuelve a sonar después de ese tiempo, las veces que haga falta. Solo ese día, hasta las 23:00; si lo marcas como hecho, ya no vuelve.</small></div>`;
 }
 const _remSheetHA = remSheet;
 remSheet = function (i) {
   _remSheetHA(i);
   const r = i != null ? state.reminders[i] : null, kf = document.getElementById('rm-kind');
   if (kf) kf.closest('.field').insertAdjacentHTML('afterend', haField(r));
+  /* Los viejos Creatina / Proteína / Omega 3 se editan como "Hábito" (así eligen qué hace la ✕); al guardar quedan como hábito */
+  if (r && kf && r.kind !== 'hab' && habKeyOf(r)) {
+    kf.value = 'hab';
+    const hint = document.getElementById('rm-hint'); if (hint) hint.textContent = REM_KINDS.hab.hint;
+  }
 };
 function haPrefill(k) {
   const kind = document.getElementById('rm-kind'), hab = document.getElementById('rm-hab');
