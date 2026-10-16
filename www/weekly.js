@@ -300,7 +300,9 @@ function wcDue() {
   const C = wcCfg(), t = wcToday(), S = wcSeen(), out = {};
   if (!C.on || !state.sessions.length) return out;
   const si = wcIdx(C.sun), sk = wcSumKey();
-  if ((si < 4 || t >= si) && S.s !== sk) out.s = sk;
+  /* Desde su día hasta el resumen siguiente, mientras no se vea; los días de después, solo si esa semana entrenaste */
+  const late = si >= 4 && t < si, trained = () => state.sessions.some(s => wkKey(new Date(s.date)) === sk);
+  if (S.s !== sk && (!late || trained())) out.s = sk;
   if (!out.s && t >= wcIdx(C.fri) && S.f !== wkKey(new Date())) out.f = wkKey(new Date());
   return out;
 }
@@ -368,7 +370,7 @@ document.addEventListener('click', ev => {
   ev.preventDefault(); ev.stopPropagation();
   const a = b.dataset.wc;
   if (a === 'open-f') return wcSheet('f');
-  if (a === 'open-s') return wcSheet('s');
+  if (a === 'open-s') { wcSheet('s'); if (wcSeen().s !== wcSumKey()) { wcMark('s', wcSumKey()); render(); } return; }   // abrirla cuenta como vista
   if (a === 'seen-f') { wcMark('f', wkKey(new Date())); return render(); }
   if (a === 'seen-s') { wcMark('s', wcSumKey()); return render(); }
   if (a === 'fill') { wc.seed = 0; return wcFillSheet(); }
