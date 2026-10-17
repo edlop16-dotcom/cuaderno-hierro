@@ -1906,3 +1906,53 @@ body:not(.watch) .alt-eqs{display:flex;flex-direction:column;border:1px solid va
 body:not(.watch) .alt-eq-r{display:flex;align-items:center;gap:10px;min-height:48px;padding:6px 12px;border-top:1px solid var(--line);background:var(--surface);color:var(--fg);text-align:left}
 body:not(.watch) .alt-eq-r:first-child{border-top:0}
 body:not(.watch) .alt-eq-r small{font-size:12px}
+
+/* ---------- Pantalla del ejercicio en la sesión (sessui.js, Tanda C) · solo teléfono ---------- */
+/* 1. Barra de arriba: cronómetro */
+body.su-sess .su-sw{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 12px;border-radius:22px;background:var(--surface2);border:1px solid var(--line2);color:var(--fg);font-weight:700;font-size:15px}
+body.su-sess .su-sw.on{border-color:var(--accent);color:var(--accent)}
+/* 2. Franja: círculos grandes con ✓ */
+body.su-sess .sx-strip{gap:12px;padding:12px 14px 10px}
+body.su-sess .sx-th,body.su-sess .sx-th-add{width:64px;height:64px;border-radius:50%}
+body.su-sess .sx-th .th-img{border-radius:50%}
+body.su-sess .sx-th .ok{width:22px;height:22px;right:-1px;bottom:-1px}
+body.su-sess .sx-th.done{opacity:.85}
+/* 3. Figura: un poco más baja para que la tabla quede a la vista */
+body.su-sess .sx-hero{max-height:200px;overflow:hidden;border-radius:14px}
+body.su-sess .sx-hero img,body.su-sess .sx-hero .sx-fig{max-height:200px;object-fit:cover}
+/* 4. Nombre grande con el equipo */
+body.su-sess .sx-page .card.ex > .row:first-child h3{font-size:23px;line-height:1.15}
+body.su-sess .su-eq{font-family:var(--f-num);font-size:15px;font-weight:600;color:var(--muted)}
+body.su-sess .su-hide{display:none!important}
+/* 5. Píldoras deslizables */
+body.su-sess .su-pills{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:2px 16px;flex-shrink:0}
+body.su-sess .su-pills::-webkit-scrollbar{display:none}
+body.su-sess .su-p{flex:none;display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 14px;border-radius:22px;background:var(--surface2);border:1px solid var(--line2);color:var(--fg);font-weight:600;font-size:14px;white-space:nowrap}
+body.su-sess .su-p.su-rest{padding:0 4px;gap:4px}
+body.su-sess .su-p.su-rest button{width:36px;height:36px;border-radius:50%;background:var(--surface);border:1px solid var(--line2)}
+/* 6. Línea del coach y tabla grande */
+body.su-sess .su-coach{display:flex;align-items:center;gap:8px;width:100%;min-height:44px;padding:8px 12px;border-radius:12px;background:var(--surface2);border:1px solid var(--line2);color:var(--fg);text-align:left;font-size:13.5px;flex-shrink:0}
+body.su-sess .su-coach b{flex:none;font-size:15px}
+body.su-sess .su-coach span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}
+body.su-sess .sx-page .sets{grid-template-columns:36px 64px 1fr 1fr 52px;gap:8px 8px;align-items:center}
+body.su-sess .sx-page .sets .h{font-size:12px;text-align:center}
+body.su-sess .sx-page .sets input{height:52px;font-size:22px!important}
+body.su-sess .sx-page .sets .prev{min-height:52px}
+body.su-sess .sx-page .check{width:52px;height:52px;border-radius:50%}
+body.su-sess .sx-page .check svg{width:24px;height:24px}
+body.su-sess .sx-page .sets .su-done{background:rgba(53,178,106,.16)!important;border-color:rgba(53,178,106,.45)!important}
+body.su-sess .sx-page .sets .check.su-done{background:var(--ok)!important;color:var(--ok-ink)}
+body.su-sess .sx-page .sets span.n.su-done{border-radius:10px;align-self:stretch;display:flex;flex-direction:column;justify-content:center}
+/* 7. "+ Añadir serie" a lo ancho */
+body.su-sess .st-ctl{display:flex;gap:8px}
+body.su-sess .st-ctl .st-b.add{flex:1;min-height:52px;font-size:16px;border:1px dashed var(--line);background:var(--surface2)}
+body.su-sess .st-ctl .st-b:not(.add){flex:none;min-height:52px;padding:0 12px;font-size:13px}
+/* 8. Descanso fijo abajo */
+body.su-sess .rest{left:0;right:0;bottom:0;padding:0;z-index:30}
+body.su-sess .rest-in{max-width:none;margin:0;border-radius:20px 20px 0 0;padding:12px 16px calc(14px + env(safe-area-inset-bottom,0px));gap:16px}
+body.su-sess .rest-in .rring{width:84px;height:84px}
+body.su-sess .rest-in .rring svg{width:84px;height:84px}
+body.su-sess .rest-in .rring .t{font-size:24px!important}
+body.su-sess .rest-in .row .btn{min-height:44px;flex:1;font-size:15px}
+body.su-sess .sx-page{padding-bottom:calc(150px + env(safe-area-inset-bottom,0px))}
+body:not(.watch) .su-set{margin-bottom:6px}
