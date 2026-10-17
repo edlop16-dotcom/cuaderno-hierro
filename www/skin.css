@@ -1897,3 +1897,12 @@ body:not(.watch) .lu-more{min-height:44px;flex-shrink:0}
 body:not(.watch) .lu-pkf{display:flex;flex-direction:column;gap:6px}
 body:not(.watch) .lu-pkf .gymbar{flex-shrink:0}
 body:not(.watch) .lu-spec .gchip{font-size:12.5px}
+
+/* ---------- Alternativas y equipo por gimnasio (alts.js) · solo teléfono ---------- */
+body:not(.watch) .alt-no{color:var(--bad);flex-shrink:0}
+body:not(.watch) .alt-gym{flex-shrink:0}
+body:not(.watch) .sw-list .label{margin:6px 2px 0}
+body:not(.watch) .alt-eqs{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:12px;overflow:hidden;flex-shrink:0}
+body:not(.watch) .alt-eq-r{display:flex;align-items:center;gap:10px;min-height:48px;padding:6px 12px;border-top:1px solid var(--line);background:var(--surface);color:var(--fg);text-align:left}
+body:not(.watch) .alt-eq-r:first-child{border-top:0}
+body:not(.watch) .alt-eq-r small{font-size:12px}
