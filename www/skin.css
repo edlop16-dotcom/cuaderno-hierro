@@ -1884,3 +1884,16 @@ body:not(.watch) .se-acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 body:not(.watch) .se-foot{font-size:12px;text-align:center}
 body:not(.watch) .se-tag{display:inline-block;border:1px solid var(--line);border-radius:4px;padding:0 5px;font-size:11px;color:var(--muted);margin-left:4px;vertical-align:middle}
 body:not(.watch) .dd-h .se-open{display:flex;width:fit-content;margin-top:8px}
+
+/* ---------- Biblioteca y selector con el catálogo (libui.js) · solo teléfono ---------- */
+body:not(.watch) .lu-gh{display:flex;align-items:baseline;gap:8px;margin:6px 2px -4px;flex-shrink:0}
+body:not(.watch) .lu-gh b{font-family:var(--f-display);font-size:17px}
+body:not(.watch) .lu-gh span{color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
+body:not(.watch) .fig.lu-fig{min-height:96px}
+body:not(.watch) .lu-fig>svg{display:block;width:100%;height:auto}
+body:not(.watch) .pk-th>.lu-th{display:block;width:54px;height:54px;border-radius:50%;overflow:hidden;background:var(--surface2)}
+body:not(.watch) .pk-th>.lu-th>svg{width:54px;height:54px}
+body:not(.watch) .lu-more{min-height:44px;flex-shrink:0}
+body:not(.watch) .lu-pkf{display:flex;flex-direction:column;gap:6px}
+body:not(.watch) .lu-pkf .gymbar{flex-shrink:0}
+body:not(.watch) .lu-spec .gchip{font-size:12.5px}
