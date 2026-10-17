@@ -1858,3 +1858,29 @@ body:not(.watch) .ha-log-r b{display:block;font-size:13.5px}
 body:not(.watch) .ha-log-r small{display:block;font-size:12px;color:var(--muted)}
 body:not(.watch) .ha-log-r:not(.ok) .ha-ck-i{background:var(--warn);color:#1c1400}
 body:not(.watch) .ha-log-r .btn{flex-shrink:0}
+
+/* ---------- Editar sesión (sessedit.js) · solo teléfono ---------- */
+body:not(.watch) .se-sheet{gap:10px}
+body:not(.watch) .se-sheet>*{flex-shrink:0}
+body:not(.watch) .se-sub{font-size:13px;text-align:center}
+body:not(.watch) .se-err{background:rgba(255,116,102,.12);border:1px solid var(--bad);color:var(--fg);border-radius:10px;padding:10px 12px;font-size:13.5px}
+body:not(.watch) .se-list{display:flex;flex-direction:column;gap:10px}
+body:not(.watch) .se-ex{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--surface)}
+body:not(.watch) .se-eh{display:flex;align-items:center;gap:6px}
+body:not(.watch) .se-eh b{font-size:15px;line-height:1.25;min-width:0}
+body:not(.watch) .se-num{flex-shrink:0;width:24px;height:24px;border-radius:12px;background:var(--surface2);color:var(--muted);font-size:12px;font-weight:700;display:inline-flex;align-items:center;justify-content:center}
+body:not(.watch) .se-mv{flex-shrink:0;width:44px;height:44px;border-radius:10px;background:var(--surface2);border:1px solid var(--line2);color:var(--fg);display:inline-flex;align-items:center;justify-content:center}
+body:not(.watch) .se-mv:disabled{opacity:.35}
+body:not(.watch) .se-hd{display:flex;justify-content:space-between;font-size:12px;margin:8px 0 2px}
+body:not(.watch) .se-set{display:flex;align-items:center;gap:6px;padding:4px 0;flex-wrap:wrap}
+body:not(.watch) .se-sn{width:22px;flex-shrink:0;color:var(--muted);font-size:13px;text-align:center}
+body:not(.watch) .se-in{width:76px;height:44px;border-radius:10px;border:1px solid var(--line);background:var(--surface2);color:var(--fg);font-family:var(--f-num);font-size:18px;font-variant-numeric:tabular-nums;text-align:center;padding:0 6px}
+body:not(.watch) .se-in.bad{border-color:var(--bad);box-shadow:0 0 0 1px var(--bad)}
+body:not(.watch) .se-x{color:var(--muted)}
+body:not(.watch) .se-rir{color:var(--muted);font-size:12px}
+body:not(.watch) .se-del{margin-left:auto;width:44px;height:44px;border-radius:10px;background:none;border:1px solid var(--line2);color:var(--muted);display:inline-flex;align-items:center;justify-content:center}
+body:not(.watch) .se-none{font-size:13px;padding:6px 0}
+body:not(.watch) .se-acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+body:not(.watch) .se-foot{font-size:12px;text-align:center}
+body:not(.watch) .se-tag{display:inline-block;border:1px solid var(--line);border-radius:4px;padding:0 5px;font-size:11px;color:var(--muted);margin-left:4px;vertical-align:middle}
+body:not(.watch) .dd-h .se-open{display:flex;width:fit-content;margin-top:8px}
