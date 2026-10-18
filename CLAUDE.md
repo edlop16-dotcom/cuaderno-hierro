@@ -233,7 +233,7 @@ Pedida por Edgar: una "rutina secundaria lista para usar, sin tocar mi plan". La
 - Formato igual a las de siempre: `www/ex/<clave>-0.webp` y `-1.webp`, 480×320, recortadas al centro, webp calidad 0,72 con el canvas de Edge (~15 KB). Suman 5,6 MB (`www` pasa de 2,9 a 8,6 MB).
 - photos.js: `CAT_PHOTOS` (claves) se agregan a `PHOTO_KEYS` solo si no es el reloj; así la Biblioteca y el selector (`luThumb`, `loading="lazy"`), la ficha (`exPhoto` con las dos fotos que se alternan), la sesión (`bigFig`, franja) y "Cómo se hace" ("Ver esquema del movimiento") las usan como a las de antes. Reloj: sin fotos nuevas (los archivos van igual en el APK).
 - Ajustes → Datos → **Acerca de** (`.ab-set`, `SET_ORDER` 13.5): N ejercicios, N con foto y "Fotos de ejercicios: Free Exercise DB (dominio público)"; en el teléfono se quita el renglón suelto del final (en el reloj sigue).
-- Vista previa: las fotos se publican como `files` ex/*.webp (máx. 255 archivos por publicación: subir en dos tandas).
+- Vista previa: las fotos se publican como `files` ex/*.webp (máx. 255 archivos por publicación y **512 por versión** del artifact). Con fuentes y las 120 de antes no caben todas: en la vista previa se quitan de `CAT_PHOTOS` las últimas 9 claves (Pallof con rotación, flexión lateral, molino, granjero, cargada, arranque con kettlebell, trineo ×2, cuerdas), que ahí salen con figura; en la app sí tienen foto.
 - Pruebas: tests/tph.mjs (dueño: solo nuevos, los 84 iguales, Biblioteca ~300 ms con la CPU ×4 y carga diferida, búsqueda con foto y sin foto, ficha, "Ver esquema", selector, sesión, Acerca de; usuario nuevo; reloj idéntico; tamaño antes/después).
 
 ## Hábito y recordatorio en un formulario (habform.js; Tanda F, 17-oct-2026, en beta)
