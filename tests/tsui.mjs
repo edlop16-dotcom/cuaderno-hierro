@@ -119,7 +119,7 @@ console.log('A. Dueño: sesión de su rutina');
   await p.evaluate(() => setAlertCfg({ sound: 'largo' }));
   /* Añadir serie, Reemplazar, Ocupada, cronómetro */
   await p.evaluate(() => { state.draft.cur = 2; render(); if (typeof pagerGo === 'function') pagerGo(2, false); }); await p.waitForTimeout(400);
-  const l0 = await p.evaluate(() => state.draft.exercises[2].log.length); await tapCur(p, '.st-ctl .st-b.add'); const l1 = await p.evaluate(() => state.draft.exercises[2].log.length);
+  const l0 = await p.evaluate(() => state.draft.exercises[2].log.length); await p.waitForTimeout(800); await p.locator('#sx-pager .st-ctl .st-b.add[data-ex="2"]').click(); await p.waitForTimeout(250); const l1 = await p.evaluate(() => state.draft.exercises[2].log.length);
   ok(l1 === l0 + 1, 'Añadir serie suma una serie');
   await tapCur(p, '.su-pills [data-act="swap"]'); ok(/Cambiar ejercicio/.test(await p.evaluate(() => document.getElementById('sheet').innerText)), 'Reemplazar abre las alternativas (Tanda B)');
   await p.evaluate(() => closeSheet()); await tapCur(p, '.su-pills [data-act="busy"]'); ok(/Máquina ocupada/.test(await p.evaluate(() => document.getElementById('sheet').innerText)), 'Ocupada conserva sus opciones');
@@ -128,9 +128,12 @@ console.log('A. Dueño: sesión de su rutina');
   await p.locator('#sx .su-sw').click(); ok(await p.evaluate(() => !state.suSw.run), 'y se pausa');
   const box = await p.locator('#sx .su-sw').boundingBox(); await p.mouse.move(box.x + 10, box.y + 10); await p.mouse.down(); await p.waitForTimeout(800); await p.mouse.up();
   ok(await p.evaluate(() => state.suSw.acc === 0 && !state.suSw.run), 'mantener presionado lo vuelve a cero');
-  await tapCur(p, '.su-pills [data-act="su-notes"]'); ok(await p.evaluate(() => document.activeElement && document.activeElement.classList.contains('note-in')), 'Notas lleva a la nota del ejercicio');
+  await tapCur(p, '.su-pills [data-act="su-notes"]'); await p.waitForTimeout(500); ok(await p.evaluate(() => document.activeElement && document.activeElement.classList.contains('note-in')), 'Notas lleva a la nota del ejercicio');
   /* Terminar: el resumen sigue */
   await p.evaluate(() => { state.durOK = true; finishSession(); state.durOK = false; }); await p.waitForTimeout(900);
+  /* primero la racha (si sube), como siempre; al cerrarla sale el resumen */
+  for (let k = 0; k < 10 && await p.evaluate(() => !!document.querySelector('.celebrate')); k++) { await p.evaluate(() => { const c = document.querySelector('.celebrate'); const b = c && (c.querySelector('button') || c); if (b) b.click(); }); await p.waitForTimeout(600); }
+  await p.waitForTimeout(900);
   ok(await p.evaluate(() => !!document.querySelector('#sheet .fs-card')), 'al terminar sale el resumen como antes');
   ok(!p.errs.length, 'sin errores de JS ' + p.errs.join(' | '));
   await p.done();
