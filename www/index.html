@@ -647,51 +647,10 @@ function E(name, type, weight, sets, reps, restMin) {
   return Object.assign({ id: uid(), name, type, weight, sets, repsMin: a, repsMax: b || a, rest: Math.round(restMin * 60) }, bar ? { bar } : {});
 }
 const P = 'Piernas', EM = 'Empuje', TR = 'Tracción';
-function defaultPlans() {
-  return [
-    { id: 'plan1', name: 'Full Body · 3 días', days: [
-      { id: 'p1-lun', name: 'Piernas + Torso (Pesado)', weekday: 1, exercises: [
-        E('Prensa 45°', P, 170, 3, '15-18', 2), E('Sentadilla Hack', P, 60, 3, '10-12', 2), E('Hip Thrust', P, 30, 3, '12-15', 1.5),
-        E('Press Banca Inclinado (Barra)', EM, 20, 3, '6-8', 2), E('Remo Sentado con Cable', TR, 40, 3, '8-10', 2), E('Extensión de Pierna', P, 45, 3, '12-14', 1.5)] },
-      { id: 'p1-mie', name: 'Full Body (Bombeo)', weekday: 3, exercises: [
-        E('Prensa 45°', P, 120, 3, '15-18', 1), E('Press Banca Plano (Barra)', EM, 10, 3, '12-15', 1), E('Jalón al Pecho', TR, 30, 3, '12-15', 1),
-        E('Remo en Polea Baja', TR, 30, 3, '12-15', 1), E('Elevaciones Laterales', EM, 8, 3, '15-20', 1), E('Curl Bíceps', TR, 10, 3, '15', 1), E('Tríceps Polea', EM, 10, 3, '15', 1)] },
-      { id: 'p1-vie', name: 'Piernas + Torso (Pesado)', weekday: 5, exercises: [
-        E('Prensa 45°', P, 170, 3, '15-18', 2), E('Sentadilla Hack', P, 60, 3, '10-12', 2), E('Hip Thrust', P, 30, 3, '12-15', 1.5),
-        E('Press Banca Plano (Barra)', EM, 15, 3, '6-8', 2), E('Remo con Barra', TR, 15, 3, '8-10', 2), E('Extensión de Pierna', P, 45, 3, '12-14', 1.5)] },
-    ]},
-    { id: 'plan2', name: 'Torso / Pierna · 4 días', days: [
-      { id: 'p2-lun', name: 'Piernas (Pesado)', weekday: 1, exercises: [
-        E('Prensa 45°', P, 170, 3, '15-18', 2), E('Sentadilla Hack', P, 60, 3, '10-12', 2), E('Hip Thrust', P, 30, 3, '12-15', 1.5),
-        E('Extensión de Pierna', P, 45, 3, '12-14', 1.5), E('Abducción de Cadera', P, 20, 3, '10-12', 1)] },
-      { id: 'p2-mar', name: 'Torso (Pesado)', weekday: 2, exercises: [
-        E('Press Banca Inclinado (Barra)', EM, 20, 3, '6-8', 2), E('Remo Sentado con Cable', TR, 40, 3, '8-10', 2), E('Press Militar (Mancuernas)', EM, 12, 3, '8-10', 1.5),
-        E('Jalón al Pecho', TR, 35, 3, '8-10', 1.5), E('Curl Bíceps', TR, 15, 3, '8-10', 1), E('Tríceps Polea', EM, 15, 3, '8-10', 1)] },
-      { id: 'p2-jue', name: 'Piernas (Bombeo)', weekday: 4, exercises: [
-        E('Prensa 45°', P, 120, 3, '15-18', 1), E('Sentadilla Hack', P, 45, 3, '12-15', 1), E('Hip Thrust', P, 25, 3, '18-20', 1),
-        E('Extensión de Pierna', P, 35, 3, '15-18', 1), E('Abducción de Cadera', P, 15, 3, '15-20', 1)] },
-      { id: 'p2-vie', name: 'Torso (Bombeo)', weekday: 5, exercises: [
-        E('Press Banca Plano (Barra)', EM, 10, 3, '12-15', 1), E('Jalón al Pecho', TR, 30, 3, '12-15', 1), E('Elevaciones Laterales', EM, 8, 3, '15-20', 1),
-        E('Remo en Polea Baja', TR, 30, 3, '12-15', 1), E('Curl Bíceps', TR, 10, 3, '15', 1), E('Tríceps Polea', EM, 10, 3, '15', 1)] },
-    ]},
-  ];
-}
+function defaultPlans() { return starterPlans(); }
 
-/* ================== Tu historial (traído de Hevy / Symmetry) ================== */
-const HISTORY = {
-  name: 'Edgwr', gym: "Roka'z Gym", age: 40, kg: 73, cm: 173, since: '3 meses',
-  goal: 'Hipertrofia, fuerza y corregir la postura',
-  records: [
-    { name: 'Prensa 45°', w: 170, r: 18, start: 70 },
-    { name: 'Sentadilla Hack', w: 80, r: 6, start: 50 },
-    { name: 'Hip Thrust', w: 35, r: 18, start: 25 },
-    { name: 'Press Banca Plano (Barra)', w: 20, r: 7, start: 10 },
-    { name: 'Remo Sentado con Cable', w: 50, r: 8, start: 25 },
-    { name: 'Extensión de Pierna', w: 65, r: 15, start: 30 },
-    { name: 'Curl Bíceps', w: 20, r: 6 },
-    { name: 'Press Francés', w: 10, r: 15 },
-  ],
-};
+/* Perfil de respaldo genérico; los datos del usuario se leen de settings.prof y settings.body. */
+const HISTORY = { name: 'Atleta', gym: 'Mi gimnasio', age: 30, kg: 70, cm: 170, since: 'poco tiempo', goal: 'Salud y energía', records: [] };
 const baseRec = name => HISTORY.records.find(r => r.name === name);
 const SUPS = [
   { k: 'crea', name: 'Creatina', dose: '5 g' },
@@ -701,26 +660,14 @@ const SUPS = [
 const WATER_MIN = 2500, WATER_MAX = 3000;
 const dk = d => { const x = new Date(d); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`; };
 
-/* Ajustes aprobados el 11-oct-2026: isquiotibiales + postura */
+/* Compatibilidad de revisión de planes. */
 const PLAN_REV = 2;
-function applyRev2(plans) {
-  const day = id => { for (const p of plans) for (const d of p.days) if (d.id === id) return d; return null; };
-  const has = (d, n) => d.exercises.some(e => e.name === n);
-  const CF = 'Curl Femoral Tumbado', FP = 'Face Pull';
-  let d = day('p1-vie');
-  if (d && !has(d, CF)) { const i = d.exercises.findIndex(e => e.name === 'Extensión de Pierna'); const e = E(CF, P, 25, 3, '10-12', 1.5); i >= 0 ? d.exercises.splice(i, 1, e) : d.exercises.push(e); }
-  for (const id of ['p1-lun', 'p1-vie', 'p2-mar', 'p2-vie']) { d = day(id); if (d && !has(d, FP)) d.exercises.push(E(FP, TR, 12.5, 3, '15', 1)); }
-  d = day('p2-lun'); if (d && !has(d, CF)) d.exercises.splice(Math.min(4, d.exercises.length), 0, E(CF, P, 25, 3, '10-12', 1.5));
-  d = day('p2-jue'); if (d && !has(d, CF)) d.exercises.splice(Math.min(4, d.exercises.length), 0, E(CF, P, 20, 3, '12-15', 1));
-  return plans;
-}
-function migratePlans() {
-  if ((state.settings.planRev || 1) >= PLAN_REV) return false;
-  applyRev2(state.plans); state.settings.planRev = PLAN_REV; savePlans(); return true;
-}
+/* Migración histórica retirada: conservar planes y revisiones guardados. */
+function applyRev2(plans) { return plans; }
+function migratePlans() { return false; }
 
 /* ================== Gimnasios ================== */
-const DEFAULT_GYMS = [{ id: 'rokaz', name: "Roka'z Gym" }, { id: 'raydac', name: 'Raydac Gym' }];
+const DEFAULT_GYMS = [{ id: 'rokaz', name: "Mi gimnasio" }, { id: 'raydac', name: 'Otro gimnasio' }];
 const KINDS = { fuerza: 'Fuerza', bombeo: 'Bombeo' };
 const kindOfName = n => /bombeo/i.test(n) ? 'bombeo' : 'fuerza';
 function clonePlanFor(p, gymId) {
@@ -729,7 +676,7 @@ function clonePlanFor(p, gymId) {
   c.days.forEach(d => { d.id = d.id + '-' + gymId; d.exercises.forEach(e => e.id = uid()); });
   return c;
 }
-/* Rev 3: cada plan pertenece a un gym; Roka'z conserva los actuales y Raydac recibe una copia */
+/* Compatibilidad de claves de gimnasio de instalaciones anteriores. */
 function migrateGyms() {
   let changed = false;
   if (!state.gyms || !state.gyms.length) { state.gyms = JSON.parse(JSON.stringify(DEFAULT_GYMS)); changed = true; }
@@ -748,7 +695,7 @@ function migrateGyms() {
 }
 const activeGym = () => state.gyms.find(g => g.id === state.settings.activeGymId) || state.gyms[0];
 const gymPlans = (gid = activeGym().id) => state.plans.filter(p => p.gymId === gid);
-const gymName = gid => (state.gyms.find(g => g.id === (gid || 'rokaz')) || { name: gid || "Roka'z Gym" }).name;
+const gymName = gid => (state.gyms.find(g => g.id === (gid || 'rokaz')) || { name: gid || "Mi gimnasio" }).name;
 const sGym = s => s.gymId || 'rokaz';
 function sKind(s) {
   if (s.kind) return s.kind;
@@ -764,7 +711,7 @@ const LS = {
   del(k) { try { localStorage.removeItem('cdh.' + k); } catch (e) {} },
 };
 /* App pública: una instalación sin datos es un usuario nuevo. Empieza sin el historial, los gimnasios
-   ni las rutinas de Edgar; la bienvenida (pub.js) arma su plan según su objetivo. */
+   ni las rutinas de otra cuenta; la bienvenida (pub.js) arma su plan según su objetivo. */
 const FRESH = (() => { try { return !localStorage.getItem('cdh.settings') && !localStorage.getItem('cdh.sessions') && !localStorage.getItem('cdh.plans'); } catch (e) { return false; } })();
 const PUB_INIT = { pub: 1, onb: 0, activePlanId: 'start', planRev: 2, gymRev: 1, dropRev: 1, barRev: 1, importSym1: 1, importSym2: 1, importSym3: 1, symDate9: 1, weekFix1: 1, hevyImport1: 1, symImport2: 1, planFix2: 1, bedtime1: 1, goals: [] };
 function starterPlans() {
@@ -949,7 +896,7 @@ function lastPerf(name, gymId, kind, noRef) {
     const x = s.exercises.find(e => e.name === name);
     if (x && x.sets.length) return { date: s.date, sets: x.sets, gymId: sGym(s), ref: true };
   }
-  /* Sin sesiones en la app: tu récord previo (Raydac, registrado en Hevy / Symmetry) */
+  /* Referencia previa de una importación explícita, si está disponible. */
   const rec = baseRec(name);
   if (rec && gymId !== BASE_GYM) return { date: null, sets: [{ w: rec.w, r: rec.r }], gymId: BASE_GYM, ref: true, base: true };
   return null;
@@ -1411,7 +1358,7 @@ function vProgress() {
 }
 function recordsCard() {
   const best = {};
-  if (gf() === 'all' || gf() === BASE_GYM) HISTORY.records.forEach(r => best[r.name] = { w: r.w, r: r.r, e: e1rm(r.w, r.r), when: 'Raydac · Hevy / Symmetry', start: r.start });
+  if (gf() === 'all' || gf() === BASE_GYM) HISTORY.records.forEach(r => best[r.name] = { w: r.w, r: r.r, e: e1rm(r.w, r.r), when: 'Historial importado', start: r.start });
   [...state.sessions].filter(inGf).reverse().forEach(s => s.exercises.forEach(e => e.sets.forEach(x => {
     const v = e1rm(x.w, x.r); const b = best[e.name];
     if (!b || v > b.e + 0.01) best[e.name] = { w: x.w, r: x.r, e: v, when: fmtDate(s.date) + ' · ' + gymName(sGym(s)).replace(/ Gym$/, ''), start: b ? b.start : undefined, isNew: !!b };
@@ -1768,22 +1715,6 @@ if (!state.settings.barRev) {
   });
   state.settings.barRev = 1; saveLocal(); saveDraft();
 }
-/* Sesión registrada en Symmetry: primera semana en Roka'z (piernas pesado, lunes 5 de octubre) */
-if (!state.settings.importSym1) {
-  if (!state.sessions.some(s => s.id === 'sym-rokaz-2026-10-05')) {
-    state.sessions.push({ id: 'sym-rokaz-2026-10-05', date: new Date('2026-10-09T19:00:00-05:00').toISOString(), planId: 'plan2', planName: 'Torso / Pierna · 4 días', dayId: 'p2-lun', dayName: 'Piernas (Pesado)', gymId: 'rokaz', gymName: gymName('rokaz'), kind: 'fuerza', durationSec: 7080, source: 'Symmetry',
-      exercises: [
-        { name: 'Prensa 45°', type: P, sets: [{ w: 160, r: 18 }, { w: 170, r: 18 }, { w: 170, r: 18 }] },
-        { name: 'Sentadilla Hack', type: P, note: 'Con mala técnica, dominar 60', sets: [{ w: 60, r: 12 }, { w: 60, r: 12 }, { w: 60, r: 12 }] },
-        { name: 'Hip Thrust', type: P, sets: [{ w: 30, r: 15 }, { w: 30, r: 10 }, { w: 30, r: 11 }] },
-        { name: 'Extensión de Pierna', type: P, sets: [{ w: 45, r: 14 }, { w: 45, r: 12 }, { w: 45, r: 12 }] },
-        { name: 'Abducción de Cadera', type: P, sets: [{ w: 20, r: 10 }, { w: 20, r: 10 }, { w: 20, r: 10 }] },
-      ] });
-    state.sessions.sort((a, b) => b.date.localeCompare(a.date));
-  }
-  state.settings.importSym1 = 1; saveLocal();
-}
-if (hadPlans && !hadGyms) setTimeout(() => toast("Nuevo: elige tu gimnasio arriba. Raydac tiene una copia de tus rutinas."), 400);
 bootRender();
 cloud.init();
 </script>

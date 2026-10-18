@@ -1,3 +1,4 @@
+import { OWNER_SETTINGS, seedOwner } from './owner-fixture.mjs';
 // Prueba de las Novedades n6 (news.js): editar sesión y tandas A-G, con Playwright y Edge.
 // Uso (desde PowerShell): $env:PW_DIR = "<carpeta con node_modules/playwright>"; node tests/tnw6.mjs <copia transpilada> <copia transpilada anterior> [capturas]
 // A. Dueño que vio la n5: sale una vez con 8 novedades, cada "Ver" llega a su sitio, no vuelve a salir, Ajustes → Novedades.
@@ -21,8 +22,8 @@ const serve = dir => new Promise(res => {
 });
 let fail = 0;
 const ok = (c, msg) => { if (c) console.log('  ok  ', msg); else { fail++; console.log('  FALLA', msg); } };
-const browser = await chromium.launch({ channel: 'msedge', headless: false, args: ['--headless=new'] });
-const OWNER = { owner: 1, healthOk: 1 };
+const browser = await chromium.launch({ channel: process.env.PW_CHANNEL === 'chromium' ? undefined : 'msedge', headless: process.env.PW_CHANNEL === 'chromium', args: ['--headless=new'] });
+const OWNER = OWNER_SETTINGS;
 
 async function open(dir, { seed, watch, at, cpu } = {}) {
   const srv = await serve(dir);
@@ -31,6 +32,7 @@ async function open(dir, { seed, watch, at, cpu } = {}) {
   const p = await ctx.newPage(); p.errs = [];
   p.on('pageerror', e => p.errs.push(e.message));
   await p.clock.setFixedTime(at || new Date('2026-10-19T08:00:30'));
+  await seedOwner(p, seed);
   await p.addInitScript(o => { if (!sessionStorage.getItem('seeded')) { sessionStorage.setItem('seeded', '1'); if (o) { localStorage.setItem('cdh.settings', JSON.stringify(o)); localStorage.setItem('cdh.newsSeen', '"n5"'); } } }, seed || null);
   p.url0 = `http://127.0.0.1:${srv.address().port}/index.html`;
   await p.goto(p.url0); await p.waitForTimeout(2500);
@@ -64,6 +66,7 @@ async function openSeen(dir, seen, { seed, watch, draft } = {}) {
   const p = await ctx.newPage(); p.errs = [];
   p.on('pageerror', e => p.errs.push(e.message));
   await p.clock.setFixedTime(new Date('2026-10-19T10:30:30'));
+  await seedOwner(p, seed);
   await p.addInitScript(([o, s]) => { if (!sessionStorage.getItem('seeded')) { sessionStorage.setItem('seeded', '1'); if (o) localStorage.setItem('cdh.settings', JSON.stringify(o)); if (s) localStorage.setItem('cdh.newsSeen', JSON.stringify(s)); } }, [seed || null, seen]);
   await p.goto(`http://127.0.0.1:${srv.address().port}/index.html`); await p.waitForTimeout(2500);
   if (draft) {   // sesión en curso guardada y Novedades sin ver: se vuelve a abrir la app

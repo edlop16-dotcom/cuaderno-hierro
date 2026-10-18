@@ -397,7 +397,8 @@ function aixBlocks(txt) {
       if (!cur) cur = { day: null, name: '', rows: [], untitled: 1 };
       continue;
     }
-    if (!cur || !head) continue;
+    // Cuatro columnas: nsParse conserva listas RIR, Series y la dosis del plan.
+    if (!cur || !head || head.rest < 0) continue;
     const r = nsRow(c[head.name], c[head.w], c[head.r], head.rir >= 0 ? c[head.rir] : null, null);
     if (!r) continue;
     const rir = r.rir ? r.rir[0] : r.rirAll, rest = head.rest >= 0 ? aixRestParse(c[head.rest]) : null;

@@ -1765,7 +1765,7 @@ body:not(.watch) .rt-head{scroll-margin-top:32px}
 /* Selector de ejercicios: Cancelar / Crear en tiza y con toque cómodo */
 body:not(.watch) .pk-top .linkbtn{color:var(--fg);min-height:44px;padding:6px 4px}
 /* ==========================================================================
-   Títulos (16-oct-2026, opción B elegida por Edgar): Poppins con los tamaños de la v1.0.40.
+   Títulos: Poppins con los tamaños de la v1.0.40.
    El resto de "Acero y discos" sigue igual (colores, formas, etiquetas, tarjetas). La sesión
    no cambia: kg, reps y reloj quedan en Barlow Condensed de ancho fijo. Solo teléfono.
    ========================================================================== */

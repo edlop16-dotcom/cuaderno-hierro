@@ -19,8 +19,7 @@ function habKeyOf(r) {
 }
 const habDoneOn = (k, date) => !!((state.daily[dk(date)] || {})[k]);
 /* ¿Aparece en toda la pantalla? Hábitos: sí, salvo que lo apaguen (`fs:false`). Agua, entrenamiento y personalizados:
-   si lo eligen (`fs:true`); para el dueño, por defecto sí (16-oct-2026: Edgar quiere sus recordatorios en pantalla
-   completa, no solo los de hábitos). En el reloj, solo los hábitos, como antes. */
+   si lo eligen (`fs:true`); para cuentas owner, por defecto sí. En el reloj, solo los hábitos. */
 const HA_FS_KINDS = { water: 1, train: 1, custom: 1 };
 function haFull(r) {
   if (habKeyOf(r)) return r.fs !== false;

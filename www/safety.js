@@ -45,7 +45,7 @@ function safetyNotes(name) {
   zs.filter(z => z[0] === '~' && sore[z.slice(1)]).forEach(z => notes.push({ lv: 'tip', t: `Este ejercicio también carga las ${zoneName(z.slice(1)).toLowerCase()} (que te duelen): empuja con todo el pie, apoyando el talón, no con las puntas.` }));
   if (!doneBefore(name)) {
     const nz = zs.filter(z => z[0] !== '~' && !zoneTrained(z));
-    notes.push({ lv: 'new', t: `<b>Ejercicio nuevo para ti.</b> Haz solo <b>2 series</b> con un peso que podrías mover 15 veces (te sobran 3-4 reps) y <b>no vayas al fallo</b>${pubUser() ? '' : ', aunque tu entrenador sí lo haga'}.${nz.length ? ` Trabaja un músculo que nunca entrenaste (${nz.map(zoneName).join(', ').toLowerCase()}): mañana y pasado puede doler mucho; sube poco a poco durante 2-3 semanas.` : ' Lo nuevo suele dejar dolor 24-72 h después.'}${zs.includes('pant') && state.sessions.some(x => x.id === 'approx-rokaz-2026-10-05') ? ' Recuerda: el 5 de octubre hiciste pantorrillas al fallo con tu entrenador y te dolieron varios días; esta vez ve con calma.' : ''}` });
+    notes.push({ lv: 'new', t: `<b>Ejercicio nuevo para ti.</b> Haz solo <b>2 series</b> con un peso que podrías mover 15 veces (te sobran 3-4 reps) y <b>no vayas al fallo</b>.${nz.length ? ` Trabaja un músculo que nunca entrenaste (${nz.map(zoneName).join(', ').toLowerCase()}): mañana y pasado puede doler mucho; sube poco a poco durante 2-3 semanas.` : ' Lo nuevo suele dejar dolor 24-72 h después.'}` });
   } else if (timesDone(name) < 3 && zs.some(z => z[0] !== '~' && ['pant'].includes(z))) {
     notes.push({ lv: 'new', t: 'Aún te estás adaptando a este ejercicio: quédate 2-3 reps antes del fallo las primeras semanas.' });
   }
@@ -108,21 +108,6 @@ document.addEventListener('click', ev => {
   if ($('#sheet').hidden) render();
 }, true);
 
-/* ---------- Tus registros de la semana pasada ---------- */
-if (!state.settings.weekFix1) {
-  const S9 = 'sym-rokaz-2026-10-05', when9 = new Date('2026-10-09T19:00:00-05:00').toISOString();
-  const s9 = state.sessions.find(x => x.id === S9);
-  if (s9) s9.date = when9;
-  /* Lunes 5: sin registro exacto; fue parecido al 9 + pantorrillas al fallo con tu entrenador */
-  if (s9 && !state.sessions.some(x => x.id === 'approx-rokaz-2026-10-05')) {
-    state.sessions.push(Object.assign(JSON.parse(JSON.stringify(s9)), { id: 'approx-rokaz-2026-10-05', date: new Date('2026-10-05T19:00:00-05:00').toISOString(), source: 'Aproximado', approx: true,
-      note: 'Sin registro exacto: parecido al viernes 9. Pantorrillas hasta el fallo con el entrenador (te dejó con dolor varios días).' }));
-  }
-  state.sessions.sort((a, b) => b.date.localeCompare(a.date));
-  /* Hoy aún te duelen un poco las pantorrillas */
-  state.settings.sore = Object.assign({}, state.settings.sore || {}, { pant: { lvl: 1, at: Date.now() } });
-  state.settings.weekFix1 = 1; saveLocal(); savePlans();
-}
 /* Los registros aproximados cuentan para la racha y el historial, no para gráficas ni récords */
 const _exPointsSafe = exPoints;
 exPoints = function (name, gym) { return _exPointsSafe(name, gym).filter(p => !p.s.approx); };

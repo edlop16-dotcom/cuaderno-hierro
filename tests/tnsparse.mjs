@@ -26,9 +26,9 @@ const LUNES = ['Prensa 45°', 'Sentadilla Hack', 'Hip Thrust', 'Curl Femoral Tum
 const run = txt => { const P = ctx.nsParse(txt); return { P, M: ctx.nsMatch(P.rows, LUNES) }; };
 const show = (P, M) => P.rows.map((r, i) => `${r.raw} → ${(LUNES.find(e => e.id === M[i].exId) || {}).name || '¿?'} · ${r.w} kg · ${r.rMin === r.rMax ? r.rMax : r.rMin + '-' + r.rMax} · RIR ${r.rir ? r.rir.join(',') : r.rirAll}`);
 
-const REAL = fs.readFileSync(path.join(HERE, 'importar-ejemplo-real-1.txt'), 'utf8');
-const WANT = [['Prensa 45°', 'Prensa 45°', 190, 15, 15], ['Sentadilla Hack', 'Sentadilla Hack', 60, 11, 12], ['Hip Thrust', 'Hip Thrust', 30, 15, 18],
-  ['Curl Femoral', 'Curl Femoral Tumbado', 25, 15, 18], ['Remo Cable', 'Remo Sentado con Cable', 35, 10, 12], ['Extensión', 'Extensión de Pierna', 45, 14, 16]];
+const REAL = fs.readFileSync(path.join(HERE, 'importar-ejemplo-sintetico.txt'), 'utf8');
+const WANT = [['Prensa 45°', 'Prensa 45°', 82.5, 10, 10], ['Sentadilla Hack', 'Sentadilla Hack', 27.5, 8, 10], ['Hip Thrust', 'Hip Thrust', 42.5, 9, 11],
+  ['Curl Femoral', 'Curl Femoral Tumbado', 17.5, 11, 13], ['Remo Cable', 'Remo Sentado con Cable', 32.5, 8, 10], ['Extensión', 'Extensión de Pierna', 22.5, 12, 14]];
 const checkReal = (label, txt) => {
   console.log(label);
   ok(REAL.indexOf('\t') >= 0, 'el archivo de prueba conserva sus tabulaciones');
@@ -41,10 +41,10 @@ const checkReal = (label, txt) => {
     ok(r.raw === raw && e.name === name && M[i].sure && r.w === w && r.rMin === a && r.rMax === b && String(r.rir) === '2,1,0', `${raw} → ${name} · ${w} kg · ${a === b ? a : a + '-' + b} · RIR 2,1,0`);
   });
 };
-checkReal('A. Texto real (tabulaciones)', REAL);
-checkReal('B. Texto real con espacios simples en vez de tabulaciones', REAL.replace(/\t/g, ' '));
-checkReal('C. Texto real con una celda por línea', REAL.replace(/\t/g, '\n'));
-checkReal('D. Texto real con 2 espacios y saltos \\r\\n', REAL.replace(/\t/g, '  ').replace(/\n/g, '\r\n'));
+checkReal('A. Texto sintético (tabulaciones)', REAL);
+checkReal('B. Texto sintético con espacios simples en vez de tabulaciones', REAL.replace(/\t/g, ' '));
+checkReal('C. Texto sintético con una celda por línea', REAL.replace(/\t/g, '\n'));
+checkReal('D. Texto sintético con 2 espacios y saltos \\r\\n', REAL.replace(/\t/g, '  ').replace(/\n/g, '\r\n'));
 
 console.log('E. Tabla con "|" (markdown), título del viernes, lb, rangos de RIR y "Series"');
 {

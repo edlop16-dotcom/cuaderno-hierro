@@ -1,6 +1,7 @@
+import { OWNER_SETTINGS, seedOwner } from './owner-fixture.mjs';
 // Prueba de "Editar sesión" (sessedit.js) y de los dos ejercicios nuevos (catalog.js), con Playwright y Edge.
 // Uso (desde PowerShell): $env:PW_DIR = "<carpeta con node_modules/playwright>"; node tests/tses.mjs <copia transpilada> <copia transpilada anterior> [capturas]
-// A. Dueño (sábado 17-oct, Roka'z): la sesión "Completar semana · Bombeo" con datos falsos se corrige desde el detalle del día
+// A. Dueño (datos ficticios, Gimnasio de prueba): la sesión "Completar semana · Bombeo" con datos falsos se corrige desde el detalle del día
 //    (cambiar, agregar, quitar, ordenar, series, peso con coma), Cancelar no cambia nada, errores de datos, y al guardar se
 //    recalculan series por músculo, récords, logros y Coach; el resto del historial, las rutinas y la racha no cambian.
 // B. Pesos de la rutina: si la sesión editada fue la que puso el peso (learnWeights), se corrige; si lo cambiaste a mano, no.
@@ -26,8 +27,8 @@ const serve = dir => new Promise(res => {
 });
 let fail = 0;
 const ok = (c, msg) => { if (c) console.log('  ok  ', msg); else { fail++; console.log('  FALLA', msg); } };
-const browser = await chromium.launch({ channel: 'msedge', headless: false, args: ['--headless=new'] });
-const OWNER = { owner: 1, healthOk: 1 };
+const browser = await chromium.launch({ channel: process.env.PW_CHANNEL === 'chromium' ? undefined : 'msedge', headless: process.env.PW_CHANNEL === 'chromium', args: ['--headless=new'] });
+const OWNER = OWNER_SETTINGS;
 const SAT = new Date('2026-10-17T20:30:00');
 
 async function open(dir, { seed, watch, at } = {}) {
@@ -37,6 +38,7 @@ async function open(dir, { seed, watch, at } = {}) {
   const p = await ctx.newPage(); p.errs = [];
   p.on('pageerror', e => p.errs.push(e.message));
   await p.clock.setFixedTime(at || SAT);
+  await seedOwner(p, seed);
   await p.addInitScript(o => { if (!sessionStorage.getItem('seeded')) { sessionStorage.setItem('seeded', '1'); if (o) { localStorage.setItem('cdh.settings', JSON.stringify(o)); localStorage.setItem('cdh.newsSeen', '"n5"'); } } }, seed || null);
   const url = `http://127.0.0.1:${srv.address().port}/index.html`;
   await p.goto(url); await p.waitForTimeout(2500);
@@ -60,7 +62,7 @@ async function pixDiff(a, b) {
 const tap = async (p, sel) => { await p.locator(sel).first().click(); await p.waitForTimeout(120); };
 const fill = async (p, i, j, f, v) => { const l = p.locator(`#sheet input[data-se-i="${i}"][data-se-j="${j}"][data-se-f="${f}"]`); await l.fill(String(v)); };
 const sheetText = p => p.evaluate(() => document.getElementById('sheet').innerText);
-/* La sesión falsa del sábado (lo que se anotó para no perder la racha) */
+/* Sesión de prueba inventada para cubrir correcciones de series. */
 const FAKE = () => {
   const s = { id: 'wcfill-test-1017', date: new Date('2026-10-17T18:10:00-05:00').toISOString(), planId: 'wcfill', planName: 'Completar semana', dayId: 'wcfill-2026-10-17', dayName: 'Completar semana · Bombeo',
     gymId: 'rokaz', gymName: gymName('rokaz'), kind: 'bombeo', durationSec: 3300, exercises: [
@@ -78,11 +80,11 @@ const SNAP = () => {
   return { other: JSON.stringify(other.map(cleanSess)), plans: JSON.stringify(state.plans), streak: JSON.stringify(streakInfo()), n: state.sessions.length };
 };
 const EXPECT = [
-  ['Elevación de Talones en Prensa', [[70, 25], [70, 25], [70, 25]]],
-  ['Elevación de Talones Sentado', [[35, 15], [35, 15], [35, 15]]],
-  ['Extensión de Tríceps con Barra V en Polea', [[25, 15], [25, 15], [25, 15]]],
-  ['Press Banca Plano (Barra)', [[20, 10], [20, 10], [20, 7]]],
-  ['Curl Concentrado', [[7.5, 12], [7.5, 12], [7.5, 12]]],
+  ['Elevación de Talones en Prensa', [[72.5, 23], [72.5, 23], [72.5, 23]]],
+  ['Elevación de Talones Sentado', [[32.5, 15], [32.5, 15], [32.5, 15]]],
+  ['Extensión de Tríceps con Barra V en Polea', [[23, 15], [23, 15], [23, 15]]],
+  ['Press Banca Plano (Barra)', [[17.5, 10], [17.5, 10], [17.5, 7]]],
+  ['Curl Concentrado', [[6.5, 12], [6.5, 12], [6.5, 12]]],
 ];
 
 console.log('A. Dueño: corregir la sesión del sábado 17-oct');
@@ -92,20 +94,20 @@ console.log('A. Dueño: corregir la sesión del sábado 17-oct');
   const before = await p.evaluate(SNAP);
   const pre = await p.evaluate(() => ({ ws: weekSets(0).sets, curl: bestE1rm('Curl Concentrado', 'rokaz'), bd: JSON.stringify(badgeStats()), nk: nsKey(activePlan().id, activePlan().days[0].id) }));
   await p.evaluate(() => daySheet('2026-10-17')); await p.waitForTimeout(200);
-  ok(await p.locator('#sheet .se-open').count() === 1, 'el detalle del día tiene "Editar sesión"');
+  ok(await p.locator('#sheet .se-open[data-id="wcfill-test-1017"]').count() === 1, 'el detalle del día tiene "Editar sesión"');
   await shot(p, 'a0-detalle');
 
   /* Cancelar no cambia nada */
-  await tap(p, '#sheet .se-open');
+  await tap(p, '#sheet .se-open[data-id="wcfill-test-1017"]');
   ok(await p.locator('#sheet .se-sheet').count() === 1, 'abre la pantalla de edición');
   await fill(p, 0, 0, 'w', 99); await tap(p, '#sheet [data-se="del-ex"][data-i="4"]');
   await tap(p, '#sheet [data-se="cancel"]');
   const afterCancel = await p.evaluate(() => JSON.stringify(state.sessions.find(s => s.id === 'wcfill-test-1017').exercises));
   ok(afterCancel.includes('"w":50') && afterCancel.includes('Elevaciones Laterales') && !afterCancel.includes('99'), 'Cancelar no cambia nada');
-  ok(await p.locator('#sheet .se-open').count() === 1, 'y vuelve al detalle del día');
+  ok(await p.locator('#sheet .se-open[data-id="wcfill-test-1017"]').count() === 1, 'y vuelve al detalle del día');
 
   /* Edición completa con la interfaz */
-  await tap(p, '#sheet .se-open');
+  await tap(p, '#sheet .se-open[data-id="wcfill-test-1017"]');
   await tap(p, '#sheet [data-se="swap"][data-i="0"]');
   ok((await sheetText(p)).includes('Cambiar ejercicio'), 'Cambiar ejercicio abre la biblioteca');
   await p.locator('#pk-q').fill('gemelos en prensa'); await p.waitForTimeout(150);
@@ -113,14 +115,15 @@ console.log('A. Dueño: corregir la sesión del sábado 17-oct');
   await p.locator('#pk-q').fill('talones prensa'); await p.waitForTimeout(150);
   await tap(p, '#pk-list [data-act="pk-tog"][data-name="Elevación de Talones en Prensa"]');
   ok((await sheetText(p)).includes('Elevación de Talones en Prensa') && (await p.locator('#sheet .se-sheet').count()) === 1, 'vuelve a la edición con el ejercicio cambiado y sus 3 series');
-  for (let j = 0; j < 3; j++) { await fill(p, 0, j, 'w', 70); await fill(p, 0, j, 'r', 25); }
+  for (let j = 0; j < 3; j++) { await fill(p, 0, j, 'w', 72.5); await fill(p, 0, j, 'r', 23); }
   await tap(p, '#sheet [data-se="swap"][data-i="1"]');
   await p.locator('#pk-q').fill('barra v'); await p.waitForTimeout(150);
   ok(await p.locator('#pk-list [data-act="pk-tog"][data-name="Extensión de Tríceps con Barra V en Polea"]').count() === 1, 'buscar "barra v" encuentra Extensión de Tríceps con Barra V en Polea');
   await tap(p, '#pk-list [data-act="pk-tog"][data-name="Extensión de Tríceps con Barra V en Polea"]');
-  for (let j = 0; j < 3; j++) { await fill(p, 1, j, 'w', 25); await fill(p, 1, j, 'r', 15); }
+  for (let j = 0; j < 3; j++) { await fill(p, 1, j, 'w', 23); await fill(p, 1, j, 'r', 15); }
   await fill(p, 2, 0, 'r', 10); await fill(p, 2, 1, 'r', 10); await fill(p, 2, 2, 'r', 7);
-  for (let j = 0; j < 3; j++) await fill(p, 3, j, 'w', '7,5');
+  for (let j = 0; j < 3; j++) await fill(p, 3, j, 'w', '6,5');
+  for (let j = 0; j < 3; j++) await fill(p, 2, j, 'w', 17.5);
   await tap(p, '#sheet [data-se="del-ex"][data-i="4"]');
   /* Agregar Elevación de Talones Sentado y subirlo al 2.º lugar */
   await tap(p, '#sheet [data-se="add-ex"]');
@@ -132,7 +135,7 @@ console.log('A. Dueño: corregir la sesión del sábado 17-oct');
   await tap(p, '#sheet .pk-bottom [data-se="save"]');
   ok((await sheetText(p)).includes('escribe las reps'), 'sin reps no se guarda y dice qué falta');
   ok(await p.locator('#sheet input.se-in.bad').count() === 1, 'marca el campo');
-  await fill(p, 4, 0, 'w', 35); await fill(p, 4, 0, 'r', 15);
+  await fill(p, 4, 0, 'w', 32.5); await fill(p, 4, 0, 'r', 15);
   await tap(p, '#sheet [data-se="add-set"][data-i="4"]'); await tap(p, '#sheet [data-se="add-set"][data-i="4"]');
   for (let k = 0; k < 3; k++) await tap(p, '#sheet [data-se="up"][data-i="' + (4 - k) + '"]');
   await shot(p, 'a1-edicion');
@@ -178,6 +181,7 @@ console.log('B. Pesos de la rutina');
     const plan = state.plans.find(x => x.gymId === 'rokaz' && x.days.some(d => d.exercises.some(e => e.name === 'Prensa 45°')));
     const day = plan.days.find(d => d.exercises.some(e => e.name === 'Prensa 45°')), pe = day.exercises.find(e => e.name === 'Prensa 45°');
     const mk = (id, date, w) => ({ id, date, planId: plan.id, planName: plan.name, dayId: day.id, dayName: day.name, gymId: 'rokaz', gymName: gymName('rokaz'), kind: 'fuerza', durationSec: 3000, exercises: [{ name: 'Prensa 45°', type: 'Piernas', sets: [{ w, r: 12 }, { w, r: 12 }] }, { name: 'Extensión de Pierna', type: 'Piernas', sets: [{ w: 50, r: 12 }] }] });
+    state.sessions = []; // Este escenario necesita exactamente sus dos sesiones ficticias.
     const a = mk('t-b1', new Date('2026-10-14T19:00:00-05:00').toISOString(), 180), b = mk('t-b2', new Date('2026-10-16T19:00:00-05:00').toISOString(), 205);
     state.sessions.push(a, b); state.sessions.sort((x, y) => y.date.localeCompare(x.date)); learnWeights(a); learnWeights(b); saveLocal();
     const w0 = pe.weight;
@@ -268,8 +272,6 @@ console.log('E. Emparejamiento de nombres conocidos (antes = después)');
       state.plans.forEach(pl => pl.days.forEach(d => d.exercises.forEach(e => set.add(e.name))));
       (HISTORY.records || []).forEach(x => set.add(x.name));
       Object.keys(HEVY_MAP).forEach(k => { set.add(k); set.add(HEVY_MAP[k]); });
-      MY_HEVY.split('\n').slice(1).forEach(l => { const c = l.split('","'); if (c[4]) { set.add(c[4]); set.add(mapExName(c[4])); } });
-      MY_SYM.forEach(r => r[2].forEach(e => set.add(e[0])));
       Object.keys(PB_SLOTS).forEach(k => Object.keys(PB_SLOTS[k]).forEach(q => Array.isArray(PB_SLOTS[k][q]) && PB_SLOTS[k][q].forEach(n => set.add(n))));
       (typeof PB_TPL !== 'undefined' ? JSON.stringify(PB_TPL) : '').replace(/"name":"([^"]+)"/g, (m, n) => set.add(n));
       LIB.filter(x => !x.cat).forEach(x => set.add(x.name));

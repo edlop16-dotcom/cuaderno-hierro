@@ -1,15 +1,17 @@
 # Forja
 
-App Android de entrenamiento de Edgwr (Roka'z Gym): planes Full Body y Torso/Pierna, registro de series, progresión automática, figuras de técnica, suplementos, agua, calculadora de 1RM, modo reloj y recordatorios configurables.
+App Android de entrenamiento en español: rutinas, registro de series, progresión, biblioteca de ejercicios, hábitos, recordatorios, exportación a IA y modo reloj.
 
-## Instalar en el celular o el reloj
+## Instalar
 
-1. Abre en el celular: **Releases → la versión más reciente → Forja.apk**.
-2. Al abrir el archivo, Android pedirá permiso para "instalar apps desconocidas" desde el navegador: actívalo.
-3. Toca **Instalar**.
+1. Abre **Releases → versión más reciente → Forja.apk**.
+2. Autoriza la instalación desde el navegador si Android lo solicita.
+3. Instala encima de la versión anterior para conservar tus datos.
 
-Cada vez que se publique una versión nueva, instálala encima: tus datos se conservan.
+## Desarrollo
 
-## Cómo se compila
+Los cambios grandes se trabajan en una rama aparte y pasan a `beta` solo con aprobación explícita. Esta limpieza usa `limpieza`. No compilar, publicar ni subir a `main` sin la instrucción explícita «compila». Todos los commits de esta limpieza usan `[skip ci]` para evitar la compilación automática de beta.
 
-Cada cambio en la rama `main` ejecuta la acción **Compilar app Android**, que genera el APK y lo publica en Releases.
+Consulta `CLAUDE.md` para las reglas y arquitectura. Las pruebas usan datos ficticios. Los datos de cada cuenta se leen del almacenamiento local y de su sincronización.
+
+Antes de publicar, configura `LEGAL_OWNER` y `CONTACT_EMAIL` en `www/legal.js`. El correo de ejemplo no es un canal de soporte.

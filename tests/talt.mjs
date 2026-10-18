@@ -1,7 +1,8 @@
+import { OWNER_SETTINGS, seedOwner } from './owner-fixture.mjs';
 // Prueba de la Tanda B (alts.js): alternativas cuando una máquina no está y equipo por gimnasio, con Playwright y Edge.
 // Uso (desde PowerShell): $env:PW_DIR = "<carpeta con node_modules/playwright>"; node tests/talt.mjs <copia transpilada> <copia transpilada anterior> [capturas]
 // A. Dueño: en plena sesión, "Remo Sentado con Cable" → ¿Máquina ocupada? / Cambiar ejercicio: mismo músculo y patrón, primero con
-//    otro equipo, peso prudente; cambiarlo; "No hay Remo sentado en polea en Roka'z": ya no se propone en las alternativas, el
+//    otro equipo, peso prudente; cambiarlo; "No hay Remo sentado en polea en Gimnasio de prueba": ya no se propone en las alternativas, el
 //    coach semanal, el Coach de Próxima sesión ni al empezar (se cambia solo hoy); "Equipo que no hay aquí" lo deshace. Historial intacto.
 // B. Usuario nuevo: cambiar un ejercicio y Entreno rápido sin la máquina que falta.
 // C. Reloj: inicio idéntico y su lista de "Máquina ocupada" igual a la de la versión anterior.
@@ -24,8 +25,8 @@ const serve = dir => new Promise(res => {
 });
 let fail = 0;
 const ok = (c, msg) => { if (c) console.log('  ok  ', msg); else { fail++; console.log('  FALLA', msg); } };
-const browser = await chromium.launch({ channel: 'msedge', headless: false, args: ['--headless=new'] });
-const OWNER = { owner: 1, healthOk: 1 };
+const browser = await chromium.launch({ channel: process.env.PW_CHANNEL === 'chromium' ? undefined : 'msedge', headless: process.env.PW_CHANNEL === 'chromium', args: ['--headless=new'] });
+const OWNER = OWNER_SETTINGS;
 const MON = new Date('2026-10-19T18:30:00');
 
 async function open(dir, { seed, watch, at } = {}) {
@@ -35,6 +36,7 @@ async function open(dir, { seed, watch, at } = {}) {
   const p = await ctx.newPage(); p.errs = [];
   p.on('pageerror', e => p.errs.push(e.message));
   await p.clock.setFixedTime(at || MON);
+  await seedOwner(p, seed);
   await p.addInitScript(o => { if (!sessionStorage.getItem('seeded')) { sessionStorage.setItem('seeded', '1'); if (o) { localStorage.setItem('cdh.settings', JSON.stringify(o)); localStorage.setItem('cdh.newsSeen', '"n5"'); } } }, seed || null);
   await p.goto(`http://127.0.0.1:${srv.address().port}/index.html`); await p.waitForTimeout(2500);
   await p.evaluate(() => { if (state.settings.pub) state.settings.onb = 1; LS.set('newsSeen', NEWS_KEY); state.settings.healthOk = 1; savePlans(); });
@@ -55,21 +57,21 @@ async function pixDiff(a, b) {
   await p.close(); return n;
 }
 const tap = async (p, sel) => { await p.locator(sel).first().click(); await p.waitForTimeout(200); };
-/* Día del plan activo que tiene "Remo Sentado con Cable" (en Roka'z) */
+/* Día del plan activo que tiene "Remo Sentado con Cable" (en Gimnasio de prueba) */
 const DAY = () => { const pl = activePlan(), d = pl.days.find(x => x.exercises.some(e => e.name === 'Remo Sentado con Cable')); return { pid: pl.id, did: d.id, gym: pl.gymId || 'rokaz' }; };
 const startPlan = r => { state.settings.nextS = Object.assign({}, state.settings.nextS, { [r.did]: { pick: 'plan' } }); savePlans(); startSession(r.pid, r.did); const d = state.draft; return d.exercises.findIndex(e => e.name === 'Remo Sentado con Cable'); };
 
-console.log('A. Dueño en Roka\'z: Remo Sentado con Cable');
+console.log('A. Dueño en Gimnasio de prueba: Remo Sentado con Cable');
 {
   const p = await open(DIR, { seed: OWNER });
   const snap0 = await p.evaluate(() => JSON.stringify(state.sessions.map(cleanSess)) + JSON.stringify(state.plans));
   const r = await p.evaluate(DAY);
-  ok(r.gym === 'rokaz', 'la rutina activa es de Roka\'z');
+  ok(r.gym === 'rokaz', 'la rutina activa es de Mi gimnasio');
   const i = await p.evaluate(startPlan, r); await p.waitForTimeout(300);
   ok(i >= 0, 'sesión empezada con Remo Sentado con Cable (ejercicio ' + (i + 1) + ')');
   await p.evaluate(i => busySheet(i), i); await p.waitForTimeout(200);
   const bt = await p.evaluate(() => document.getElementById('sheet').innerText);
-  ok(/No hay Remo sentado en polea en Roka'z/.test(bt), '"¿Máquina ocupada?" ofrece "No hay Remo sentado en polea en Roka\'z"');
+  ok(/No hay Remo sentado en polea en Gimnasio de prueba/.test(bt), '"¿Máquina ocupada?" ofrece "No hay Remo sentado en polea en Gimnasio de prueba"');
   await shot(p, 'a1-ocupada');
   await p.evaluate(i => swapSheet(i), i); await p.waitForTimeout(200);
   const L = await p.evaluate(i => { const e = state.draft.exercises[i]; return { w: workW(e), list: swapCandidates(e).map(c => ({ n: c.n, other: c.other, w: c.cv.w, how: c.cv.how, pat: libFind(c.n).pat, eq: libFind(c.n).eq, main: catMain(libFind(c.n)) })) }; }, i);
@@ -94,7 +96,7 @@ console.log('A. Dueño en Roka\'z: Remo Sentado con Cable');
   await p.evaluate(i => swapSheet(i), i2); await p.waitForTimeout(200);
   await tap(p, '#sheet [data-act="alt-no"]');
   const after = await p.evaluate(i => ({ no: state.settings.gymNo, list: swapCandidates(state.draft.exercises[i]).map(c => c.n) }), i2);
-  ok(after.no && after.no.rokaz && after.no.rokaz.remo_polea, 'Roka\'z: "Remo sentado en polea" marcado como que no hay');
+  ok(after.no && after.no.rokaz && after.no.rokaz.remo_polea, 'Mi gimnasio: "Remo sentado en polea" marcado como que no hay');
   ok(!after.list.some(n => /Polea Baja|Remo en Polea|Remo Sentado/.test(n)), 'las alternativas ya no proponen remos en esa máquina');
   await shot(p, 'a3-marcado');
   await p.evaluate(() => { discardSession(); });
@@ -103,7 +105,7 @@ console.log('A. Dueño en Roka\'z: Remo Sentado con Cable');
   const wb = await p.evaluate(() => { const b = wcBuild('bombeo', 1); return b.list.map(e => e.name); });
   ok(!wb.some(n => /Remo Sentado con Cable|Remo en Polea Baja/.test(n)), '"Crear entreno para completar" tampoco: ' + wb.join(' · '));
   const co = await p.evaluate(r => { const E = nsCoachEntry(r.pid, r.did); const x = E.ex.find(x => x.swapFrom === 'Remo Sentado con Cable'); return x ? { n: x.name, why: x.why, w: x.sets[0].w } : null; }, r);
-  ok(co && /No hay Remo sentado en polea en Roka'z/.test(co.why), 'Coach de Próxima sesión: ' + (co ? `${co.n} ${co.w} kg — ${co.why.slice(0, 90)}…` : 'sin cambio'));
+  ok(co && /No hay Remo sentado en polea en Gimnasio de prueba/.test(co.why), 'Coach de Próxima sesión: ' + (co ? `${co.n} ${co.w} kg — ${co.why.slice(0, 90)}…` : 'sin cambio'));
   const st = await p.evaluate(r => { state.settings.nextS = Object.assign({}, state.settings.nextS, { [r.did]: { pick: 'coach' } }); savePlans(); startSession(r.pid, r.did); return state.draft.exercises.map(e => [e.name, e.swappedFrom || '', e.noEq || 0, e.log[0].w]); }, r);
   const rep = st.find(e => e[1] === 'Remo Sentado con Cable');
   ok(rep && rep[2] && rep[0] === co.n && rep[3] === co.w, 'al empezar con el Coach: ' + (rep ? `${rep[0]} ${rep[3]} kg en vez de Remo Sentado con Cable` : 'no se cambió'));
@@ -116,7 +118,7 @@ console.log('A. Dueño en Roka\'z: Remo Sentado con Cable');
   /* Deshacer desde "¿Dónde entrenas hoy?" */
   await p.evaluate(() => { state.tab = 'train'; render(); });
   await p.evaluate(() => { const b = document.createElement('button'); b.dataset.act = 'gym-pick'; document.body.appendChild(b); b.click(); b.remove(); }); await p.waitForTimeout(200);
-  ok(await p.locator('#sheet [data-act="alt-eq"]').count() === 1, '"¿Dónde entrenas hoy?" tiene "Equipo que no hay en Roka\'z (1)"');
+  ok(await p.locator('#sheet [data-act="alt-eq"]').count() === 1, '"¿Dónde entrenas hoy?" tiene "Equipo que no hay en Gimnasio de prueba (1)"');
   await tap(p, '#sheet [data-act="alt-eq"]');
   ok(await p.locator('#sheet [data-act="alt-eqt"]').count() > 40, 'lista de equipo por tipo con interruptores');
   await shot(p, 'a5-equipo');

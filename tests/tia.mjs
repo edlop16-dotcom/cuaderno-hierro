@@ -1,3 +1,4 @@
+import { OWNER_SETTINGS, seedOwner } from './owner-fixture.mjs';
 // Prueba de la Tanda D (aiexport.js): exportar a una IA como coach, formato obligatorio, descanso e importar para entrenar.
 // Uso (desde PowerShell): $env:PW_DIR = "<carpeta con node_modules/playwright>"; node tests/tia.mjs <copia transpilada> <copia transpilada anterior> [capturas]
 import fs from 'node:fs';
@@ -10,7 +11,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const { chromium } = createRequire(path.join(process.env.PW_DIR || HERE, 'x.js'))('playwright');
 const [DIR, OLD, SHOTS] = process.argv.slice(2);
 if (!DIR || !OLD) throw new Error('Faltan las carpetas transpiladas (nueva y anterior)');
-const REAL = fs.readFileSync(path.join(HERE, 'importar-ejemplo-real-1.txt'), 'utf8');
+const REAL = fs.readFileSync(path.join(HERE, 'importar-ejemplo-sintetico.txt'), 'utf8');
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css', '.webp': 'image/webp', '.woff2': 'font/woff2', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png' };
 const serve = dir => new Promise(res => {
   const s = http.createServer((q, r) => {
@@ -20,8 +21,8 @@ const serve = dir => new Promise(res => {
 });
 let fail = 0;
 const ok = (c, msg) => { if (c) console.log('  ok  ', msg); else { fail++; console.log('  FALLA', msg); } };
-const browser = await chromium.launch({ channel: 'msedge', headless: false, args: ['--headless=new'] });
-const OWNER = { owner: 1, healthOk: 1 };
+const browser = await chromium.launch({ channel: process.env.PW_CHANNEL === 'chromium' ? undefined : 'msedge', headless: process.env.PW_CHANNEL === 'chromium', args: ['--headless=new'] });
+const OWNER = OWNER_SETTINGS;
 async function open(dir, { seed, watch } = {}) {
   const srv = await serve(dir);
   const ctx = await browser.newContext(watch ? { viewport: { width: 410, height: 500 }, hasTouch: true } : { viewport: { width: 390, height: 844 }, hasTouch: true });
@@ -29,6 +30,7 @@ async function open(dir, { seed, watch } = {}) {
   const p = await ctx.newPage(); p.errs = [];
   p.on('pageerror', e => p.errs.push(e.message));
   await p.clock.setFixedTime(new Date('2026-10-19T18:30:00'));
+  await seedOwner(p, seed);
   await p.addInitScript(o => { if (!sessionStorage.getItem('seeded')) { sessionStorage.setItem('seeded', '1'); if (o) { localStorage.setItem('cdh.settings', JSON.stringify(o)); localStorage.setItem('cdh.newsSeen', '"n5"'); } } }, seed || null);
   await p.addInitScript(() => { window.open = () => null; });
   await p.goto(`http://127.0.0.1:${srv.address().port}/index.html`); await p.waitForTimeout(2500);
@@ -69,13 +71,13 @@ console.log('A. Dueño: los tres textos');
   ok(/^Actúa como mi entrenador personal experto en hipertrofia y fuerza\. Analiza mi historial de últimos 3 meses:/.test(A), 'historial: prompt de coach arriba con el período');
   ok(['MIS DATOS:', 'MI PLAN ACTUAL:', 'MIS SESIONES', 'RÉCORDS Y 1RM ESTIMADO:', 'SERIES POR MÚSCULO Y SEMANA', 'RACHA:', 'FORMATO OBLIGATORIO'].every(k => A.indexOf(k) >= 0), 'datos, plan, sesiones, récords y 1RM, series por músculo, racha y formato');
   ok(/descanso \d/.test(A) && /\(rutina\)/.test(A), 'cada ejercicio con su descanso (en las viejas, el de la rutina)');
-  ok(/Considera mi edad \(40 años\), mi peso \([\d,.]+ kg\)/.test(A), 'edad y peso llenados');
+  ok(/Considera mi edad \(31 años\)(?:,| y) mi peso \([\d,.]+ kg\)/.test(A), 'edad y peso llenados');
   ok(clean(A) && clean(T.day) && clean(T.week), 'sin {} ni huecos');
   ok(!/[\w.-]+@[\w-]+\.[a-z]{2,}|\bacc\b/i.test(A), 'sin correo ni cuenta');
   const FD = t => ((t.split('FORMATO OBLIGATORIO')[1] || '').split('Ejemplo:')[0].match(/\b(LUNES|MARTES|MIÉRCOLES|JUEVES|VIERNES|SÁBADO|DOMINGO): [^→;]+ → /g) || []).length;
   ok(FD(A) >= 3 && /UN SOLO bloque de código/.test(A) && /'DÍA: nombre'/.test(A), 'formato nuevo: un solo bloque con "DÍA: nombre" y los ejercicios de cada día de la rutina activa');
   ok(/^Actúa como mi entrenador personal experto en hipertrofia y fuerza, con criterio basado en evidencia\./.test(T.day) && FD(T.day) === 0 && /nombre EXACTO de esta lista [^;]+, igual en todas sus filas/.test(T.day), 'sesión del día: su prompt y la lista de un solo día');
-  ok(/^Actúa como mi entrenador personal experto en hipertrofia\. Analiza mi semana completa:/.test(T.week) && /entreno \d días en Roka/.test(T.week), 'semana: su prompt con días y gimnasio');
+  ok(/^Actúa como mi entrenador personal experto en hipertrofia\. Analiza mi semana completa:/.test(T.week) && /entreno \d días en Gimnasio/.test(T.week), 'semana: su prompt con días y gimnasio');
   fs.mkdirSync(SHOTS || '.', { recursive: true }); if (SHOTS) { fs.writeFileSync(path.join(SHOTS, 'historial-3m.txt'), A); fs.writeFileSync(path.join(SHOTS, 'dia.txt'), T.day); fs.writeFileSync(path.join(SHOTS, 'semana.txt'), T.week); }
   /* Sesión editada: sale con sus datos corregidos */
   const ed = await p.evaluate(() => { const s = state.sessions[0]; s.edited = Date.now(); s.exercises[0].sets[0].w = 123.5; saveLocal(); return aixAllText('4w').txt; });
@@ -138,7 +140,7 @@ console.log('C. Importar');
   await p.done();
 }
 
-console.log('D. Tu ejemplo real (formato viejo de 4 columnas): igual que antes');
+console.log('D. Ejemplo sintético (formato viejo de 4 columnas): igual que antes');
 {
   const a = await open(DIR, { seed: OWNER }), b = await open(OLD, { seed: OWNER });
   const f = t => JSON.stringify(nsParse(t));

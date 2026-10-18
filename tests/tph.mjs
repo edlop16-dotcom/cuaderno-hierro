@@ -1,3 +1,4 @@
+import { OWNER_SETTINGS, seedOwner } from './owner-fixture.mjs';
 // Prueba de la Tanda G: fotos de Free Exercise DB para los ejercicios nuevos (photos.js), con Playwright y Edge.
 // Uso (desde PowerShell): $env:PW_DIR = "<carpeta con node_modules/playwright>"; node tests/tph.mjs <copia transpilada> <copia transpilada anterior> [capturas]
 // A. Dueño: los 84 de antes iguales; Biblioteca con fotos y sin lentitud (carga diferida); ficha, selector y sesión con foto;
@@ -23,8 +24,8 @@ const serve = dir => new Promise(res => {
 });
 let fail = 0;
 const ok = (c, msg) => { if (c) console.log('  ok  ', msg); else { fail++; console.log('  FALLA', msg); } };
-const browser = await chromium.launch({ channel: 'msedge', headless: false, args: ['--headless=new'] });
-const OWNER = { owner: 1, healthOk: 1 };
+const browser = await chromium.launch({ channel: process.env.PW_CHANNEL === 'chromium' ? undefined : 'msedge', headless: process.env.PW_CHANNEL === 'chromium', args: ['--headless=new'] });
+const OWNER = OWNER_SETTINGS;
 
 async function open(dir, { seed, watch, at, cpu } = {}) {
   const srv = await serve(dir);
@@ -33,6 +34,7 @@ async function open(dir, { seed, watch, at, cpu } = {}) {
   const p = await ctx.newPage(); p.errs = [];
   p.on('pageerror', e => p.errs.push(e.message));
   await p.clock.setFixedTime(at || new Date('2026-10-19T10:30:30'));
+  await seedOwner(p, seed);
   await p.addInitScript(o => { if (!sessionStorage.getItem('seeded')) { sessionStorage.setItem('seeded', '1'); if (o) { localStorage.setItem('cdh.settings', JSON.stringify(o)); localStorage.setItem('cdh.newsSeen', '"n5"'); } } }, seed || null);
   p.url0 = `http://127.0.0.1:${srv.address().port}/index.html`;
   await p.goto(p.url0); await p.waitForTimeout(2500);
@@ -71,9 +73,10 @@ console.log('A. Dueño');
   const p = await open(DIR, { seed: OWNER, cpu: 4 }), q = await open(OLD, { seed: OWNER });
   const K = await p.evaluate(() => ({ n: PHOTO_KEYS.size, cat: CAT_PHOTOS.length, newOnly: CAT_PHOTOS.every(k => { const x = LIB.find(y => y.key === k); return x && x.cat; }) }));
   const K0 = await q.evaluate(() => PHOTO_KEYS.size);
+  const oldCat = await q.evaluate(() => typeof CAT_PHOTOS === 'undefined' ? 0 : CAT_PHOTOS.length);
   console.log(`     fotos: antes ${K0}, ahora ${K.n} (+${K.cat} de ejercicios nuevos)`);
-  ok(K.n === K0 + K.cat && K.newOnly, 'solo se suman fotos a ejercicios nuevos del catálogo');
-  ok(fs.readdirSync(path.join(DIR, 'ex')).length === (K0 + K.cat) * 2, 'cada foto tiene sus dos webp (inicio y final)');
+  ok(K.n === K0 + K.cat - oldCat && K.newOnly, 'solo se suman fotos a ejercicios nuevos del catálogo');
+  ok(fs.readdirSync(path.join(DIR, 'ex')).length === K.n * 2, 'cada foto tiene sus dos webp (inicio y final)');
   const old84 = pg => pg.evaluate(() => LIB.filter(x => !x.cat).map(x => x.key + ':' + luThumb(x, false)).join('\n'));
   ok(await old84(p) === await old84(q), 'los 84 de antes se dibujan igual (foto o figura)');
   /* Biblioteca: carga diferida y velocidad */

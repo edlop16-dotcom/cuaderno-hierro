@@ -1,0 +1,12 @@
+Análisis ficticio del entrenamiento del lunes.
+Serie	Peso anterior	Progreso
+1	10	Sin cambios
+
+RECOMENDACIÓN PARA EL PRÓXIMO LUNES
+Ejercicio	Peso	Reps	RIR
+Prensa 45°	82.5	10	2,1,0
+Sentadilla Hack	27.5	8-10	2,1,0
+Hip Thrust	42.5	9-11	2,1,0
+Curl Femoral	17.5	11-13	2,1,0
+Remo Cable	32.5	8-10	2,1,0
+Extensión	22.5	12-14	2,1,0

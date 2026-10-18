@@ -5,7 +5,7 @@
    2. Generador de rutinas según objetivo, experiencia, tiempo, equipo y molestias.
    3. Plantillas listas en Rutinas y tarjeta "Tu objetivo y plan" en Ajustes.
    4. Pesas en kg o lb (los datos se convierten; el peso corporal sigue en kg).
-   Tu instalación (Edgar) queda marcada como `owner` y no cambia.
+   Las cuentas owner conservan sus datos guardados.
    ========================================================================== */
 const PB_GOALS = {
   musculo: ['Ganar músculo', 'Más músculo y mejor forma física.', 'dumbbell', 'bulk'],
@@ -145,19 +145,9 @@ function ownerFix() {
   const S = state.settings; if (!S.owner) return;
   let ch = false;
   if (S.pub) { S.pub = 0; ch = true; }
-  if (!S.ownerFix1) {
-    if (Array.isArray(S.goals) && !S.goals.length) S.goals = ['postura'];
-    const n = state.plans.length;
-    state.plans = state.plans.filter(p => !(p.auto && p.id === 'start' && !state.sessions.some(s => s.planId === p.id)));
-    if (state.plans.length !== n || S.activePlanId === 'start') {
-      Object.keys(S.planByGym || {}).forEach(g => { if (!state.plans.some(p => p.id === S.planByGym[g])) { const p = state.plans.find(x => (x.gymId || 'rokaz') === g); if (p) S.planByGym[g] = p.id; } });
-      if (!state.plans.some(p => p.id === S.activePlanId)) S.activePlanId = (S.planByGym || {}).rokaz || (state.plans[0] && state.plans[0].id);
-    }
-    S.ownerFix1 = 1; ch = true;
-  }
   if (ch) savePlans();
 }
-/* Instalación de Edgar: dueño de la app (sus datos y migraciones personales siguen igual) */
+/* Compatibilidad de cuentas existentes; nunca reinsertar datos ni eliminar planes. */
 if (!state.settings.pub && !state.settings.owner) { state.settings.owner = 1; savePlans(); }
 ownerFix();
 applyProf();

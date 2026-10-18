@@ -90,12 +90,12 @@ function exStats(name) {
     <div class="trend ${t ? t[2] : 'flat'}">${t ? `${ic(t[1], 18)}<b>${t[0]}</b><span>${tr.pct >= 0 ? '+' : ''}${fmtKg(tr.pct)} % en tu 1RM estimado (últimas sesiones vs anteriores)` : `${ic('info', 18)}<b>Primera sesión registrada</b><span>Con la próxima verás si vas subiendo.`}</span></div>
     ${chart}
     <div class="stat3"><div><b class="num">${pts.length}</b><span>Sesiones</span></div><div><b class="num">${fmtKg(best.top.w)}×${best.top.r}</b><span>Mejor serie</span></div><div><b class="num">${first !== lastP ? (lastP.top.w - first.top.w >= 0 ? '+' : '') + fmtKg(lastP.top.w - first.top.w) : '—'}</b><span>kg desde el inicio</span></div></div>
-    ${rec ? `<div class="muted" style="font-size:12.5px">Récord previo (Raydac · Hevy / Symmetry): <b class="num">${fmtKg(rec.w)} kg × ${rec.r}</b></div>` : ''}
+    ${rec ? `<div class="muted" style="font-size:12.5px">Récord previo (Otro gimnasio · Hevy / Symmetry): <b class="num">${fmtKg(rec.w)} kg × ${rec.r}</b></div>` : ''}
     ${stRecords(pts)}
     <div class="label">Historial</div>
     <div class="st-list">${pts.map((p, i) => [p, wins[i]]).reverse().slice(0, 10).map(([p, w]) => `<div class="st-row"><div class="grow" style="min-width:0"><b>${fmtDate(p.d, true)}</b><small class="muted">${esc(gymName(p.gym))}</small></div>
       <div class="num st-sets">${p.sets.map(z => `${fmtKg(z.w)}×${z.r}`).join(' · ')}</div>${w ? `<span class="win ${w}" title="${w === 'pr' ? 'Récord' : 'Mejoraste'}">${ic('shield', 15)}</span>` : '<span class="win none"></span>'}</div>`).join('')}</div>`
-    : `<div class="card empty">${rec ? `Tu récord previo: <b>${fmtKg(rec.w)} kg × ${rec.r}</b> (Raydac). ` : ''}Cuando registres este ejercicio en Forja verás aquí tu gráfica.</div>`}
+    : `<div class="card empty">${rec ? `Tu récord previo: <b>${fmtKg(rec.w)} kg × ${rec.r}</b> (Otro gimnasio). ` : ''}Cuando registres este ejercicio en Forja verás aquí tu gráfica.</div>`}
     <div class="grid2">${x ? `<button class="btn" data-act="how" data-name="${esc(name)}">${ic('book-open', 16)} Ver técnica</button>` : '<span></span>'}<button class="btn primary" data-act="sheet-close">Cerrar</button></div>`);
 }
 
@@ -360,32 +360,4 @@ finishSession = function () {
   if (id) learnWeights(state.sessions.find(x => x.id === id));
 };
 
-/* ---------- Tu sesión de piernas en Roka'z (5 oct, Symmetry): asegurar que esté y que la rutina de Roka'z use esos pesos ---------- */
-if (!state.settings.importSym3) {
-  const SID = 'sym-rokaz-2026-10-05';
-  let s = state.sessions.find(x => x.id === SID);
-  if (!s) {
-    s = { id: SID, date: new Date('2026-10-09T19:00:00-05:00').toISOString(), planId: 'plan2', planName: 'Torso / Pierna · 4 días', dayId: 'p2-lun', dayName: 'Piernas (Pesado)', gymId: 'rokaz', gymName: gymName('rokaz'), kind: 'fuerza', durationSec: 7080, source: 'Symmetry',
-      exercises: [
-        { name: 'Prensa 45°', type: P, sets: [{ w: 160, r: 18 }, { w: 170, r: 18 }, { w: 170, r: 18 }] },
-        { name: 'Sentadilla Hack', type: P, note: 'Con mala técnica, dominar 60', sets: [{ w: 60, r: 12 }, { w: 60, r: 12 }, { w: 60, r: 12 }] },
-        { name: 'Hip Thrust', type: P, sets: [{ w: 30, r: 15 }, { w: 30, r: 10 }, { w: 30, r: 11 }] },
-        { name: 'Extensión de Pierna', type: P, sets: [{ w: 45, r: 14 }, { w: 45, r: 12 }, { w: 45, r: 12 }] },
-        { name: 'Abducción de Cadera', type: P, sets: [{ w: 20, r: 10 }, { w: 20, r: 10 }, { w: 20, r: 10 }] },
-      ] };
-    state.sessions.push(s); state.sessions.sort((a, b) => b.date.localeCompare(a.date));
-    if (typeof sync !== 'undefined') sync.revive([SID]);
-  }
-  /* Solo piernas: los ejercicios de torso de Roka'z siguen con la referencia de Raydac hasta que los hagas allí */
-  learnWeights(s);
-  state.settings.importSym3 = 1; saveLocal();
-}
 bootRender();
-
-/* Corrección: tu sesión de piernas en Roka'z fue el viernes 9 de octubre (no el lunes 5) */
-if (!state.settings.symDate9) {
-  const SID = 'sym-rokaz-2026-10-05', when = new Date('2026-10-09T19:00:00-05:00').toISOString();
-  const s = state.sessions.find(x => x.id === SID);
-  if (s && s.date !== when) { s.date = when; state.sessions.sort((a, b) => b.date.localeCompare(a.date)); }
-  state.settings.symDate9 = 1; saveLocal(); bootRender();
-}

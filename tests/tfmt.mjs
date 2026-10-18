@@ -1,9 +1,10 @@
+import { OWNER_SETTINGS, seedOwner } from './owner-fixture.mjs';
 // Prueba: formato de exportación con el día DENTRO del bloque, ida y vuelta (aiexport.js, next.js, rimport.js).
 // Uso (desde PowerShell): $env:PW_DIR = "<carpeta con node_modules/playwright>"; node tests/tfmt.mjs <copia transpilada> <copia transpilada anterior> [capturas]
 // A. Dueño: exportar día, semana, historial y "Copiar instrucción" con el formato nuevo → respuesta inventada → "Importar
 //    recomendación" (cada día a su día; series, peso, reps, RIR y descanso) y "Importar rutinas" (nombre tras los dos puntos,
 //    día, series, RIR por serie, descanso); variantes: título viejo fuera del bloque, sin bloque, con espacios, día que no está
-//    en el plan, "Entrenar ahora". Formato viejo (tests/importar-ejemplo-real-1.txt) igual que la versión anterior.
+//    en el plan, "Entrenar ahora". Formato viejo (tests/importar-ejemplo-sintetico.txt) igual que la versión anterior.
 // B. "Importar rutinas" con otros formatos: espacios, una celda por línea, columna Día, "DÍA LUNES:" largo, nada → "Copiar formato".
 // C. Usuario nuevo: ida y vuelta con su rutina. D. Reloj: inicio y sesión idénticos a la versión anterior.
 // Todos los datos (pesos, nombres de rutinas, textos de la IA) son inventados.
@@ -26,8 +27,8 @@ const serve = dir => new Promise(res => {
 });
 let fail = 0;
 const ok = (c, msg) => { if (c) console.log('  ok  ', msg); else { fail++; console.log('  FALLA', msg); } };
-const browser = await chromium.launch({ channel: 'msedge', headless: false, args: ['--headless=new'] });
-const OWNER = { owner: 1, healthOk: 1 };
+const browser = await chromium.launch({ channel: process.env.PW_CHANNEL === 'chromium' ? undefined : 'msedge', headless: process.env.PW_CHANNEL === 'chromium', args: ['--headless=new'] });
+const OWNER = OWNER_SETTINGS;
 
 async function open(dir, { seed, watch } = {}) {
   const srv = await serve(dir);
@@ -36,6 +37,7 @@ async function open(dir, { seed, watch } = {}) {
   const p = await ctx.newPage(); p.errs = [];
   p.on('pageerror', e => p.errs.push(e.message));
   await p.clock.setFixedTime(new Date('2026-10-19T10:30:30'));
+  await seedOwner(p, seed);
   await p.addInitScript(o => {
     if (!sessionStorage.getItem('seeded')) { sessionStorage.setItem('seeded', '1'); if (o) { localStorage.setItem('cdh.settings', JSON.stringify(o)); localStorage.setItem('cdh.newsSeen', '"n6"'); } }
     window.__clip = []; try { Object.defineProperty(navigator, 'clipboard', { value: { writeText: t => { window.__clip.push(t); return Promise.resolve(); } } }); } catch (e) {}
@@ -145,8 +147,8 @@ console.log('A. Dueño: ida y vuelta');
   ok(NP.length === R.length && NP.every((d, i) => d.name.indexOf(R[i].name) === 0 && d.wd === R[i].wd && d.ex[0].sets === 2 && d.ex[0].rirT === '2,1' && d.ex[0].rest === 120 && d.ex[1].rirT === '2,1,0'), 'guardadas: ' + NP.map(d => `${WDL(d.wd).slice(0, 3)} «${d.name}»`).join(', '));
   ok(await p.evaluate(b => { const now = state.plans.map(x => ({ id: x.id, name: x.name, days: x.days })); return JSON.parse(b).every(o => JSON.stringify(now.find(n => n.id === o.id)) === JSON.stringify(o)); }, before), 'las rutinas de antes no cambian');
 
-  /* 4. Formato viejo: tu ejemplo real se lee igual que en la versión anterior */
-  const q = await open(OLD, { seed: OWNER }), REAL = fs.readFileSync(path.join(HERE, 'importar-ejemplo-real-1.txt'), 'utf8');
+  /* 4. Formato viejo: tu ejemplo sintético se lee igual que en la versión anterior */
+  const q = await open(OLD, { seed: OWNER }), REAL = fs.readFileSync(path.join(HERE, 'importar-ejemplo-sintetico.txt'), 'utf8');
   for (const [lbl, t] of [['tabulaciones', REAL], ['espacios', REAL.replace(/\t/g, ' ')], ['una celda por línea', REAL.replace(/\t/g, '\n')], ['2 espacios y \\r\\n', REAL.replace(/\t/g, '  ').replace(/\n/g, '\r\n')]]) {
     const f = pg => pg.evaluate(t => JSON.stringify(nsParse(t)), t), a = await f(p), b = await f(q);
     ok(a === b && JSON.parse(a).rows.length === 6, `formato viejo (${lbl}): igual que antes (${JSON.parse(a).rows.length} ejercicios, día ${JSON.parse(a).day})`);

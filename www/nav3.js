@@ -32,8 +32,7 @@ Object.assign(ICONS, {
 })();
 /* El orden de la barra lo cambia solo quien la mueve a mano (Ajustes o mantener presionado): queda en `navCustom`.
    navMig4 (16-oct-2026): un orden viejo que no se movió a mano en esta versión vuelve a Hoy · Rutinas · Progreso · Perfil.
-   Pasó con Edgar: su orden guardado era Perfil · Rutinas · Entrenar (un toque de "bajar" en la hoja de ordenar),
-   la migración de la tanda 1 lo tomó como propio y quedó Progreso · Perfil · Rutinas · Hoy. */
+   Los órdenes predeterminados de versiones anteriores no se consideran personalizaciones manuales. */
 (function () {
   const S = state.settings; if (S.navMig4) return;
   if (!S.navCustom) S.navOrder = NAV_ALL.slice();

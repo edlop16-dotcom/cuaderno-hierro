@@ -1,3 +1,4 @@
+import { OWNER_SETTINGS, seedOwner } from './owner-fixture.mjs';
 // Prueba de los recordatorios de hábitos a la hora real (habalarm.js + stats.js), con Playwright y Edge.
 // Uso (desde PowerShell): $env:PW_DIR = "<carpeta con node_modules/playwright>"; node tests/thal.mjs <copia transpilada> [copia transpilada anterior] [capturas]
 // La parte nativa (HabitAlarms.java: ventana de 1 px para abrir la pantalla completa con la app cerrada) no se puede
@@ -24,7 +25,7 @@ const serve = dir => new Promise(res => {
 });
 let fail = 0;
 const ok = (c, msg) => { if (c) console.log('  ok  ', msg); else { fail++; console.log('  FALLA', msg); } };
-const browser = await chromium.launch({ channel: 'msedge', headless: false, args: ['--headless=new'] });
+const browser = await chromium.launch({ channel: process.env.PW_CHANNEL === 'chromium' ? undefined : 'msedge', headless: process.env.PW_CHANNEL === 'chromium', args: ['--headless=new'] });
 
 /* Capacitor nativo simulado con solo el plugin HabitAlarm (anota las llamadas en window.__ha) */
 const NATIVE = cfg => {
@@ -42,7 +43,8 @@ async function open(dir, { owner, watch, native } = {}) {
   await p.clock.setFixedTime(new Date('2026-10-19T08:00:30'));
   if (native) await p.addInitScript(NATIVE, native);
   /* dueño: inyecta {owner:1}; usuario nuevo: instalación nueva de verdad (sin cdh.settings, la app lo marca como público) */
-  await p.addInitScript(o => { if (!sessionStorage.getItem('seeded')) { sessionStorage.setItem('seeded', '1'); if (o.owner && !localStorage.getItem('cdh.settings')) localStorage.setItem('cdh.settings', JSON.stringify({ owner: 1, healthOk: 1 })); localStorage.setItem('cdh.newsSeen', '"n5"'); } }, { owner });
+  await seedOwner(p, owner ? OWNER_SETTINGS : null);
+  await p.addInitScript(o => { if (!sessionStorage.getItem('seeded')) { sessionStorage.setItem('seeded', '1'); if (o.owner && !localStorage.getItem('cdh.settings')) localStorage.setItem('cdh.settings', JSON.stringify(o.settings)); localStorage.setItem('cdh.newsSeen', '"n5"'); } }, { owner, settings: OWNER_SETTINGS });
   await p.goto(`http://127.0.0.1:${srv.address().port}/index.html`);
   await p.waitForTimeout(1800);
   if (!owner && !watch) await p.evaluate(() => { state.settings.onb = 1; state.settings.healthOk = 1; if (typeof pbClose === 'function') pbClose(); LS.set('newsSeen', NEWS_KEY); savePlans(); closeSheet(); render(); });

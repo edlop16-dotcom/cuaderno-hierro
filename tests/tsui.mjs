@@ -1,3 +1,4 @@
+import { OWNER_SETTINGS, seedOwner } from './owner-fixture.mjs';
 // Prueba de la Tanda C (sessui.js): pantalla del ejercicio en la sesión, con Playwright y Edge.
 // Uso (desde PowerShell): $env:PW_DIR = "<carpeta con node_modules/playwright>"; node tests/tsui.mjs <copia transpilada> <copia transpilada anterior> [capturas]
 // A. Dueño con su rutina: barra con cronómetro, franja, nombre con equipo, píldoras, tabla primero (Serie · Anterior · Kg · Reps · ✓),
@@ -23,8 +24,8 @@ const serve = dir => new Promise(res => {
 });
 let fail = 0;
 const ok = (c, msg) => { if (c) console.log('  ok  ', msg); else { fail++; console.log('  FALLA', msg); } };
-const browser = await chromium.launch({ channel: 'msedge', headless: false, args: ['--headless=new'] });
-const OWNER = { owner: 1, healthOk: 1 };
+const browser = await chromium.launch({ channel: process.env.PW_CHANNEL === 'chromium' ? undefined : 'msedge', headless: process.env.PW_CHANNEL === 'chromium', args: ['--headless=new'] });
+const OWNER = OWNER_SETTINGS;
 /* Sonido y vibración simulados: se cuentan */
 const SPY = () => {
   window.__snd = { osc: 0, vib: [] };
@@ -39,6 +40,7 @@ async function open(dir, { seed, watch, w, h } = {}) {
   const p = await ctx.newPage(); p.errs = [];
   p.on('pageerror', e => p.errs.push(e.message));
   await p.clock.setFixedTime(new Date('2026-10-19T18:30:00'));
+  await seedOwner(p, seed);
   await p.addInitScript(o => { if (!sessionStorage.getItem('seeded')) { sessionStorage.setItem('seeded', '1'); if (o) { localStorage.setItem('cdh.settings', JSON.stringify(o)); localStorage.setItem('cdh.newsSeen', '"n5"'); } } }, seed || null);
   await p.addInitScript(SPY);
   await p.goto(`http://127.0.0.1:${srv.address().port}/index.html`); await p.waitForTimeout(2500);
@@ -187,6 +189,23 @@ for (const [w, h] of [[360, 740], [360, 640], [390, 844]]) {
     ok(await p.evaluate(c => !document.querySelector(c + '.su-co').classList.contains('su-open'), cur), '"Ver menos" lo cierra');
   }
   await shot(p, `c2-coach-${w}x${h}`);
+  ok(!p.errs.length, 'sin errores de JS ' + p.errs.join(' | '));
+  await p.done();
+}
+
+console.log('C3. Sin recomendación');
+{
+  const p = await open(DIR, { seed: OWNER });
+  await p.evaluate(() => { coachBox = () => ''; });
+  await p.evaluate(START); await p.waitForTimeout(800);
+  const empty = await p.evaluate(c => {
+    const card = document.querySelector(c + '.card.ex'), pills = card.querySelector('.su-pills'), line = card.querySelector('.su-coach');
+    const next = pills.nextElementSibling;
+    return { boxes: card.querySelectorAll('.coach, .sugg').length, text: line && line.textContent.trim(), gap: next.getBoundingClientRect().top - pills.getBoundingClientRect().bottom, height: line && line.offsetHeight };
+  }, cur);
+  ok(empty.boxes === 0 && /×/.test(empty.text), 'sin coach: solo el dato de series y reps, sin tarjeta vacía');
+  ok(empty.gap <= 16 && empty.height <= 48, 'sin espacio reservado para una recomendación ausente');
+  await shot(p, 'c3-sin-recomendacion');
   ok(!p.errs.length, 'sin errores de JS ' + p.errs.join(' | '));
   await p.done();
 }

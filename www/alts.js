@@ -18,7 +18,7 @@ function exAvail(name, gid) {
   const x = libFind(name); if (!x || !x.eq) return true;
   return gymHasEq(x.eq, gid) && String(x.req || '').split(',').every(r => !r || gymHasEq(r, gid));
 }
-/* El equipo que falta (para decir "No hay Prensa 45° en Roka'z") */
+/* El equipo que falta (para decir "No hay Prensa 45° en Mi gimnasio") */
 function exMissing(name, gid) { const x = libFind(name); if (!x || !x.eq) return null; if (!gymHasEq(x.eq, gid)) return x.eq; return String(x.req || '').split(',').find(r => r && !gymHasEq(r, gid)) || null; }
 const eqName = k => (CAT_EQ[k] ? CAT_EQ[k][0] : k);
 function gymNoSet(gid, eq, on) {

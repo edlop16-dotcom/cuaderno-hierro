@@ -1,3 +1,4 @@
+import { OWNER_SETTINGS, seedOwner } from './owner-fixture.mjs';
 // Prueba de la Tanda A: catálogo (catalog.js) y búsqueda (libui.js), con Playwright y Edge.
 // Uso (desde PowerShell): $env:PW_DIR = "<carpeta con node_modules/playwright>"; node tests/tcat.mjs <copia transpilada> <copia transpilada anterior> [capturas]
 // A. Dueño: Biblioteca agrupada con conteos, filtros por músculo, equipo y máquina (combinables), búsqueda con alias,
@@ -24,8 +25,8 @@ const serve = dir => new Promise(res => {
 });
 let fail = 0;
 const ok = (c, msg) => { if (c) console.log('  ok  ', msg); else { fail++; console.log('  FALLA', msg); } };
-const browser = await chromium.launch({ channel: 'msedge', headless: false, args: ['--headless=new'] });
-const OWNER = { owner: 1, healthOk: 1 };
+const browser = await chromium.launch({ channel: process.env.PW_CHANNEL === 'chromium' ? undefined : 'msedge', headless: process.env.PW_CHANNEL === 'chromium', args: ['--headless=new'] });
+const OWNER = OWNER_SETTINGS;
 
 async function open(dir, { seed, watch, at, cpu } = {}) {
   const srv = await serve(dir);
@@ -34,6 +35,8 @@ async function open(dir, { seed, watch, at, cpu } = {}) {
   const p = await ctx.newPage(); p.errs = [];
   p.on('pageerror', e => p.errs.push(e.message));
   await p.clock.setFixedTime(at || new Date('2026-10-19T08:00:30'));
+  await seedOwner(p, seed);
+  await p.addInitScript(() => localStorage.setItem('cdh.reminders', '[]')); // Sin alarmas ajenas al catálogo.
   await p.addInitScript(o => { if (!sessionStorage.getItem('seeded')) { sessionStorage.setItem('seeded', '1'); if (o) { localStorage.setItem('cdh.settings', JSON.stringify(o)); localStorage.setItem('cdh.newsSeen', '"n5"'); } } }, seed || null);
   p.url0 = `http://127.0.0.1:${srv.address().port}/index.html`;
   await p.goto(p.url0); await p.waitForTimeout(2500);
@@ -124,13 +127,9 @@ console.log('A. Dueño: Biblioteca');
   const n2 = await p.evaluate(() => [...document.querySelectorAll('#pk-list .pk-main b')].map(b => b.textContent));
   ok(n2[0] === 'Tríceps con Cuerda', 'buscar dentro de un filtro ("cuerda" en Tríceps + Polea): ' + n2.slice(0, 3).join(' · '));
   await p.evaluate(() => { closeSheet(); state.pk = null; });
-  console.log('A3. Tu Press de Banca (Máquina Smith) de Hevy');
-  const sm = await p.evaluate(() => {
-    const days = {}; MY_HEVY.split('\n').slice(1).forEach(l => { const c = l.split('","'); if (c[4] && c[4].indexOf('Press de Banca (Máquina Smith)') === 0) days[c[1]] = (days[c[1]] || 0) + 1; });
-    return { days, mapped: mapExName('Press de Banca (Máquina Smith)'), now: libFind('Press de Banca (Máquina Smith)').name, smith: !!libFind('Press de Banca en Smith') };
-  });
-  console.log(`     Hevy lo trae en ${Object.keys(sm.days).length} sesión(es): ${Object.keys(sm.days).map(d => d + ' (' + sm.days[d] + ' series)').join(', ')}; se guardó como "${sm.mapped}" y sigue igual ("${sm.now}"). Ya existe "Press de Banca en Smith": ${sm.smith}`);
-  ok(sm.mapped === 'Press Banca Plano (Barra)' && sm.smith, 'no se movió nada (decides tú)');
+  console.log('A3. Alias históricos con nombres ficticios de archivo');
+  const sm = await p.evaluate(() => ({ mapped: mapExName('Press de Banca (Máquina Smith)'), now: libFind('Press de Banca (Máquina Smith)').name, smith: !!libFind('Press de Banca en Smith') }));
+  ok(sm.mapped === 'Press Banca Plano (Barra)' && sm.smith, 'el alias de importación sigue compatible');
   ok(!p.errs.length, 'sin errores de JS ' + p.errs.join(' | '));
   await p.done();
 }

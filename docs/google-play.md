@@ -13,7 +13,7 @@
 - **Aviso de salud**, cuestionario de salud (PAR-Q) y sin calorías ni dietas para menores.
 
 ## Pasos manuales (los haces tú, en este orden)
-1. **Datos legales** en `www/legal.js`: por ahora `owner` = Edgar Hugo Lopez Luna y `contact` = su correo personal. Cuando haya empresa y dominio, cambiar esas dos líneas, subir `v` y `date` y avisar en la app.
+1. **Datos legales** en `www/legal.js`: configurar `LEGAL_OWNER` y `CONTACT_EMAIL` con el responsable y el correo exclusivo de la app. El correo de ejemplo no recibe solicitudes. Actualizar `v` y `date` al publicar los datos definitivos.
 2. **Publicar las reglas de Firestore** (incluyen las de amigos y entrenador: `social`, `codes`, `share`, `inbox`): copia `ci/firestore.rules` en Firebase Console → Firestore → Reglas → Publicar.
 3. **Borrado automático de reportes**: Firebase Console → Firestore → TTL → política sobre la colección `errors`, campo `exp`.
 4. **Activar GitHub Pages** (Settings → Pages → Source: GitHub Actions). Las URLs para Play quedan así:

@@ -1,3 +1,4 @@
+import { OWNER_SETTINGS, seedOwner } from './owner-fixture.mjs';
 // Prueba de editar recordatorios de hábitos y de la ✕ que repite (habalarm.js), con Playwright y Edge.
 // Uso (desde PowerShell): $env:PW_DIR = "<carpeta con node_modules/playwright>"; node tests/trem.mjs <copia transpilada> [copia transpilada anterior] [capturas]
 // Escenarios: dueño (editar su "Toma tu creatina" viejo, campanita que edita, ✕ que repite varias veces hasta las 23:00 y
@@ -21,7 +22,7 @@ const serve = dir => new Promise(res => {
 });
 let fail = 0;
 const ok = (c, msg) => { if (c) console.log('  ok  ', msg); else { fail++; console.log('  FALLA', msg); } };
-const browser = await chromium.launch({ channel: 'msedge', headless: false, args: ['--headless=new'] });
+const browser = await chromium.launch({ channel: process.env.PW_CHANNEL === 'chromium' ? undefined : 'msedge', headless: process.env.PW_CHANNEL === 'chromium', args: ['--headless=new'] });
 async function open(dir, { owner, watch, time = '2026-10-19T08:00:30' } = {}) {
   const srv = await serve(dir);
   const ctx = await browser.newContext(watch ? { viewport: { width: 410, height: 500 }, hasTouch: true } : { viewport: { width: 390, height: 844 }, hasTouch: true });
@@ -29,9 +30,10 @@ async function open(dir, { owner, watch, time = '2026-10-19T08:00:30' } = {}) {
   const p = await ctx.newPage(); p.errs = [];
   p.on('pageerror', e => p.errs.push(e.message));
   await p.clock.install({ time: new Date(time) });
+  await seedOwner(p, owner ? OWNER_SETTINGS : null);
   await p.addInitScript(o => {
-    if (o.owner && !localStorage.getItem('cdh.settings')) { localStorage.setItem('cdh.settings', JSON.stringify({ owner: 1, healthOk: 1 })); localStorage.setItem('cdh.newsSeen', '"n5"'); }
-  }, { owner });
+    if (o.owner && !localStorage.getItem('cdh.settings')) { localStorage.setItem('cdh.settings', JSON.stringify(o.settings)); localStorage.setItem('cdh.newsSeen', '"n5"'); }
+  }, { owner, settings: OWNER_SETTINGS });
   await p.goto(`http://127.0.0.1:${srv.address().port}/index.html`);
   await p.waitForTimeout(1500);
   if (!owner && !watch) await p.evaluate(() => { state.settings.onb = 1; state.settings.healthOk = 1; if (typeof pbClose === 'function') pbClose(); LS.set('newsSeen', NEWS_KEY); savePlans(); closeSheet(); render(); });

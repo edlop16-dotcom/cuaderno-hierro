@@ -5,11 +5,14 @@
    - Términos de uso.
    Antes de publicar: completar LEGAL.owner y LEGAL.contact.
    ========================================================================== */
+/* Configurar un contacto exclusivo para la app antes de publicar. */
+var CONTACT_EMAIL = 'contacto@example.com';
+var LEGAL_OWNER = 'Equipo de Forja';
 var LEGAL = {
   v: '2026-10-13b',
   date: '13 de octubre de 2026',
-  owner: 'Edgar Hugo Lopez Luna',
-  contact: 'edlopezluna@gmail.com',
+  owner: LEGAL_OWNER,
+  contact: CONTACT_EMAIL,
   minAge: 14,
 };
 LEGAL.privacy = '<p class="muted">Última actualización: ' + LEGAL.date + '</p>'

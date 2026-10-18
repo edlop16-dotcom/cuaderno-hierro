@@ -1,3 +1,4 @@
+import { OWNER_SETTINGS, seedOwner } from './owner-fixture.mjs';
 // Prueba del arranque en un solo dibujo (bootRender / bootEnd en index.html), con Playwright y Edge.
 // Uso (desde PowerShell): $env:PW_DIR = "<carpeta con node_modules/playwright>"; node tests/tboot.mjs <copia transpilada> [copia transpilada anterior] [capturas]
 // Cuenta cuántas veces se reescribe #app al abrir y qué se ve en cada cuadro (dueño, usuario nuevo, reloj; apertura diaria
@@ -23,8 +24,8 @@ const serve = dir => new Promise(res => {
 });
 let fail = 0;
 const ok = (c, msg) => { if (c) console.log('  ok  ', msg); else { fail++; console.log('  FALLA', msg); } };
-const browser = await chromium.launch({ channel: 'msedge', headless: false, args: ['--headless=new'] });
-const OWNER = { owner: 1, healthOk: 1 };
+const browser = await chromium.launch({ channel: process.env.PW_CHANNEL === 'chromium' ? undefined : 'msedge', headless: process.env.PW_CHANNEL === 'chromium', args: ['--headless=new'] });
+const OWNER = OWNER_SETTINGS;
 
 /* Se inyecta antes que todo: cuenta las escrituras de #app y guarda cada estado distinto que llega a un cuadro */
 const SPY = () => {
@@ -41,7 +42,8 @@ const SPY = () => {
     const k = JSON.stringify(s); if (k !== last) { last = k; log.frames.push(s); }
     if (log.frames.length < 400) requestAnimationFrame(f);
   };
-  requestAnimationFrame(f);
+  // Registrar el muestreo después de instalar el reloj de Playwright: el orden de init scripts no es estable.
+  window.addEventListener('DOMContentLoaded', () => requestAnimationFrame(f), { once: true });
 };
 
 async function open(dir, { seed, watch, first, init, block } = {}) {
@@ -52,14 +54,15 @@ async function open(dir, { seed, watch, first, init, block } = {}) {
   const p = await ctx.newPage(); p.errs = [];
   p.on('pageerror', e => p.errs.push(e.message));
   await p.clock.setFixedTime(new Date('2026-10-19T08:00:30'));
+  await seedOwner(p, seed);
   await p.addInitScript(o => { if (!sessionStorage.getItem('seeded')) { sessionStorage.setItem('seeded', '1'); if (o) { localStorage.setItem('cdh.settings', JSON.stringify(o)); localStorage.setItem('cdh.newsSeen', '"n4"'); } } }, seed || null);
   const url = `http://127.0.0.1:${srv.address().port}/index.html`;
-  if (first) { await p.addInitScript(SPY); if (init) await p.addInitScript(init); await p.goto(url); await p.waitForTimeout(2500); }
+  if (first) { await p.addInitScript(SPY); if (init) await p.addInitScript(init); await p.goto(url); await p.bringToFront(); await p.waitForTimeout(2500); }
   else {
-    await p.goto(url); await p.waitForTimeout(2500);   /* 1.ª apertura: migraciones de una vez */
+    await p.goto(url); await p.bringToFront(); await p.waitForTimeout(2500);   /* 1.ª apertura: migraciones de una vez */
     await p.evaluate(() => { if (state.settings.pub) state.settings.onb = 1; LS.set('newsSeen', NEWS_KEY); state.settings.healthOk = 1; savePlans(); });
     await p.addInitScript(SPY); if (init) await p.addInitScript(init);
-    await p.reload(); await p.waitForTimeout(2500);  /* la de todos los días */
+    await p.reload(); await p.bringToFront(); await p.waitForTimeout(2500);  /* la de todos los días */
   }
   p.B = await p.evaluate(() => window.__boot);
   p.done = async () => { await ctx.close(); srv.close(); };
