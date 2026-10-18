@@ -2,7 +2,8 @@
 // Uso (desde PowerShell): $env:PW_DIR = "<carpeta con node_modules/playwright>"; node tests/tri.mjs <copia transpilada> <copia transpilada anterior> [capturas]
 // A. Dueño: elegir crear/importar, texto en español con markdown, dudosos, buscar otro, nombres repetidos, guardar sin tocar lo de antes,
 //    etiqueta y chip, segunda importación, inglés en el plan activo con Otra IA, archivo, tabla, crear uno nuevo, historial compartido.
-// B. Usuario nuevo: tabla de DeepSeek. C. Reloj: inicio idéntico, rutinas importadas se entrenan. Textos en tests/rutinas/.
+// B. Usuario nuevo: tabla de DeepSeek. C. Reloj: inicio idéntico, rutinas importadas se entrenan.
+// D. Lector: tabla por serie sin título, "RECOMENDACIÓN PARA EL PRÓXIMO …" con ```, prosa, un encabezado para varios días. Textos en tests/rutinas/.
 import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
@@ -229,6 +230,53 @@ console.log('C. Reloj 410×500');
   await p.evaluate(() => { const pl = activePlan(); startSession(pl.id, pl.days[0].id); }); await p.waitForTimeout(600);
   ok(await p.evaluate(() => !!state.draft && /Press Banca Plano/.test(document.getElementById('app').textContent + document.body.textContent)), 'entrena una rutina importada en el reloj');
   await shot(p, 'c-reloj-sesion');
+  ok(!p.errs.length, 'sin errores de JS ' + p.errs.join(' | '));
+  await p.done();
+}
+console.log('D. Lector: tablas por serie, títulos de día y descansos (textos inventados)');
+{
+  const p = await open(DIR, { seed: OWNER });
+  const B = t => p.evaluate(t => riBuild(t).map(d => ({ name: d.name, wd: d.wd, ex: d.ex.map(e => ({ n: e.name, s: e.sets, r: [e.rMin, e.rMax], rir: e.rir.join('/'), w: e.w, rest: e.rest })) })), t);
+  const sum = D => D.map(d => `${d.name} [${['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][d.wd]}]: ` + d.ex.map(e => `${e.n} ${e.s}× RIR ${e.rir || '-'} ${e.rest || '-'} s`).join(', ')).join(' | ');
+  /* 1. La tabla del bug: sin título de día */
+  let D = await B(TXT('tabla-series'));
+  console.log('     ' + sum(D));
+  ok(D.length === 1 && D[0].ex.length === 4, 'tabla sin título: 1 rutina con 4 ejercicios');
+  const [pr, hk, ht, cf] = D[0].ex;
+  ok(pr.n === 'Prensa 45°' && pr.s === 3 && pr.rir === '2/1/0' && pr.w === 190, 'Prensa 45°: 3 series, RIR 2/1/0, 190');
+  ok(hk.n === 'Sentadilla Hack' && hk.s === 3 && hk.rir === '2/1/0', 'Sentadilla Hack: 3 series, RIR 2/1/0');
+  ok(ht.n === 'Hip Thrust' && ht.s === 1 && cf.n === 'Curl Femoral Tumbado' && cf.s === 1, 'Hip Thrust y Curl femoral: 1 serie cada uno');
+  ok([pr, hk, ht, cf].map(e => e.rest).join() === '150,150,120,90', 'descansos sin unidad = segundos: 150 / 150 / 120 / 90');
+  /* 2. Tres días "RECOMENDACIÓN PARA EL PRÓXIMO …" con bloques ``` */
+  D = await B(TXT('reco-3dias'));
+  console.log('     ' + sum(D));
+  ok(D.length === 3 && D.map(d => d.wd).join() === '1,3,5', '3 rutinas: Lunes, Miércoles y Viernes');
+  ok(D[0].name === 'Piernas + Torso (Pesado)' && D[1].name === 'Espalda y bíceps' && D[2].name === 'Hombro y core', 'nombres sin "RECOMENDACIÓN PARA EL PRÓXIMO …"');
+  ok(D[0].ex.length === 2 && D[0].ex[0].s === 2 && D[0].ex[1].n === 'Press Banca Plano (Barra)' && D[0].ex[1].rest === 120, 'Lunes: Prensa 2 series y Press banca con descanso "2 min" = 120 s');
+  ok(D[1].ex[0].rest === 90 && D[1].ex[1].rest === 90 && D[2].ex[1].rest === 90, 'descansos "1:30", "90 s" y "60-90" (el alto)');
+  /* 3. Tres días en prosa con viñetas */
+  D = await B(TXT('prosa-3dias'));
+  console.log('     ' + sum(D));
+  ok(D.length === 3 && D.map(d => d.wd).join() === '1,3,5' && D.map(d => d.name).join() === 'Pierna,Empuje,Tirón', 'prosa: Lunes – Pierna, Miércoles – Empuje, Viernes – Tirón');
+  ok(D[0].ex[0].n === 'Prensa 45°' && D[0].ex[0].s === 4 && D[0].ex[0].rir === '2' && D[0].ex[0].rest === 150, '"Prensa 4x10-12 RIR 2, 150 s": 4 series, RIR 2, 150 s (el 150 no se lee como RIR)');
+  ok(D[1].ex[0].rir === '2' && D[1].ex[0].rest === 120 && D[1].ex[2].rest == null, '"RIR 2, 2 min" = RIR 2 y 120 s; "Plancha 3x30 s" no es descanso');
+  /* 4. Un solo encabezado de tabla con títulos de día intercalados */
+  D = await B(TXT('un-encabezado'));
+  console.log('     ' + sum(D));
+  ok(D.length === 3 && D[0].name === 'Torso' && D[0].wd === 2 && D[1].name === 'Día 3 · Push' && D[1].wd === 3 && D[2].name === 'Miércoles' && D[2].wd === 3, 'el encabezado vale para todos los días: "**Martes: Torso**", "## Día 3 (Miércoles) Push", "MIÉRCOLES"');
+  ok(D[1].ex.length === 2 && D[1].ex[0].n === 'Press Militar con Barra' && D[1].ex[0].s === 2 && D[1].ex[0].rir === '2/1', 'el mismo ejercicio más adelante en el día se suma como serie');
+  ok(D[2].ex[0].rest === 180, '"3 min" = 180 s');
+  /* 5. Los de antes no cambian */
+  D = await B(TXT('es-markdown'));
+  ok(D.length === 4 && D.map(d => d.ex.length).join() === '5,5,5,4' && D[0].name === 'Día 1 · Empuje (pecho, hombro y tríceps)', 'texto en español de antes: igual (4 rutinas, 5/5/5/4)');
+  D = await B(TXT('tabla'));
+  ok(D.length === 2 && D[0].name === 'Full body A' && D[0].wd === 1 && D[1].wd === 3, 'tabla con "**Lunes: Full body A**": igual');
+  /* De punta a punta: pegar la tabla del bug y guardar */
+  await goImport(p, TXT('tabla-series'));
+  await p.locator('#sheet .pk-bottom [data-ri="save"]').click(); await p.waitForTimeout(500);
+  const S = await p.evaluate(() => { const p = state.plans[state.plans.length - 1]; const d = p.days[0]; return { n: p.days.length, ex: d.exercises.map(e => `${e.name}:${e.sets}:${(e.rirT || []).join('/')}:${e.rest}:${e.weight}`) }; });
+  console.log('     guardado: ' + S.ex.join(' · '));
+  ok(S.n === 1 && S.ex.join('|') === 'Prensa 45°:3:2/1/0:150:190|Sentadilla Hack:3:2/1/0:150:65|Hip Thrust:1:2:120:45|Curl Femoral Tumbado:1:2:90:25', 'guardada: 4 ejercicios con series, RIR por serie, descanso y peso');
   ok(!p.errs.length, 'sin errores de JS ' + p.errs.join(' | '));
   await p.done();
 }

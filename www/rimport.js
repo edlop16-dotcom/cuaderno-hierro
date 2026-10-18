@@ -26,6 +26,22 @@ const RI_SPLIT = /^(push|pull|legs?|pierna|piernas|torso|upper|lower|full ?body|
 const RI_SKIP = /^(calentamiento|warm.?up|enfriamiento|cool.?down|estiramientos?|stretch\w*|notas?|notes?|consejos?|tips?|progresi[oó]n|progression|cardio|observaciones|recomendaciones|importante|nutrici[oó]n)\b/i;
 const RI_NOISE = /cada|por lado|lado|each|per |opcional|optional|superserie|superset|biserie|drop|al fallo|failure/i;
 const riWdOf = s => { const w = normName(s).split(/[^a-z]+/)[0]; return RI_WD[w] != null ? RI_WD[w] : null; };
+/* Todos los días de la semana que nombra la línea, en orden */
+const riWds = s => normName(s).split(/[^a-z]+/).filter(w => RI_WD[w] != null).map(w => RI_WD[w]);
+const RI_RECO = /recomendaci[oó]n\s+para\s+(?:el|la)?\s*pr[oó]xim[oa]/i;
+/* Nombre de la rutina a partir del título: sin "RECOMENDACIÓN PARA EL PRÓXIMO", sin el día de la semana */
+function riDayTitle(t) {
+  const wds = riWds(t);
+  let n = String(t || '').replace(RI_RECO, ' ');
+  if (wds.length) n = n.replace(/\(?\s*\b(lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b\s*\)?/gi, ' ');
+  n = n.replace(/\(\s*\)/g, ' ').replace(/^[\s:–—\-·|,.]+|[\s:–—\-·|,.]+$/g, '').replace(/\s+/g, ' ').trim();
+  const dm = n.match(/^((?:d[ií]a|day)\s*\d+)\s*[:–—\-·|,]*\s*(.+)$/i); if (dm) n = dm[1] + ' · ' + dm[2];
+  if (!n) { const k = Object.keys(RI_WD).find(x => RI_WD[x] === wds[0] && !/day$/.test(x)); n = k ? (k === 'miercoles' ? 'Miércoles' : k === 'sabado' ? 'Sábado' : k[0].toUpperCase() + k.slice(1)) : ''; }
+  else if (wds.length || RI_RECO.test(t)) { /* ya sin el día */ }
+  else n = n.replace(/\s*[–—]\s*|\s+-\s+|:\s*/, ' · ');
+  if (n.length > 40) n = n.replace(/\s*\(.*?\)\s*/g, ' ').trim();
+  return n.slice(0, 40).trim();
+}
 function riClean(l) {
   return String(l).replace(/[\uD83C-\uDBFF][\uDC00-\uDFFF]|[☀-➿️‍]/g, '').replace(/\*\*|__|`/g, '').replace(/^\s*#+\s*/, '')
     .replace(/^\s*(?:[-*•·▪►>]+|\d+[.)])\s+/, '').replace(/ /g, ' ').replace(/\s+/g, ' ').trim();
@@ -41,7 +57,8 @@ function riName(c) {
 function riNum(s) { const n = parseFloat(String(s).replace(',', '.')); return isFinite(n) ? n : null; }
 function riRestOf(c) {
   const m = c.match(/(?:descanso|descansa|rest|desc\.|pausa)\s*[:=]?\s*([\d.,:]+(?:\s*[-–a]\s*[\d.,:]+)?\s*(?:s|seg|segundos|sec|secs|seconds|min|mins|minutos|minutes|'|")?)/i)
-    || c.match(/([\d.,:]+\s*(?:s|seg|segundos|min|minutos|'))\s*(?:de\s*)?(?:descanso|rest)/i);
+    || c.match(/([\d.,:]+\s*(?:s|seg|segundos|min|minutos|'))\s*(?:de\s*)?(?:descanso|rest)/i)
+    || (x => (x && !/[x×*]\s*$/i.test(c.slice(0, x.index + x[0].indexOf(x[1])))) ? x : null)(c.match(/(?:^|[,;(]\s*|\s)(\d+(?:[.,]\d+)?(?:\s*[-–]\s*\d+)?\s*(?:s|seg|segundos|min|minutos))\b(?!\s*(?:x|×|de\s+trabajo))/i));
   if (!m) return null;
   const t = m[1].replace(/'$/, ' min').replace(/"$/, ' s');
   const v = typeof aixRestParse === 'function' ? aixRestParse(t) : null;
@@ -57,7 +74,7 @@ function riExOf(c, name) {
     if (e.rMin == null) { m = c.match(RI_REPS); if (m) { e.rMin = +m[1]; e.rMax = m[2] ? +m[2] : +m[1]; } }
   }
   if (e.rMin != null && e.rMax < e.rMin) { const t = e.rMin; e.rMin = e.rMax; e.rMax = t; }
-  m = c.match(/RIR\s*[:=]?\s*(\d(?:\s*[,/]\s*\d)*)(?:\s*(?:-|–|a)\s*(\d))?/i);
+  m = c.match(/RIR\s*[:=]?\s*(\d(?!\d)(?:\s*[,/]\s*\d(?![\d.,]*\d)(?!\s*(?:min|mins|minutos|m\b|s\b|seg|segundos|sec|kg|lb|'|")))*)(?:\s*(?:-|–|a)\s*(\d(?!\d)))?/i);   /* "RIR 2, 150 s": el 150 es el descanso */
   if (m) e.rir = m[2] ? [Math.max(+m[1], +m[2])] : m[1].split(/[,/]/).map(x => +x);
   else { m = c.match(/RPE\s*[:=]?\s*(\d+(?:[.,]5)?)/i); if (m) e.rir = [Math.max(0, Math.min(5, Math.round(10 - riNum(m[1]))))]; }
   m = c.match(/(\d+(?:[.,]\d+)?)\s*(kg|kgs|kilos?|lb|lbs|libras)\b/i);
@@ -88,12 +105,13 @@ function riHead(cells) {
 function riParse(text) {
   const lines = String(text || '').replace(/\r/g, '').split('\n');
   const days = []; let day = null, skip = false, head = null;
-  const newDay = t => { day = { title: t, ex: [] }; days.push(day); skip = false; head = null; };
+  const newDay = t => { day = { title: t, ex: [] }; days.push(day); skip = false; };   /* el encabezado de la tabla sigue valiendo */
   const add = e => { if (!day) newDay(''); if (!e.raw || e.raw.length < 2) return; const last = day.ex[day.ex.length - 1];
-    if (e.merge && last && last.merge && normName(last.raw) === normName(e.raw)) { last.sets++; if (e.rMin != null) { last.rMin = Math.min(last.rMin == null ? e.rMin : last.rMin, e.rMin); last.rMax = Math.max(last.rMax || 0, e.rMax); } if (e.rir.length) last.rir.push(e.rir[0]); if (e.w != null && (last.w == null || e.w > last.w)) last.w = e.w; return; }
+    const same = e.merge ? day.ex.filter(x => x.merge && normName(x.raw) === normName(e.raw)).pop() : null;
+    if (same) { const last = same; last.sets++; if (e.rest && (!last.rest || e.rest > last.rest)) last.rest = e.rest; if (e.rMin != null) { last.rMin = Math.min(last.rMin == null ? e.rMin : last.rMin, e.rMin); last.rMax = Math.max(last.rMax || 0, e.rMax); } if (e.rir.length) last.rir.push(e.rir[0]); else if (last.rir.length) last.rir.push(last.rir[last.rir.length - 1]); if (e.w != null && (last.w == null || e.w > last.w)) last.w = e.w; return; }
     day.ex.push(e); };
   for (const l of lines) {
-    if (!l.trim()) continue;
+    if (!l.trim() || /^\s*(```|~~~)/.test(l)) continue;
     if (riIsRow(l)) {
       const cells = riCells(l);
       if (cells.every(c => /^[\s:-]*$/.test(c))) continue;
@@ -104,6 +122,7 @@ function riParse(text) {
         const nm = riName(cells[head.name]); if (!nm) continue;
         const reps = g('reps');
         const e = riExOf(`${head.sets != null ? g('sets') + ' series de ' : ''}${reps ? reps + ' reps' : ''} ${g('rir') && !/rir|rpe/i.test(g('rir')) ? 'RIR ' + g('rir') : g('rir')} ${g('w') && /\d/.test(g('w')) && !/kg|lb/i.test(g('w')) ? g('w') + ' kg' : g('w')} ${g('rest') ? 'descanso ' + g('rest') : ''}`, nm);
+        if (head.rest != null) { const rv = aixRestParse(g('rest')); e.rest = rv && rv >= 10 && rv <= 600 ? rv : e.rest; }
         if (head.sets == null) { e.sets = 1; e.merge = true; if (e.rir.length > 1) e.rir = [e.rir[0]]; }
         else if (e.rir.length > 1 && e.sets && e.rir.length !== e.sets) e.rir = [Math.max.apply(null, e.rir)];
         add(e);
@@ -115,8 +134,9 @@ function riParse(text) {
     const c = riClean(l); if (!c) continue;
     const ex = riIsEx(c);
     const short = c.length <= 70;
-    if (!ex && short && (RI_DAYRE.test(c) || riWdOf(c) != null || ((heading || /:$/.test(c) || !bullet) && RI_SPLIT.test(c)))) { newDay(c.replace(/:$/, '')); continue; }
-    if (!ex && RI_SKIP.test(c)) { if (heading || /:$/.test(c) || !bullet) { skip = true; head = null; } continue; }
+    const wds = riWds(c), titled = heading || /:/.test(c) || /^[^a-z]*[A-ZÁÉÍÓÚÑ]{4,}[^a-z]*$/.test(c) || !bullet;
+    if (!ex && short && (RI_DAYRE.test(c) || RI_RECO.test(c) || riWdOf(c) != null || (wds.length && (wds.length === 1 || heading || /:$/.test(c)) && titled) || ((heading || /:$/.test(c) || !bullet) && RI_SPLIT.test(c)))) { newDay(c.replace(/:$/, '')); continue; }
+    if (!ex && RI_SKIP.test(c)) { if (heading || /:$/.test(c) || !bullet) skip = true; continue; }
     if (!ex && heading && short) { if (day && day.ex.length) newDay(c.replace(/:$/, '')); else if (day) day.title = day.title || c.replace(/:$/, ''); else newDay(c.replace(/:$/, '')); continue; }
     if (skip) continue;
     if (ex) { const e = riExOf(c); if (e.raw && /[a-záéíóúñ]/i.test(e.raw)) add(e); continue; }
@@ -260,11 +280,8 @@ function riBuild(text) {
   const days = riParse(text).map(d => {
     const ex = d.ex.map(e => { const m = riMatch(e.raw); return Object.assign(e, { name: m.sure ? m.name : null, sure: m.sure, sugg: m.sugg, on: true, top: m.top || (m.sure ? 1 : 0) }); })
       .filter(e => !e.loose || e.sure || e.top >= 0.5);
-    const t = d.title || '';
-    let name = t.replace(/\s*[–—]\s*|\s+-\s+|:\s*/, ' · ').replace(/\s+/g, ' ').trim();
-    if (name.length > 40) name = name.replace(/\s*\(.*?\)\s*/g, ' ').trim();
-    if (name.length > 40) name = name.slice(0, 40).trim();
-    return { name: name || 'Rutina importada', wd: riWdOf(t), on: true, ex };
+    const t = d.title || '', w = riWds(t);
+    return { name: riDayTitle(t) || 'Rutina importada', wd: w.length ? w[0] : null, on: true, ex };
   }).filter(d => d.ex.length);
   days.forEach((d, i) => { if (!/[a-záéíóúñ]/i.test(d.name)) d.name = 'Día ' + (i + 1); });
   const free = [1, 2, 3, 4, 5, 6, 0].filter(w => !days.some(d => d.wd === w));

@@ -1,0 +1,9 @@
+Ejercicio | Peso | Reps | RIR | Descanso
+Prensa 45° | 190 | 12 | 2 | 150
+Prensa 45° | 190 | 12 | 1 | 150
+Prensa 45° | 190 | 12 | 0 | 150
+Sentadilla Hack | 65 | 10 | 2 | 150
+Sentadilla Hack | 65 | 10 | 1 | 150
+Sentadilla Hack | 65 | 10 | 0 | 150
+Hip Thrust | 45 | 10 | 2 | 120
+Curl Femoral Tumbado | 25 | 12 | 2 | 90
