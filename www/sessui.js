@@ -115,7 +115,8 @@ markSet = function (i, j, v, k) {
 /* ---------- Ajustes → Música y sonidos ---------- */
 const _fsCardSu = fsCard;
 fsCard = function () {
-  const h = _fsCardSu(), S = state.settings, sw = (act, on, t, sub) => `<div class="row su-set"><span class="grow"><b>${t}</b><br><span class="muted" style="font-size:12.5px">${sub}</span></span>
+  const h = _fsCardSu(); if (isWatch()) return h;   // el reloj no suena al marcar: sin estos interruptores
+  const S = state.settings, sw = (act, on, t, sub) => `<div class="row su-set"><span class="grow"><b>${t}</b><br><span class="muted" style="font-size:12.5px">${sub}</span></span>
       <button type="button" class="switch ${on ? 'on' : ''}" style="border:0;cursor:pointer;margin-left:12px" data-act="${act}" role="switch" aria-checked="${on}" aria-label="${t}"><i></i></button></div>`;
   const add = sw('su-snd', S.setSound !== false, 'Sonido al marcar serie', 'Un clic corto; al cerrar el ejercicio, un ding. Respeta el modo silencio.') + sw('su-vib', S.setVibe !== false, 'Vibración al marcar serie', 'Una vibración breve en cada serie.');
   const at = h.indexOf('<div class="field">'); return at < 0 ? h : h.slice(0, at) + add + h.slice(at);

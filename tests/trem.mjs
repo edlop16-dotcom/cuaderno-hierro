@@ -42,7 +42,7 @@ async function open(dir, { owner, watch, time = '2026-10-19T08:00:30' } = {}) {
 const shot = async (p, n) => { if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: true }); await p.screenshot({ path: path.join(SHOTS, n + '.png') }); } };
 const form = p => p.evaluate(() => ({
   title: ($('#sheet h2') || {}).textContent, kind: ($('#rm-kind') || {}).value, hab: ($('#rm-hab') || {}).value,
-  habShown: !!$('#rm-hab-f') && !$('#rm-hab-f').hidden, again: ($('#rm-again') || {}).value, againShown: !!$('#rm-again-f') && !$('#rm-again-f').hidden,
+  habShown: !!$('#rm-hab-f') && !$('#rm-hab-f').hidden, again: ($('#rm-again') || {}).value, free: !!$('#hf-ag-n') && !!$('#hf-sz-n'), againShown: !!$('#rm-again-f') && !$('#rm-again-f').hidden,
   label: ($('#rm-label') || {}).value, time: ($('#rm-time') || {}).value, opts: Array.prototype.map.call(document.querySelectorAll('#rm-again option'), o => o.textContent),
 }));
 
@@ -61,8 +61,8 @@ console.log('A. Dueño: editar su recordatorio viejo de creatina en Ajustes');
   ok(F.kind === 'hab' && F.hab === 'crea' && F.habShown, 'se muestra como Hábito · Creatina');
   ok(F.againShown && F.again === '0', 'aparece "Si lo cierras con ✕" (una vez al día)');
   ok(F.label === 'Toma tu creatina (5 g)' && F.time === '08:00', 'conserva el texto y la hora');
-  ok(F.opts.join('|') === 'No volver a avisar hoy (una vez al día)|Repetir cada 30 min hasta que lo marques|Repetir cada 1 hora hasta que lo marques|Repetir cada 2 horas hasta que lo marques|Repetir cada 3 horas hasta que lo marques|Repetir cada 4 horas hasta que lo marques', 'opciones "Repetir cada …"');
-  await p.selectOption('#rm-again', '120');
+  ok(F.free, 'tiempos libres: "Repetir cada…" y "Aplazar" (Tanda F)');
+  await p.click('#sheet [data-hf="ag-on"]'); await p.fill('#hf-ag-n', '2'); await p.selectOption('#hf-ag-u', '60');
   await shot(p, 'a1-editar-creatina');
   await p.click('#f-rem button[type="submit"]'); await p.waitForTimeout(300);
   const R = await p.evaluate(i => state.reminders[i], i);
@@ -73,16 +73,15 @@ console.log('A. Dueño: editar su recordatorio viejo de creatina en Ajustes');
   F = await form(p);
   ok(F.again === '120' && F.kind === 'hab', 'al volver a editar sigue "Repetir cada 2 horas"');
   await p.evaluate(() => closeSheet());
-  console.log('B. Dueño: la campanita de "Tus hábitos"');
+  console.log('B. Dueño: el ⚙ de "Tus hábitos" (Tanda F)');
   await p.evaluate(() => habManage());
-  await p.click('#sheet [data-act="ha-rem"][data-k="crea"]'); await p.waitForSelector('#f-rem');
-  F = await form(p);
-  ok(F.title === 'Editar recordatorio' && F.hab === 'crea' && F.again === '120', 'creatina: abre el que ya existe para editarlo');
-  await p.evaluate(() => closeSheet()); await p.evaluate(() => habManage());
-  await p.click('#sheet [data-act="ha-rem"][data-k="prot"]'); await p.waitForSelector('#f-rem');
-  F = await form(p);
-  ok(F.title === 'Nuevo recordatorio' && F.kind === 'hab' && F.hab === 'prot' && F.againShown, 'proteína (sin recordatorio): abre uno nuevo');
-  await p.evaluate(() => closeSheet());
+  ok(await p.locator('#sheet [data-act="ha-rem"]').count() === 0, 'sin campanita: ahora es ⚙');
+  await p.click('#sheet [data-hf="open"][data-k="crea"]'); await p.waitForTimeout(200);
+  ok(await p.evaluate(() => !!(state.hF && state.hF.rem && state.hF.again === 120)) && await p.inputValue('#hf-ag-n') === '2', 'creatina: abre su recordatorio (repite cada 2 h)');
+  await p.click('#sheet [data-hf="back"]'); await p.waitForTimeout(200);
+  await p.click('#sheet [data-hf="open"][data-k="prot"]'); await p.waitForTimeout(200);
+  ok(await p.evaluate(() => !!state.hF && !state.hF.rem), 'proteína (sin recordatorio): "Recordarme" apagado');
+  await p.evaluate(() => { state.hF = null; closeSheet(); });
   console.log('C. Dueño: la ✕ repite varias veces (pantalla dentro de la app)');
   await p.evaluate(() => { state.tab = 'train'; render(); });
   await p.clock.runFor(60000);   // 08:01:30: sale el de las 08:00
@@ -109,21 +108,22 @@ console.log('A. Dueño: editar su recordatorio viejo de creatina en Ajustes');
   ok(!p.errs.length, 'sin errores de JS ' + p.errs.join(' | '));
   await p.done();
 }
-console.log('D. Usuario nuevo: campanita crea uno nuevo y luego lo edita');
+console.log('D. Usuario nuevo: el ⚙ crea uno nuevo y luego lo edita');
 {
   const p = await open(DIR, {});
   ok(await p.evaluate(() => pubUser() && !state.reminders.some(r => habKeyOf(r))), 'usuario público sin recordatorios de hábitos');
   const k = await p.evaluate(() => habList().filter(h => !h.hidden)[0].k);
   await p.evaluate(() => habManage());
-  await p.click(`#sheet [data-act="ha-rem"][data-k="${k}"]`); await p.waitForSelector('#f-rem');
-  let F = await form(p);
-  ok(F.title === 'Nuevo recordatorio' && F.kind === 'hab' && F.hab === k && F.againShown, `nuevo para "${k}" con la opción de la ✕`);
-  await p.selectOption('#rm-again', '30');
-  await p.click('#f-rem button[type="submit"]'); await p.waitForTimeout(300);
+  await p.click(`#sheet [data-hf="open"][data-k="${k}"]`); await p.waitForTimeout(200);
+  ok(await p.evaluate(() => !!state.hF && !state.hF.rem), `"${k}" sin recordatorio: "Recordarme" apagado`);
+  await p.click('#sheet [data-hf="rem"]'); await p.waitForTimeout(150);
+  await p.click('#sheet [data-hf="ag-on"]'); await p.waitForTimeout(150);
+  await p.click('#sheet [data-hf="ag-q"][data-v="30"]'); await p.waitForTimeout(150);
+  await p.click('#sheet [data-hf="save"]'); await p.waitForTimeout(300);
   await p.evaluate(() => habManage());
-  await p.click(`#sheet [data-act="ha-rem"][data-k="${k}"]`); await p.waitForSelector('#f-rem');
-  F = await form(p);
-  ok(F.title === 'Editar recordatorio' && F.again === '30', 'la campanita ahora abre ese para editarlo (cada 30 min)');
+  await p.click(`#sheet [data-hf="open"][data-k="${k}"]`); await p.waitForTimeout(200);
+  ok(await p.evaluate(() => !!(state.hF && state.hF.rem && state.hF.again === 30)), 'el ⚙ ahora abre ese para editarlo (cada 30 min)');
+  await p.click('#sheet [data-hf="save"]'); await p.waitForTimeout(300);
   ok(await p.evaluate(k => state.reminders.filter(r => habKeyOf(r) === k).length, k) === 1, 'uno solo');
   ok(!p.errs.length, 'sin errores de JS ' + p.errs.join(' | '));
   await p.done();

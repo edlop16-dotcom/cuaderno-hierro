@@ -154,7 +154,7 @@ public class HabitAlarms {
             .setContentIntent(fullPI)
             .setFullScreenIntent(fullPI, true)
             .addAction(0, "✓ Hecho", actionPI(c, A_DONE, id, item))
-            .addAction(0, "Aplazar 15 min", actionPI(c, A_SNOOZE, id, item))
+            .addAction(0, "Aplazar " + againText(snzOf(item)), actionPI(c, A_SNOOZE, id, item))
             .setDeleteIntent(actionPI(c, A_DISMISS, id, item));   // deslizar la notificación = ✕
         NotificationManager nm = (NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm != null) nm.notify(id, b.build());
@@ -339,15 +339,16 @@ public class HabitAlarms {
         android.widget.TextView plus = text(c, "+", 36, false);
         plus.setContentDescription("Más minutos");
         plus.setLayoutParams(new android.widget.LinearLayout.LayoutParams(dp(c, 56), dp(c, 56)));
-        final int[] snz = { 15 };
-        final android.widget.TextView snoozeBtn = text(c, "Aplazar 15 min", 18, true);
+        final int[] snz = { snzOf(item) };
+        final android.widget.TextView snoozeBtn = text(c, "Aplazar " + againText(snz[0]), 18, true);
         android.graphics.drawable.GradientDrawable pill = new android.graphics.drawable.GradientDrawable();
         pill.setColor(0x33FFFFFF); pill.setCornerRadius(dp(c, 40));
         snoozeBtn.setBackground(pill);
         snoozeBtn.setPadding(dp(c, 22), dp(c, 14), dp(c, 22), dp(c, 14));
-        minus.setOnClickListener(v -> { snz[0] = Math.max(5, snz[0] - 5); snoozeBtn.setText("Aplazar " + snz[0] + " min"); });
-        plus.setOnClickListener(v -> { snz[0] = Math.min(120, snz[0] + 5); snoozeBtn.setText("Aplazar " + snz[0] + " min"); });
-        snoozeBtn.setOnClickListener(v -> { snooze(c, item, snz[0]); toast(c, "Te lo recuerdo en " + snz[0] + " min"); close.run(); });
+        /* Solo esa vez: de 1 en 1 hasta 10 min y luego de 5 en 5 (de 1 min a 12 h) */
+        minus.setOnClickListener(v -> { snz[0] = snz[0] <= 10 ? Math.max(1, snz[0] - 1) : snz[0] - 5; snoozeBtn.setText("Aplazar " + againText(snz[0])); });
+        plus.setOnClickListener(v -> { snz[0] = snz[0] < 10 ? snz[0] + 1 : Math.min(720, snz[0] + 5); snoozeBtn.setText("Aplazar " + againText(snz[0])); });
+        snoozeBtn.setOnClickListener(v -> { snooze(c, item, snz[0]); toast(c, "Te lo recuerdo en " + againText(snz[0])); close.run(); });
         sn.addView(minus);
         android.widget.LinearLayout.LayoutParams mid = new android.widget.LinearLayout.LayoutParams(0, -2, 1f);
         mid.leftMargin = dp(c, 10); mid.rightMargin = dp(c, 10);
@@ -433,7 +434,10 @@ public class HabitAlarms {
         snooze(c, o, min);
         return true;
     }
-    static String againText(int min) { return min >= 60 ? (min / 60) + (min == 60 ? " hora" : " horas") : min + " min"; }
+    /** "7 min", "1 hora", "1 h 30 min", "2 horas" */
+    static String againText(int min) { if (min < 60) return min + " min"; int h = min / 60, m = min % 60; return m > 0 ? h + " h " + m + " min" : h + (h == 1 ? " hora" : " horas"); }
+    /** Tiempo de Aplazar de ese recordatorio (minutos; 15 si no tiene), entre 1 min y 12 h */
+    static int snzOf(JSONObject o) { int m = o.optInt("snz", 15); return Math.max(1, Math.min(720, m <= 0 ? 15 : m)); }
 
     static void snooze(Context c, JSONObject o, int min) {
         dismiss(c, o.optInt("id"));

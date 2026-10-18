@@ -1987,3 +1987,16 @@ body:not(.watch) .my-phbtn{cursor:pointer}
 body:not(.watch) .my-sim{border-color:var(--accent);flex-shrink:0}
 body:not(.watch) .my-new{margin-top:6px}
 body:not(.watch) .my-hero{width:100%;max-height:200px;object-fit:cover;border-radius:14px}
+
+/* ---------- Hábito + recordatorio en un formulario (habform.js) · solo teléfono ---------- */
+body:not(.watch) .hf-row{min-height:52px;gap:12px;flex-shrink:0}
+body:not(.watch) .hf-rem{display:flex;flex-direction:column;gap:12px;flex-shrink:0}
+body:not(.watch) .hf-trow{gap:8px;margin-bottom:6px}
+body:not(.watch) .hf-trow input{flex:1;min-height:44px}
+body:not(.watch) .hf-seg,body:not(.watch) .hf-ring{display:flex}
+body:not(.watch) .hf-seg button,body:not(.watch) .hf-ring button{flex:1;min-height:44px;font-size:13px}
+body:not(.watch) .hf-time{display:flex;gap:8px;margin-top:6px}
+body:not(.watch) .hf-time input{flex:1;min-height:44px;text-align:center;font-size:18px}
+body:not(.watch) .hf-time select{width:90px;min-height:44px}
+body:not(.watch) .hf-quick{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+body:not(.watch) .hf-ag small,body:not(.watch) .hf-sz small{display:block;font-size:12px;margin-top:4px}

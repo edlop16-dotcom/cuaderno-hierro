@@ -59,7 +59,10 @@ async function gearCheck(p, who) {
   ok(g && g.gear && !g.bell, `${who}: "Hábitos de hoy" muestra la rueda de ajustes en vez de la campana`);
   ok(g && g.label === 'Ajustes de los recordatorios', `${who}: dice "Ajustes de los recordatorios"`);
   ok(g && g.cal, `${who}: el calendario sigue igual`);
-  await p.click('#habits [data-act="hab-rem"]'); await p.waitForTimeout(900);
+  /* Tanda F: la rueda abre "Tus hábitos" (con ⚙ por hábito) y desde ahí "Ajustes de los recordatorios" */
+  await p.click('#habits [data-act="hab-rem"]'); await p.waitForTimeout(300);
+  ok(await p.locator('#sheet [data-hf="open"]').count() > 0, `${who}: abre "Tus hábitos" con ⚙ por hábito`);
+  await p.click('#sheet [data-hf="remset"]'); await p.waitForTimeout(900);
   const r = await p.evaluate(() => { const h = [...document.querySelectorAll('#app h3')].find(x => /Recordatorios/.test(x.textContent)); const b = h && h.getBoundingClientRect(); return { tab: state.tab, seen: !!b && b.top >= 0 && b.top < innerHeight && b.height > 0 }; });
   ok(r.tab === 'settings' && r.seen, `${who}: al tocarla se abren los ajustes de Recordatorios, a la vista`);
 }
