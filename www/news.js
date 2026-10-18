@@ -5,8 +5,19 @@
    Para la próxima versión: cambiar NEWS_KEY y la lista NEWS.
    No sale en el reloj, en una instalación nueva (tiene la bienvenida) ni durante una sesión.
    ========================================================================== */
-const NEWS_KEY = 'n5';   // se guarda en cdh.newsSeen (local: el celular y el reloj van por separado). n1 = 1.0.39, n2 = nueva organización (tanda 1), n3 = tanda 2, n4 = Próxima sesión (Coach e importada) y la ✕ de los hábitos, n5 = recordatorios en toda la pantalla (también agua) y últimos avisos
+const NEWS_KEY = 'n6';   // se guarda en cdh.newsSeen (local: el celular y el reloj van por separado). n1 = 1.0.39, n2 = nueva organización (tanda 1), n3 = tanda 2, n4 = Próxima sesión (Coach e importada) y la ✕ de los hábitos, n5 = recordatorios en toda la pantalla (también agua) y últimos avisos, n6 = editar sesión, catálogo, alternativas, pantalla del ejercicio, exportar a la IA, mis ejercicios, hábitos con ⚙ y fotos (tandas 0 y A-G)
 const NEWS = [
+  ['square-pen', 'Edita una sesión terminada', 'Toca un día de tu racha y luego Editar sesión: corrige pesos, reps, series o ejercicios. Récords, progreso y coach se recalculan solos.', 'sed'],
+  ['book-open', '414 ejercicios y búsqueda', 'La Biblioteca y el selector buscan por nombre, músculo o máquina, y filtran por músculo, tipo de equipo y máquina concreta.', 'guide', 'Ver Biblioteca'],
+  ['refresh-cw', '¿No está esa máquina?', 'En la sesión, Reemplazar te da alternativas con el peso ya convertido. Marca el equipo que no hay en tu gimnasio y el coach lo respeta.', 'gymno'],
+  ['timer', 'Nueva pantalla del ejercicio', 'Cronómetro, tabla Serie · Anterior · Kg · Reps, + Añadir serie, descanso abajo con −15 / +15 y un sonido al marcar cada serie (se apaga en Música y sonidos).', 'fs', 'Sonidos'],
+  ['download', 'Exporta todo a tu IA', 'En Progreso y Perfil mandas tus datos, plan y sesiones a tu IA como coach. Su recomendación se importa y entrenas con ella con Entrenar ahora.', 'aix'],
+  ['plus', 'Crea tus ejercicios', 'Con + Crear ejercicio en la Biblioteca eliges músculo, equipo y una foto si quieres. Cuentan en el coach, el mapa y tus récords.', 'myex', 'Crear'],
+  ['settings', 'Hábitos con ⚙', 'En Tus hábitos, ⚙ abre el hábito con su recordatorio en una sola pantalla. Repetir con la ✕ y Aplazar, de 1 min a 12 h.', 'habf', 'Abrir'],
+  ['camera', '195 ejercicios con foto', 'Los ejercicios nuevos traen foto real. Toca uno, luego Ver técnica, y Ver esquema del movimiento para la figura.', 'guide', 'Ver'],
+];
+/* Quien no vio la n5 la ve también */
+const NEWS_N5 = [
   ['bell', 'Recordatorios en toda la pantalla', 'Ahora también los de agua: aparecen como un despertador, con ✓, ✕ y aplazar. En cada recordatorio eliges si sale en toda la pantalla o como notificación normal.', 'rem', 'Ver'],
   ['droplet', 'Agua con un toque', 'En el recordatorio de agua, ✓ suma un vaso de 250 ml, aunque la app esté cerrada.', null],
   ['shield', 'Revisa los permisos', 'En Ajustes → Recordatorios ves si falta algún permiso para que salgan en toda la pantalla, y en «Últimos avisos» qué pasó con cada uno y por qué.', 'remperm', 'Revisar'],
@@ -28,8 +39,8 @@ const NEWS_N3 = [
 const NEWS_PUB = ['target', 'Peso inicial sugerido y misiones', 'Las rutinas nuevas llegan con un peso prudente para empezar, y tienes misiones de inicio en Hoy.', null];
 
 function newsSheet(all) {
-  const seen = LS.get('newsSeen', ''), n4 = all || ['n4', NEWS_KEY].indexOf(seen) < 0, old = all || ['n3', 'n4', NEWS_KEY].indexOf(seen) < 0;
-  const list = NEWS.concat(n4 ? NEWS_N4 : [], old ? NEWS_N3 : [], pubUser() ? [NEWS_PUB] : []);
+  const seen = LS.get('newsSeen', ''), n5 = all || ['n5', NEWS_KEY].indexOf(seen) < 0, n4 = all || ['n4', 'n5', NEWS_KEY].indexOf(seen) < 0, old = all || ['n3', 'n4', 'n5', NEWS_KEY].indexOf(seen) < 0;
+  const list = NEWS.concat(n5 ? NEWS_N5 : [], n4 ? NEWS_N4 : [], old ? NEWS_N3 : [], pubUser() ? [NEWS_PUB] : []);
   openSheet(`<div class="row"><span class="nw-ic">${ic('sparkles', 22)}</span><h2 class="grow">Lo nuevo en Forja</h2><button class="icon-btn" data-act="sheet-close" aria-label="Cerrar">${ic('x', 18)}</button></div>
     <div class="muted nw-sub">Toca <b>Ver</b> para ir a cada función. Algunas salen en su momento: el reporte el viernes y el resumen al terminar una sesión.</div>
     <div class="nw-list">${list.map(([icon, t, d, k, b]) => `<div class="nw-it"><span class="nw-i">${ic(icon, 18)}</span><span class="grow"><b>${t}</b><small>${d}</small></span>${k ? `<button type="button" class="btn small" data-nw="${k}">${b || 'Ver'}</button>` : ''}</div>`).join('')}</div>
@@ -68,6 +79,11 @@ document.addEventListener('click', ev => {
   if (k === 'hab') return nwGo('settings', null, '.ha-set', 'Abre un recordatorio de hábito y elige "Si lo cierras con ✕".');
   if (k === 'nsset') return nwGo('settings', null, '.ns-set');
   if (k === 'rem') return nwGo('settings', null, '.ha-set', 'Los que dicen «Pantalla completa» salen como despertador. Toca Editar para cambiarlo.');
+  if (k === 'sed') return nwGo('train', null, '.streak-card', 'Toca un día con llama en tu racha y luego «Editar sesión».');
+  if (k === 'gymno') return nwGo('train', null, null, 'Toca tu gimnasio arriba («¿Dónde entrenas hoy?») y luego «Equipo que no hay».');
+  if (k === 'aix') return nwGo('progress', 'semana', '.aix-row');
+  if (k === 'myex') return nwGo('guide', null, '.my-create');
+  if (k === 'habf') { closeSheet(); return typeof habManage === 'function' && habManage(); }
   if (k === 'remperm') return nwGo('settings', null, '.ha-set', 'Revisa que los permisos digan «Listo». Si alguno dice «Permitir», tócalo.');
 }, true);
 
