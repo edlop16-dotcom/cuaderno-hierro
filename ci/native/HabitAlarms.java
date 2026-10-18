@@ -154,7 +154,7 @@ public class HabitAlarms {
             .setContentIntent(fullPI)
             .setFullScreenIntent(fullPI, true)
             .addAction(0, "✓ Hecho", actionPI(c, A_DONE, id, item))
-            .addAction(0, "Aplazar " + againText(snzOf(item)), actionPI(c, A_SNOOZE, id, item))
+            .addAction(0, "Aplazar " + againText(snzOf(o)), actionPI(c, A_SNOOZE, id, item))
             .setDeleteIntent(actionPI(c, A_DISMISS, id, item));   // deslizar la notificación = ✕
         NotificationManager nm = (NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm != null) nm.notify(id, b.build());
