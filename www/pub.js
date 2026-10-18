@@ -134,9 +134,10 @@ function genPlan(o, name) {
 const pbLb = () => state.settings.unit === 'lb';
 function pbProf() { return state.settings.prof || null; }
 function applyProf() {
-  const p = pbProf(); if (!p) return;
-  Object.assign(HISTORY, { name: p.name || HISTORY.name, age: +p.age || HISTORY.age, goal: (PB_GOALS[p.goal] || [HISTORY.goal])[0], since: PB_SINCE[p.exp] || HISTORY.since });
-  const b = body(); if (b.h) HISTORY.cm = b.h; if (b.w.length) HISTORY.kg = r1(curWeight()); else if (p.kg) HISTORY.kg = +p.kg;
+  const p = pbProf() || {}, b = body();
+  Object.assign(HISTORY, { name: p.name || '', age: +p.age || null, goal: (PB_GOALS[p.goal] || [''])[0], since: p.exp != null ? PB_SINCE[p.exp] || '' : '', cm: +b.h || +p.cm || null, kg: curWeight() });
+  if (!b.h && p.cm) b.h = +p.cm;
+  if (!b.sex && p.sex) b.sex = p.sex;
 }
 /* Cuenta del dueño: si por sincronización llegan valores de una instalación nueva (pub, goals vacíos,
    rutina de inicio), se corrigen en el lugar y sin recargar. `pub` se pone en 0 (no se borra): un ajuste
@@ -158,8 +159,8 @@ const pb = { step: 0, o: null, edit: false };
 const PB_STEPS = 9;
 function pbStart(step, edit) {
   const p = pbProf() || {}, b = body();
-  pb.o = Object.assign({ name: p.name || (pubUser() ? '' : HISTORY.name), goal: null, exp: null, days: 3, mins: 60, equip: 'gym', age: '', sex: b.sex || 'm', cm: state.settings.pub && !p.cm ? '' : b.h, kg: state.settings.pub && !p.kg ? '' : r1(curWeight()), unit: state.settings.unit || 'kg', inj: [], parq: [], preg: false }, JSON.parse(JSON.stringify(p)));
-  if (!pubUser() && !p.age) pb.o.age = HISTORY.age;
+  pb.o = Object.assign({ name: p.name || '', goal: null, exp: null, days: 3, mins: 60, equip: 'gym', age: '', sex: b.sex || 'm', cm: b.h || '', kg: curWeight() ? r1(curWeight()) : '', unit: state.settings.unit || 'kg', inj: [], parq: [], preg: false }, JSON.parse(JSON.stringify(p)));
+  if (!p.age) pb.o.age = '';
   const o = pb.o;
   o.cmIn = o.cm === '' || o.cm == null ? '' : String(o.cm).replace('.', ',');
   o.kgIn = o.kg === '' || o.kg == null ? '' : String(o.unit === 'lb' ? r1(o.kg * PB_LB) : o.kg).replace('.', ',');

@@ -10,7 +10,7 @@ App Android de entrenamiento en español: rutinas, registro de series, progresi�
 
 ## Desarrollo
 
-Los cambios grandes se trabajan en una rama aparte y pasan a `beta` solo con aprobación explícita. Esta limpieza usa `limpieza`. No compilar, publicar ni subir a `main` sin la instrucción explícita «compila». Todos los commits de esta limpieza usan `[skip ci]` para evitar la compilación automática de beta.
+Los cambios grandes se trabajan en una rama aparte y pasan a `beta` solo con aprobación explícita. No compilar, publicar ni subir a `main` sin la instrucción explícita «compila». Los commits que deban evitar compilaciones automáticas usan `[skip ci]`; revisar los workflows antes de subir una rama.
 
 Consulta `CLAUDE.md` para las reglas y arquitectura. Las pruebas usan datos ficticios. Los datos de cada cuenta se leen del almacenamiento local y de su sincronización.
 

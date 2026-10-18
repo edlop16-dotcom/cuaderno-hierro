@@ -141,7 +141,8 @@ console.log('C. Usuario nuevo');
   if (OLD) {
     const o = await open(OLD); report(o.B, 'antes'); counts.nuevoAntes = o.B.renders;
     const d = await pixDiff(now, await shot(o, 'c-nuevo-antes', 1));
-    ok(d === 0, 'pantalla final idéntica a la versión anterior' + (d ? ` (${d} píxeles distintos)` : ''));
+    ok(await q.evaluate(() => !HISTORY.name && !HISTORY.age && !HISTORY.kg && !HISTORY.cm && !/Atleta|NaN|Infinity/.test(document.getElementById('app').innerText)), 'usuario nuevo: datos vacíos y saludo neutro (cambio esperado respecto a la referencia)');
+    console.log(`     usuario nuevo: ${d} píxeles distintos al retirar los datos de muestra`);
     await o.done();
   }
   await q.done();

@@ -29,7 +29,8 @@ function lvBest(name, days) {
 }
 function lvOf(name, v) {
   const std = lvStd(name); if (!std || !v) return null;
-  const bw = curWeight(), ratio = v / bw;
+  const bw = curWeight(); if (!bw) return null;
+  const ratio = v / bw;
   let i = -1; while (i + 1 < std.length && ratio >= std[i + 1]) i++;
   if (i < 0) return { i: -1, name: 'Sin rango', pct: ratio / std[0], next: std[0] * bw - v, ratio, std, bw };
   const lo = std[i], hi = i + 1 < std.length ? std[i + 1] : std[i] * 1.25, f = Math.min(0.999, (ratio - lo) / (hi - lo));
@@ -40,7 +41,7 @@ function lvOf(name, v) {
 function lvBadge(L, small) { return L ? `<span class="lvb ${small ? 'sm' : ''}" style="--lc:${L.i >= 0 ? L.color : '#5d6579'}">${ic(L.i >= 3 ? 'crown' : 'medal', small ? 12 : 14)} ${L.name}</span>` : ''; }
 
 function levelCard() {
-  const names = Object.keys(LV_STD).map(n => ({ n, b: lvBest(n) })).filter(x => x.b).map(x => Object.assign(x, { L: lvOf(x.n, x.b.v) })).sort((a, b) => (b.L.score || -1) - (a.L.score || -1));
+  const names = Object.keys(LV_STD).map(n => ({ n, b: lvBest(n) })).filter(x => x.b).map(x => Object.assign(x, { L: lvOf(x.n, x.b.v) })).filter(x => x.L).sort((a, b) => (b.L.score || -1) - (a.L.score || -1));
   if (!names.length) return '';
   const avg = names.reduce((a, x) => a + Math.max(0, x.L.score || 0), 0) / names.length, oi = Math.min(4, Math.floor(avg / 3)), od = Math.min(2, Math.floor(avg - oi * 3));
   return `<div class="card lv-card">

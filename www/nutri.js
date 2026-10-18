@@ -16,12 +16,13 @@ const PROT_FOODS = [
 ];
 function nutri() { const n = state.settings.nutri = state.settings.nutri || {}; if (!n.goal) n.goal = 'recomp'; if (!n.act) n.act = 1.55; return n; }
 function nutriCalc() {
-  const n = nutri(), b = body(), kg = curWeight(), age = HISTORY.age || 35;
+  const n = nutri(), b = body(), kg = curWeight(), age = +(state.settings.prof || {}).age || null;
+  if (!kg || !age || !b.h || !b.sex) return { complete: false, kg, bmr: null, tdee: null, kcal: null, prot: kg ? Math.round(kg * NU_GOALS[n.goal][2] / 5) * 5 : 0, fat: null, carbs: null };
   const bmr = 10 * kg + 6.25 * b.h - 5 * age + (b.sex === 'f' ? -161 : 5);
   const tdee = bmr * n.act, g = NU_GOALS[n.goal];
   const kcal = Math.round((tdee + g[1]) / 10) * 10, prot = Math.round(kg * g[2] / 5) * 5, fat = Math.round(kg * 0.8 / 5) * 5;
   const carbs = Math.max(0, Math.round((kcal - prot * 4 - fat * 9) / 4 / 5) * 5);
-  return { kg, bmr, tdee: Math.round(tdee / 10) * 10, kcal, prot, fat, carbs };
+  return { complete: true, kg, bmr, tdee: Math.round(tdee / 10) * 10, kcal, prot, fat, carbs };
 }
 const protGoal = () => nutriCalc().prot;
 function protOf(day) {
@@ -31,9 +32,9 @@ function protOf(day) {
 
 /* Fila en "Hábitos de hoy" */
 function protRow() {
-  const g = protOf(today()), goal = protGoal(), pct = Math.min(1, g / goal);
+  const g = protOf(today()), goal = protGoal(), pct = goal ? Math.min(1, g / goal) : 0;
   return `<div class="hab-water hab-prot"><span class="hab-ic p">${ic('beef', 18)}</span>
-    <div class="grow" style="min-width:0"><div class="row" style="justify-content:space-between"><b>Proteína</b><span class="num muted">${g} / ${goal} g</span></div><div class="wbar2 p"><i style="width:${(pct * 100).toFixed(0)}%"></i></div></div>
+    <div class="grow" style="min-width:0"><div class="row" style="justify-content:space-between"><b>Proteína</b><span class="num muted">${goal ? g + ' / ' + goal : g} g</span></div><div class="wbar2 p"><i style="width:${(pct * 100).toFixed(0)}%"></i></div></div>
     <button class="wbtn" data-act="pg-open">+ Comida</button></div>`;
 }
 const _habitCardN = habitCard;
@@ -43,8 +44,8 @@ dailyPanel = habitCard;
 function protSheet() {
   const t = today(), list = t.pg || [], g = protOf(t), goal = protGoal();
   openSheet(`<div class="row"><h2 class="grow">Proteína de hoy</h2><button class="icon-btn" data-act="sheet-close" aria-label="Cerrar">${ic('x', 18)}</button></div>
-    <div class="pg-sum"><div><b class="num">${g}</b><span> / ${goal} g</span></div><div class="wbar2 p"><i style="width:${Math.min(100, g / goal * 100).toFixed(0)}%"></i></div>
-      <small class="muted">${g >= goal ? '¡Meta cumplida! 💪' : `Te faltan ${goal - g} g. Reparte en 3-4 comidas de 30-40 g.`}</small></div>
+    <div class="pg-sum"><div><b class="num">${g}</b><span>${goal ? ' / ' + goal : ''} g</span></div><div class="wbar2 p"><i style="width:${goal ? Math.min(100, g / goal * 100).toFixed(0) : 0}%"></i></div>
+      <small class="muted">${!goal ? 'Completa Tus datos para calcular tu meta.' : g >= goal ? '¡Meta cumplida! 💪' : `Te faltan ${goal - g} g. Reparte en 3-4 comidas de 30-40 g.`}</small></div>
     <div class="pg-grid">${PROT_FOODS.map(([k, n, sub, gr]) => `<button class="pg" data-act="pg-add" data-k="${k}" data-g="${gr}"><b>${n}</b><small>${sub ? sub + ' · ' : ''}${gr} g</small></button>`).join('')}</div>
     <form class="row" id="f-pg" style="gap:8px"><input id="pg-g" inputmode="numeric" placeholder="Otra cantidad (g)" aria-label="Gramos de proteína"><button class="btn" type="submit">Sumar</button></form>
     ${list.length || t.prot ? `<div class="label">Hoy registraste</div><div class="pg-list">${t.prot && !list.some(x => x.k === 'batido') ? `<span class="chip">Batido (hábito) · 24 g</span>` : ''}${list.map((x, i) => `<span class="chip">${esc((PROT_FOODS.find(f => f[0] === x.k) || [0, 'Otro'])[1])} · ${x.g} g <button class="pg-x" data-act="pg-del" data-i="${i}" aria-label="Quitar">${ic('x', 12)}</button></span>`).join('')}</div>` : ''}
@@ -75,6 +76,7 @@ document.addEventListener('submit', ev => {
 /* Tarjeta en Perfil → Cuerpo */
 function nutriCard() {
   const n = nutri(), c = nutriCalc(), g = NU_GOALS[n.goal];
+  if (!c.complete) return `<div class="card bd-card nu-card"><h3>${ic('beef', 17)} Calorías y proteína</h3><div class="muted">Completa Tus datos y registra tu peso para calcular recomendaciones de nutrición.</div><button class="btn block" data-act="bd-data">Completar Tus datos</button></div>`;
   const days = []; for (let i = 6; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i); days.push(d); }
   const vals = days.map(d => protOf(state.daily[dk(d)])), mx = Math.max(c.prot, Math.max.apply(null, vals)) || 1;
   const hit = vals.filter(v => v >= c.prot * 0.9).length;
@@ -94,5 +96,5 @@ const _vBodyN = vBody;
 vBody = function () { const h = _vBodyN(), k = h.indexOf('<div class="card bd-card" id="bd-photos">'); return k < 0 ? h + nutriCard() : h.slice(0, k) + nutriCard() + h.slice(k); };
 
 /* El texto para Claude incluye tu objetivo */
-if (typeof claudePrompt === 'function') { const _cpN = claudePrompt; claudePrompt = function () { const c = nutriCalc(); return _cpN() + `\nNutrición: objetivo ${NU_GOALS[nutri().goal][0].toLowerCase()}, ${c.kcal} kcal y ${c.prot} g de proteína al día; proteína registrada hoy: ${protOf(today())} g.`; }; }
+if (typeof claudePrompt === 'function') { const _cpN = claudePrompt; claudePrompt = function () { const c = nutriCalc(); return _cpN() + (c.complete ? `\nNutrición: objetivo ${NU_GOALS[nutri().goal][0].toLowerCase()}, ${c.kcal} kcal y ${c.prot} g de proteína al día; proteína registrada hoy: ${protOf(today())} g.` : ''); }; }
 bootRender();

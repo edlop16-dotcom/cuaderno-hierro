@@ -18,8 +18,7 @@ function ddGoal() {
   const p = state.settings.prof || {};
   if (p.goal && typeof PB_GOALS !== 'undefined' && PB_GOALS[p.goal]) return PB_GOALS[p.goal][0];
   if (HISTORY.goal) return HISTORY.goal;
-  const g = typeof goalNow === 'function' ? goalNow() : '';
-  return (typeof PB_GOALS !== 'undefined' && PB_GOALS[g] && PB_GOALS[g][0]) || '';
+  return '';
 }
 function ddKindLine(s, noGoal) {
   const k = sKind(s), t = s.planId === 'quick' ? 'Entreno rápido' : (DD_KIND[k] || KINDS[k] || ''), g = noGoal ? '' : ddGoal();

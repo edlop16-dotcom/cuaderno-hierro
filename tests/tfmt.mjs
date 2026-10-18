@@ -118,6 +118,16 @@ console.log('A. Dueño: ida y vuelta');
     seen = await importReco(p, D[D.length - 1], txt); G = await iaOf(p, ids);
     ok(seen.length === R.length && R.every((d, i) => JSON.stringify(G[i]) === JSON.stringify(wantIa(d))), `${lbl}: igual (${seen.length} días)`);
   }
+  /* Un bloque con tres días SIN Descanso: conservar tanto filas por serie como listas RIR. */
+  const four = '```\n' + R.map(d => block(d).split('\n').map(line => line.includes('|') ? line.split('|').slice(0, 4).join('|').trim() : line).join('\n')).join('\n\n') + '\n```';
+  const fourLists = '```\n' + R.map(d => `${d.WD}: ${d.name}\nEjercicio | Peso | Reps | RIR\n` + d.ex.slice(0, 2).map((n, i) => `${n} | ${SETS[i][0][0]} | ${SETS[i][0][1]} | ${SETS[i].map(t => t[2]).join(',')}`).join('\n')).join('\n\n') + '\n```';
+  const withoutRest = rows => rows && rows.map(e => ({ name: e.name, sets: e.sets.map(t => t.slice(0, 4)) }));
+  for (const [label, text] of [['filas por serie', four], ['listas RIR', fourLists], ['tabla con espacios', four.replace(/ *\| */g, '  ')]]) {
+    seen = await importReco(p, R[2], text); G = await iaOf(p, ids);
+    ok(seen.length === 3 && seen.every((h, i) => h.t.includes(WDL(R[i].wd))), `cuatro columnas, ${label}: tres vistas previas, cada día en su lugar`);
+    ok(R.every((d, i) => JSON.stringify(withoutRest(G[i])) === JSON.stringify(withoutRest(wantIa(d)))), `cuatro columnas, ${label}: tres días con ejercicios, series, peso, reps y RIR intactos`);
+  }
+  ok(await p.evaluate(t => riBuild(t).length, four) === 3, 'Importar rutinas también reconoce los tres días sin Descanso');
   /* Un día que no está en el plan: se avisa y no se pierde en silencio */
   const free = [0, 1, 2, 3, 4, 5, 6].find(w => !D.some(d => d.wd === w));
   if (free != null) {

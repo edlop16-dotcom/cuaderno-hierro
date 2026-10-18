@@ -19,7 +19,7 @@ const LOGO_INNER = '<defs><linearGradient id="lgA" x1="0" y1="0" x2="1" y2="1"><
 const LOGO = (s = 34) => `<svg class="logo" width="${s}" height="${s}" viewBox="0 0 64 64" aria-hidden="true">${LOGO_INNER}</svg>`;
 header = function (t, s) {
   if (header.skip) return '';
-  const name = HISTORY.name || 'Atleta';
+  const name = HISTORY.name || 'Perfil';
   return `<div class="brandbar"><div class="brand">${LOGO(34)}<span class="wordmark">FORJA</span></div>
     <div class="row" style="gap:8px"><button class="userchip" data-act="tab" data-tab="profile" aria-label="Perfil de ${esc(name)}"><span class="avatar xs" aria-hidden="true">${esc(name[0])}</span><span class="un">${esc(name)}</span></button>
     <button class="icon-btn" data-act="tab" data-tab="settings" id="btn-settings" aria-label="Ajustes">${ic('settings', 19)}</button></div></div>
@@ -41,10 +41,11 @@ function vProfile(sub) {
   finally { header.skip = false; }
   return `${header('Perfil', a && a.email ? esc(a.email) : 'Tu cuenta y tu progreso')}
   <div class="card pcard">
-    <div class="row" style="gap:14px"><div class="avatar lg" aria-hidden="true">${esc((HISTORY.name || 'E')[0])}</div>
-      <div class="grow" style="min-width:0"><h2>${esc(HISTORY.name || 'Atleta')}</h2>
+    <div class="row" style="gap:14px"><div class="avatar lg" aria-hidden="true">${esc((HISTORY.name || '?')[0])}</div>
+      <div class="grow" style="min-width:0"><h2>${esc(HISTORY.name || '')}</h2>
         <div class="muted" style="font-size:12.5px">${logged ? (a.watch ? 'Reloj vinculado a tu cuenta' : 'Cuenta conectada · celular y reloj sincronizados') : 'Sin cuenta: tus datos solo están en este equipo'}</div></div></div>
     ${logged || typeof FIREBASE === 'undefined' || !FIREBASE ? '' : `<button class="btn primary small" data-act="tab" data-tab="settings" style="align-self:flex-start">${ic('shield', 15)} Crear cuenta o iniciar sesión</button>`}
+    ${!isWatch() && typeof profileMissing === 'function' && profileMissing() ? '<div class="muted">Completa Tus datos para personalizar las recomendaciones.</div><button class="btn block" data-act="bd-data">Completar Tus datos</button>' : ''}
     <div class="pstats">
       <div><b class="num">${state.sessions.length}</b><span>Entrenamientos</span></div>
       <div><b class="num">${st.count}</b><span>En racha</span></div>

@@ -373,7 +373,7 @@ function aixPipes(txt, need) {
   return out.join('\n');
 }
 function aixBlocks(txt) {
-  txt = aixPipes(txt, /^descanso/);   // con espacios o una celda por línea: solo la tabla nueva (con Descanso); la vieja la lee nsParse
+  txt = aixPipes(txt); // Normalizar cada tabla; una tabla antigua de un solo día sigue en nsParse.
   const L = String(txt || '').replace(/\r/g, '').split('\n'), out = [];
   let cur = null, head = null;
   const close = () => { if (cur && cur.rows.length) out.push(cur); cur = null; head = null; };
@@ -393,14 +393,23 @@ function aixBlocks(txt) {
     const c = nsCells(nsClean(raw)); if (!c.length) continue;
     const H = nsWords(c.join(' '));
     if (/ejercicio/.test(H) && /peso/.test(H) && /rep/.test(H)) {
-      const w = c.map(nsWords); head = { name: w.findIndex(x => /^ejercicio/.test(x)), w: w.findIndex(x => /^(peso|carga)/.test(x)), r: w.findIndex(x => /^rep/.test(x)), rir: w.findIndex(x => /^rir/.test(x)), rest: w.findIndex(x => /^descanso/.test(x)) };
+      const w = c.map(nsWords); head = { name: w.findIndex(x => /^ejercicio/.test(x)), w: w.findIndex(x => /^(peso|carga)/.test(x)), r: w.findIndex(x => /^rep/.test(x)), rir: w.findIndex(x => /^rir/.test(x)), rest: w.findIndex(x => /^descanso/.test(x)), n: w.findIndex(x => /^(series|sets)$/.test(x)) };
       if (!cur) cur = { day: null, name: '', rows: [], untitled: 1 };
+      cur.legacy = head.rest < 0;
       continue;
     }
-    // Cuatro columnas: nsParse conserva listas RIR, Series y la dosis del plan.
-    if (!cur || !head || head.rest < 0) continue;
-    const r = nsRow(c[head.name], c[head.w], c[head.r], head.rir >= 0 ? c[head.rir] : null, null);
+    if (!cur || !head) continue;
+    const r = nsRow(c[head.name], c[head.w], c[head.r], head.rir >= 0 ? c[head.rir] : null, head.n >= 0 ? c[head.n] : null);
     if (!r) continue;
+    if (head.rest < 0) {
+      cur.legacy = true;
+      const last = cur.rows[cur.rows.length - 1];
+      if (last && normName(last.raw) === normName(r.raw)) {
+        const expand = x => x.sets || Array.from({ length: x.rir ? x.rir.length : x.n || 1 }, (_, i) => ({ w: x.w, rMin: x.rMin, rMax: x.rMax, rir: x.rir ? x.rir[i] : x.rirAll }));
+        last.sets = expand(last).concat(expand(r));
+      } else cur.rows.push(r);
+      continue;
+    }
     const rir = r.rir ? r.rir[0] : r.rirAll, rest = head.rest >= 0 ? aixRestParse(c[head.rest]) : null;
     const last = cur.rows[cur.rows.length - 1], set = { w: r.w, rMin: r.rMin, rMax: r.rMax, rir: rir == null ? null : rir, rest };
     if (last && normName(last.raw) === normName(r.raw)) last.sets.push(set);
@@ -408,7 +417,8 @@ function aixBlocks(txt) {
   }
   close();
   /* Sin título: solo cuenta si la tabla tiene la columna Descanso o va en un bloque de código (si no, lo lee nsParse como siempre) */
-  return out.filter(b => !b.untitled || /```/.test(txt) || /descanso/i.test(txt));
+  const blocks = out.filter(b => !b.untitled || /```/.test(txt) || /descanso/i.test(txt));
+  return blocks.length > 1 ? blocks : blocks.filter(b => !b.legacy);
 }
 const _nsParseAix = nsParse;
 nsParse = function (txt) {

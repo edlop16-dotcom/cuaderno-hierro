@@ -150,7 +150,8 @@ function claudePrompt() {
   const g = activeGym(), plan = activePlan();
   const lines = state.sessions.filter(s => Date.now() - new Date(s.date) < 35 * 864e5).slice(0, 16).reverse().map(s =>
     `${dk(s.date)} · ${s.gymName || gymName(sGym(s))} · ${KINDS[sKind(s)] || ''} · ${s.dayName}\n` + s.exercises.map(e => `  - ${e.name}: ${e.sets.map(x => fmtKg(x.w) + '×' + x.r + ((x.drops || []).map(d => ' ↓' + fmtKg(d.w) + '×' + d.r).join(''))).join(', ')}${e.note ? ' | nota: ' + e.note : ''}`).join('\n'));
-  return `Eres mi entrenador experto en hipertrofia y sobrecarga progresiva. Tengo ${HISTORY.age} años, peso ${HISTORY.kg} kg, mido ${HISTORY.cm} cm, objetivo: ${HISTORY.goal}. Entreno en ${g.name} con el plan "${plan ? plan.name : ''}" (RIR 2-1-0, ritmo 2-3 s bajando, 1 s subiendo).
+  const data = []; if (HISTORY.age) data.push(`edad ${HISTORY.age} años`); if (HISTORY.kg) data.push(`peso ${HISTORY.kg} kg`); if (HISTORY.cm) data.push(`estatura ${HISTORY.cm} cm`); if (HISTORY.goal) data.push(`objetivo: ${HISTORY.goal}`);
+  return `Eres mi entrenador experto en hipertrofia y sobrecarga progresiva.${data.length ? ' Datos: ' + data.join(', ') + '.' : ''} Entreno en ${g.name} con el plan "${plan ? plan.name : ''}" (RIR 2-1-0, ritmo 2-3 s bajando, 1 s subiendo).
 Estas son mis sesiones de las últimas 5 semanas (peso×reps por serie, ↓ = drop set):
 ${lines.join('\n') || '(sin sesiones registradas aún)'}
 

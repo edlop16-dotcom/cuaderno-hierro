@@ -10,7 +10,7 @@ document.querySelectorAll('.nav button').forEach(b => { const s = b.querySelecto
 
 /* Encabezado con avatar */
 header = function (title, sub) {
-  return `<div class="top"><div class="hdr"><div class="avatar" aria-hidden="true">${esc((HISTORY.name || 'E')[0])}</div><div style="min-width:0"><div class="label">${sub}</div><h1>${title}</h1></div></div>
+  return `<div class="top"><div class="hdr"><div class="avatar" aria-hidden="true">${esc((HISTORY.name || '?')[0])}</div><div style="min-width:0"><div class="label">${sub}</div><h1>${title}</h1></div></div>
     <button class="icon-btn" data-act="tab" data-tab="settings" id="btn-settings" aria-label="Ajustes">${ic('settings', 20)}</button></div>`;
 };
 

@@ -24,8 +24,8 @@ function isPro() { if (!PRO_CFG.enforce) return true; const p = proState(); retu
 function aiContext() {
   const parts = [];
   try { parts.push(claudePrompt().split('\n\nDime:')[0].replace(/^Eres mi entrenador[^.]*\.\s*/, '')); } catch (e) {}
-  try { const b = body(), bf = bodyFat(); parts.push(`Cuerpo: estatura ${b.h} cm, peso promedio ${fmtKg(r1(curWeight()))} kg${bf != null ? `, grasa estimada ${fmtKg(r1(bf))} %` : ''}.`); } catch (e) {}
-  try { const c = nutriCalc(); parts.push(`Nutrición: objetivo ${NU_GOALS[nutri().goal][0].toLowerCase()}, ${c.kcal} kcal y ${c.prot} g de proteína al día; hoy lleva ${protOf(today())} g.`); } catch (e) {}
+  try { const b = body(), bf = bodyFat(), kg = curWeight(), data = []; if (b.h) data.push(`estatura ${b.h} cm`); if (kg) data.push(`peso promedio ${fmtKg(r1(kg))} kg`); if (bf != null) data.push(`grasa estimada ${fmtKg(r1(bf))} %`); if (data.length) parts.push('Cuerpo: ' + data.join(', ') + '.'); } catch (e) {}
+  try { const c = nutriCalc(); if (c.complete) parts.push(`Nutrición: objetivo ${NU_GOALS[nutri().goal][0].toLowerCase()}, ${c.kcal} kcal y ${c.prot} g de proteína al día; hoy lleva ${protOf(today())} g.`); } catch (e) {}
   try { const I = mesoInfo(); if (I && !I.pre) parts.push(`Bloque de entrenamiento: semana ${I.wk + 1} de ${I.total}${I.deload ? ' (descarga)' : `, RIR objetivo ${I.rir}`}.`); } catch (e) {}
   try { const s = weekSets(0).sets; parts.push('Series esta semana por músculo: ' + ZONES.map(z => `${z.name} ${fmtKg(s[z.k])}`).join(', ') + '.'); } catch (e) {}
   try { const so = soreMap(); const k = Object.keys(so); if (k.length) parts.push('Dolor muscular ahora: ' + k.map(x => `${zoneName(x)} (${LVL[so[x].lvl]})`).join(', ') + '.'); } catch (e) {}

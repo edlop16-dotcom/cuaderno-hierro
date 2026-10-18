@@ -650,7 +650,7 @@ const P = 'Piernas', EM = 'Empuje', TR = 'Tracción';
 function defaultPlans() { return starterPlans(); }
 
 /* Perfil de respaldo genérico; los datos del usuario se leen de settings.prof y settings.body. */
-const HISTORY = { name: 'Atleta', gym: 'Mi gimnasio', age: 30, kg: 70, cm: 170, since: 'poco tiempo', goal: 'Salud y energía', records: [] };
+const HISTORY = { name: '', gym: '', age: null, kg: null, cm: null, since: '', goal: '', records: [] };
 const baseRec = name => HISTORY.records.find(r => r.name === name);
 const SUPS = [
   { k: 'crea', name: 'Creatina', dose: '5 g' },
@@ -743,7 +743,6 @@ const TYPES = [P, EM, TR, 'Core'];
 
 /* Usuario público solo si no es la cuenta del dueño (el dueño siempre gana, aunque llegue `pub` por sincronización) */
 const pubUser = () => !!state.settings.pub && !state.settings.owner;
-if (pubUser()) Object.assign(HISTORY, { name: 'Atleta', gym: 'Mi gimnasio', age: 30, kg: 70, cm: 170, since: 'poco tiempo', goal: 'Salud y energía', records: [] });
 if (pubUser() && !state.settings.planByGym) state.settings.planByGym = { rokaz: state.settings.activePlanId || 'start' };
 function saveLocal() {
   LS.set('plans', state.plans); LS.set('settings', state.settings);
@@ -1173,7 +1172,7 @@ function dayCard(plan, d, nd, lastOf) {
 function vTrain() {
   if (state.draft) return vSession();
   const g = activeGym(), plan = activePlan(), nd = nextDay(plan);
-  const head = `${header('Hola, ' + HISTORY.name, WDL[new Date().getDay()] + ' · ' + esc(g.name))}${gymBar()}${streakCard()}${reminders()}`;
+  const head = `${header(HISTORY.name ? 'Hola, ' + esc(HISTORY.name) : 'Hola', WDL[new Date().getDay()] + ' · ' + esc(g.name))}${gymBar()}${streakCard()}${reminders()}`;
   if (!plan || !nd) return `${head}<div class="card empty"><h3>${esc(g.name)} aún no tiene rutinas</h3><div>Crea un plan para este gimnasio o copia uno de otro gym.</div><button class="btn primary" data-act="tab" data-tab="plans">Ir a Planes</button></div>${dailyPanel()}`;
   const lastOf = id => state.sessions.find(s => s.dayId === id);
   const sets = nd.exercises.reduce((a, e) => a + e.sets, 0);
@@ -1331,12 +1330,12 @@ function vProgress() {
   const names = [...new Set(state.sessions.filter(inGf).flatMap(s => s.exercises.map(e => e.name)))].sort();
   if (!state.progEx || !names.includes(state.progEx)) state.progEx = names[0] || null;
   const max = 24;
-  const imc = HISTORY.kg / Math.pow(HISTORY.cm / 100, 2);
+  const imc = HISTORY.kg && HISTORY.cm ? HISTORY.kg / Math.pow(HISTORY.cm / 100, 2) : null;
   return `${header('Progreso', esc(HISTORY.name))}
-  <div class="card bw"><div class="label">Tu perfil · ${HISTORY.since} entrenando</div>
-    <div class="prof"><div><div class="v">${HISTORY.age}</div><div class="label">años</div></div><div><div class="v">${HISTORY.kg} kg</div><div class="label">peso</div></div>
-    <div><div class="v">${fmtKg(HISTORY.cm / 100)} m</div><div class="label">altura</div></div><div><div class="v">${fmtKg(imc)}</div><div class="label">IMC</div></div></div>
-    <div class="muted" style="font-size:13px">Objetivo: ${esc(HISTORY.goal)}. Meta de proteína: ${typeof protGoal === 'function' ? protGoal() : Math.round(HISTORY.kg * 2)} g al día.</div></div>
+  <div class="card bw"><div class="label">Tu perfil${HISTORY.since ? ' · ' + esc(HISTORY.since) + ' entrenando' : ''}</div>
+    <div class="prof"><div><div class="v">${HISTORY.age || ''}</div><div class="label">años</div></div><div><div class="v">${HISTORY.kg ? fmtKg(HISTORY.kg) + ' kg' : ''}</div><div class="label">peso</div></div>
+    <div><div class="v">${HISTORY.cm ? fmtKg(HISTORY.cm / 100) + ' m' : ''}</div><div class="label">altura</div></div><div><div class="v">${imc ? fmtKg(imc) : ''}</div><div class="label">IMC</div></div></div>
+    ${HISTORY.goal ? `<div class="muted" style="font-size:13px">Objetivo: ${esc(HISTORY.goal)}.</div>` : ''}</div>
   <div class="tiles">
     <div class="tile"><span class="label">Sesiones 30 d</span><span class="v">${last30.length}</span></div>
     <div class="tile"><span class="label">Volumen semana</span><span class="v">${vol >= 1000 ? fmtKg(vol / 1000) + ' t' : fmtKg(vol) + ' kg'}</span></div>

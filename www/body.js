@@ -24,8 +24,6 @@ const CM_MSG = 'Escribe tu estatura en cm, ej. 170 (o en metros, 1,70)';
 
 function body() {
   const b = state.settings.body = state.settings.body || {};
-  if (!b.h) b.h = HISTORY.cm || 170;
-  if (!b.sex) b.sex = 'm';
   b.w = b.w || []; b.m = b.m || [];
   return b;
 }
@@ -37,7 +35,8 @@ function weekAvgs() {
   body().w.forEach(x => { const k = dk(weekStartOf(x.d + 'T12:00:00')); (by[k] = by[k] || []).push(x.kg); });
   return Object.keys(by).sort().map(k => ({ d: k, v: by[k].reduce((a, b) => a + b, 0) / by[k].length, n: by[k].length }));
 }
-function curWeight() { const wa = weekAvgs(); return wa.length ? wa[wa.length - 1].v : HISTORY.kg; }
+function curWeight() { const wa = weekAvgs(), p = state.settings.prof || {}; return wa.length ? wa[wa.length - 1].v : (+p.kg || null); }
+function profileMissing() { const p = state.settings.prof || {}; return !p.name || !p.age || !p.goal || !curWeight() || !body().h; }
 function lastMeas() { const o = {}; body().m.slice().sort((a, b) => a.d.localeCompare(b.d)).forEach(x => MEAS.forEach(([k]) => { if (x[k]) o[k] = { v: x[k], d: x.d }; })); return o; }
 function firstMeas(k) { const x = body().m.slice().sort((a, b) => a.d.localeCompare(b.d)).find(y => y[k]); return x ? x[k] : null; }
 function syncHistory() { const b = body(); HISTORY.cm = b.h; if (b.w.length) HISTORY.kg = r1(curWeight()); }
@@ -45,7 +44,7 @@ function syncHistory() { const b = body(); HISTORY.cm = b.h; if (b.w.length) HIS
 /* Grasa (Marina de EE. UU., en cm), FFMI y potencial (Casey Butt) */
 function bodyFat() {
   const b = body(), m = lastMeas(), h = b.h;
-  if (!m.waist || !m.neck) return null;
+  if (!h || !b.sex || !curWeight() || !m.waist || !m.neck) return null;
   let bf;
   if (b.sex === 'f') { if (!m.hip) return null; bf = 495 / (1.29579 - 0.35004 * Math.log10(m.waist.v + m.hip.v - m.neck.v) + 0.221 * Math.log10(h)) - 450; }
   else { if (m.waist.v <= m.neck.v) return null; bf = 495 / (1.0324 - 0.19077 * Math.log10(m.waist.v - m.neck.v) + 0.15456 * Math.log10(h)) - 450; }
@@ -53,7 +52,7 @@ function bodyFat() {
 }
 function ffmiOf(kg, bf, hcm) { const h = hcm / 100, lean = kg * (1 - bf / 100); return { lean, ffmi: lean / (h * h), adj: lean / (h * h) + 6.1 * (1.8 - h) }; }
 function potential() {
-  const b = body(); if (!b.wrist || !b.ankle) return null;
+  const b = body(); if (!b.h || !b.wrist || !b.ankle) return null;
   const H = b.h / 2.54, W = b.wrist / 2.54, A = b.ankle / 2.54, inch = v => v * 2.54;
   const lbm = bf => Math.pow(H, 1.5) * (Math.sqrt(W) / 22.667 + Math.sqrt(A) / 17.0104) * (bf / 224 + 1) * 0.4536;
   return {
@@ -96,8 +95,8 @@ function vBody() {
   const lastMd = b.m.reduce((a, x) => x.d > a ? x.d : a, '');
   const dueM = !lastMd || (Date.now() - new Date(lastMd + 'T12:00:00')) / 864e5 >= 28;
   const bf = bodyFat(), kg = curWeight(), f = bf != null ? ffmiOf(kg, bf, b.h) : null, pot = potential();
-  const whr = lm.waist ? lm.waist.v / b.h : null;
-  const realKg = 22 * Math.pow(b.h / 100, 2) / 0.88;
+  const whr = lm.waist && b.h ? lm.waist.v / b.h : null;
+  const realKg = b.h && kg ? 22 * Math.pow(b.h / 100, 2) / 0.88 : null;
   const scale = v => Math.max(0, Math.min(100, (v - 16) / 10 * 100));
 
   return `
@@ -105,7 +104,7 @@ function vBody() {
     <div class="row" style="justify-content:space-between"><h3>${ic('activity', 17)} Peso corporal</h3><button class="btn small ghost" data-act="bd-data">${ic('settings', 14)} Tus datos</button></div>
     <div class="bd-big"><div><b class="num">${cur ? fmtKg(r1(cur.v)) : '—'}</b><span> kg</span></div>
       <div class="muted">${cur ? `Promedio ${thisWk ? 'de esta semana' : 'de tu última semana'} · ${cur.n} ${cur.n === 1 ? 'pesaje' : 'pesajes'}` : 'Aún no registras tu peso'}${prev ? `<br>vs semana anterior ${delta(cur.v - prev.v, ' kg')}` : ''}</div></div>
-    <form class="row bd-wform" id="f-bdw"><span class="bd-in grow"><input id="bd-kg" inputmode="decimal" placeholder="${tw ? fmtKg(tw.kg) : fmtKg(HISTORY.kg)}" aria-label="Peso de hoy en kg" aria-describedby="bd-e-kg"><i class="pb-u bw" aria-hidden="true">kg</i></span><button class="btn primary" type="submit">${tw ? 'Cambiar hoy' : 'Guardar peso de hoy'}</button></form><small class="bd-err" id="bd-e-kg" role="alert" hidden></small>
+    <form class="row bd-wform" id="f-bdw"><span class="bd-in grow"><input id="bd-kg" inputmode="decimal" placeholder="${tw ? fmtKg(tw.kg) : kg ? fmtKg(kg) : 'Peso en kg'}" aria-label="Peso de hoy en kg" aria-describedby="bd-e-kg"><i class="pb-u bw" aria-hidden="true">kg</i></span><button class="btn primary" type="submit">${tw ? 'Cambiar hoy' : 'Guardar peso de hoy'}</button></form><small class="bd-err" id="bd-e-kg" role="alert" hidden></small>
     <div class="muted bd-tip">Pésate 3-4 veces por semana, en ayunas y después del baño. Mira el <b>promedio semanal</b>: el número de un día sube o baja 1-2 kg por agua y sal.</div>
     ${wa.length ? bodyChart(wa.map(x => ({ d: x.d, v: r1(x.v) })), 'kg', daily) + '<div class="bd-leg"><span><i class="a"></i>Promedio semanal</span><span><i class="m"></i>Pesajes</span></div>' : ''}
   </div>
@@ -130,8 +129,10 @@ function vBody() {
 
   <div class="card bd-card">
     <h3>${ic('target', 17)} Tu potencial</h3>
+    ${realKg ? `
     <div class="bd-row"><span>Meta realista (FFMI 22 con 12 % de grasa)</span><b class="num">${fmtKg(r1(realKg))} kg</b></div>
     <div class="muted bd-tip">${Math.abs(realKg - kg) <= 3 ? `Estás cerca de ese peso: tu meta no es subir de peso sino <b>cambiar grasa por músculo</b> (recomposición). Mira la cintura y las medidas, no solo la balanza.` : realKg > kg ? `Te faltan unos <b>${fmtKg(Math.round(realKg - kg))} kg</b> de músculo: un volumen limpio (unas 250 kcal sobre tu mantenimiento) te ayudaría.` : `Estás por encima: prioriza bajar grasa poco a poco (0,5 % de tu peso por semana) sin dejar de entrenar fuerte.`}</div>
+    ` : '<div class="muted">Completa Tus datos y registra tu peso para calcular estimaciones.</div>'}
     ${pot ? `<div class="label" style="margin-top:4px">Máximo natural estimado (a largo plazo)</div>
       <div class="bd-row"><span>Peso con 10 % de grasa</span><b class="num">${fmtKg(r1(pot.kg10))} kg</b></div>
       ${['chest', 'arm', 'neck', 'thigh', 'calf'].map(k => { const mx = pot.meas[k], v = lm[k] && lm[k].v, pc = v ? Math.min(100, v / mx * 100) : 0;
@@ -245,11 +246,14 @@ document.addEventListener('focusout', ev => {
   bdShowErr(k);
 });
 function dataSheet() {
-  const b = body();
+  const b = body(), p = state.settings.prof || {};
   openSheet(`<div class="row"><h2 class="grow">Tus datos</h2><button class="icon-btn" data-act="sheet-close" aria-label="Cerrar">${ic('x', 18)}</button></div>
     <form id="f-bdd" class="bd-form">
-      <label class="field"><span class="label">Estatura</span><span class="bd-in"><input id="bd-h" inputmode="decimal" maxlength="5" value="${b.h ? String(b.h).replace('.', ',') : ''}" placeholder="170" aria-describedby="bd-e-h"><i class="pb-u" aria-hidden="true">cm</i></span><small class="bd-err" id="bd-e-h" role="alert" hidden></small></label>
-      <div class="field"><span class="label">Sexo (para la fórmula de grasa)</span><div class="seg"><button type="button" class="${b.sex !== 'f' ? 'on' : ''}" data-act="bd-sex" data-v="m">Hombre</button><button type="button" class="${b.sex === 'f' ? 'on' : ''}" data-act="bd-sex" data-v="f">Mujer</button></div></div>
+      <label class="field"><span class="label">Nombre</span><input id="bd-name" value="${esc(p.name || '')}" autocomplete="given-name"></label>
+      <label class="field"><span class="label">Edad (años)</span><input id="bd-age" inputmode="numeric" value="${p.age || ''}"></label>
+      <label class="field"><span class="label">Objetivo</span><select id="bd-goal"><option value="">Sin completar</option>${Object.keys(PB_GOALS).map(k => `<option value="${k}" ${p.goal === k ? 'selected' : ''}>${esc(PB_GOALS[k][0])}</option>`).join('')}</select></label>
+      <label class="field"><span class="label">Estatura</span><span class="bd-in"><input id="bd-h" inputmode="decimal" maxlength="5" value="${b.h ? String(b.h).replace('.', ',') : ''}" placeholder="Estatura en cm" aria-describedby="bd-e-h"><i class="pb-u" aria-hidden="true">cm</i></span><small class="bd-err" id="bd-e-h" role="alert" hidden></small></label>
+      <div class="field"><span class="label">Sexo (para la fórmula de grasa)</span><div class="seg"><button type="button" class="${b.sex === 'm' ? 'on' : ''}" data-act="bd-sex" data-v="m">Hombre</button><button type="button" class="${b.sex === 'f' ? 'on' : ''}" data-act="bd-sex" data-v="f">Mujer</button></div></div>
       <label class="field"><span class="label">Muñeca (cm) · bajo el hueso, del lado de la mano</span><span class="bd-in"><input id="bd-wr" inputmode="decimal" value="${b.wrist || ''}" placeholder="Ej. 17" aria-describedby="bd-e-wr"><i class="pb-u" aria-hidden="true">cm</i></span><small class="bd-err" id="bd-e-wr" role="alert" hidden></small></label>
       <label class="field"><span class="label">Tobillo (cm) · la parte más delgada</span><span class="bd-in"><input id="bd-an" inputmode="decimal" value="${b.ankle || ''}" placeholder="Ej. 22" aria-describedby="bd-e-an"><i class="pb-u" aria-hidden="true">cm</i></span><small class="bd-err" id="bd-e-an" role="alert" hidden></small></label>
       <button class="btn primary block" type="submit">Guardar</button></form>
@@ -280,12 +284,16 @@ document.addEventListener('submit', ev => {
     b.m = b.m.filter(x => x.d !== d).concat([o]); saveBody(); closeSheet(); toast('Medidas guardadas'); render();
   } else if (f.id === 'f-bdd') {
     ev.preventDefault();
+    const ageText = $('#bd-age').value.trim(), age = +ageText;
+    if (ageText && (!Number.isInteger(age) || age < LEGAL.minAge || age > 100)) { toast(`Escribe una edad entre ${LEGAL.minAge} y 100 años`); $('#bd-age').focus(); return; }
     const bad = ['h', 'wr', 'an'].filter(k => bdErr(k)); if (bad.length) { bad.forEach(k => bdShowErr(k, true)); $('#bd-' + bad[0]).focus(); return; }
     const b = body(), h = parseCm($('#bd-h').value), wr = num($('#bd-wr').value), an = num($('#bd-an').value);
     if (h) b.h = h;
+    state.settings.prof = Object.assign({}, state.settings.prof || {}, { name: $('#bd-name').value.trim(), age: ageText ? age : null, goal: $('#bd-goal').value || null });
+    if (h) state.settings.prof.cm = h;
     if (wr && wr < 30) b.wrist = r1(wr); else if (!$('#bd-wr').value.trim()) delete b.wrist;
     if (an && an < 40) b.ankle = r1(an); else if (!$('#bd-an').value.trim()) delete b.ankle;
-    saveBody(); closeSheet(); toast('Datos guardados'); render();
+    applyProf(); saveBody(); closeSheet(); toast('Datos guardados'); render();
   }
 }, true);
 
