@@ -6,8 +6,8 @@
      la frase. Editables en Ajustes → Coach IA (`settings.aiP`), con "Restablecer".
    - Al final de los tres y de "Copiar instrucción para tu IA": el FORMATO OBLIGATORIO (no se puede borrar).
    - "Exportar todo para tu IA" en Progreso (Semana) y Perfil: 4 semanas / 3 meses / todo.
-   - Importar: primero el bloque "RECOMENDACIÓN PARA EL PRÓXIMO …" (uno o varios días), con Descanso
-     opcional; si no hay, lo de siempre (nsParse). Vista previa por serie; ejercicio nuevo solo para esa
+   - Importar: primero los bloques con su día ("LUNES: nombre" dentro del bloque, o el título viejo
+     "RECOMENDACIÓN PARA EL PRÓXIMO …" fuera), con Descanso opcional; si no hay, lo de siempre (nsParse). Vista previa por serie; ejercicio nuevo solo para esa
      sesión; "Entrenar ahora" con pesos, reps, RIR y descansos. El plan no cambia.
    - Sin correo, ID de cuenta ni datos de otros usuarios.
    ========================================================================== */
@@ -122,33 +122,27 @@ function aixFill(tpl, v) {
 }
 
 /* ---------- 4. Formato obligatorio ---------- */
+/* Un solo bloque de código; dentro, antes de cada tabla, la línea "DÍA: nombre" (18-oct-2026: algunas IA
+   dejaban el título fuera del bloque y su botón Copiar lo perdía). Sin días = para importar rutinas nuevas. */
+const aixWdUp = d => WDL[d.weekday].toUpperCase();
 function aixFormat(days) {
   days = (days || []).filter(Boolean); const u = aixU();
-  const t = d => `RECOMENDACIÓN PARA EL PRÓXIMO ${WDL[d.weekday].toUpperCase()}: ${d.name}`;
-  const titles = days.length ? days.map(t).join('\n   ') : 'RECOMENDACIÓN PARA EL PRÓXIMO {DÍA}: {nombre del día de la rutina}';
-  const lists = days.length ? days.map(d => (days.length > 1 ? `   Para ${WDL[d.weekday].toUpperCase()} (${d.name}):\n` : '') + d.exercises.map(e => '   - ' + e.name).join('\n')).join('\n') : '   (los nombres de tu rutina)';
-  return `FORMATO OBLIGATORIO DEL FINAL DE TU RESPUESTA (lo lee mi app automáticamente; si no lo cumples exacto, no podré entrenar con tu recomendación):
-1. Después de tu análisis, escribe una línea con este título exacto:
-   ${titles}
-2. Debajo, un bloque de código (entre tres comillas invertidas) con una tabla separada por barras "|", con este encabezado exacto:
-   Ejercicio | Peso | Reps | RIR | Descanso
-3. Una fila por SERIE (si son 3 series, 3 filas del mismo ejercicio), en el orden en que debo hacerlas.
-4. Ejercicio: copia el nombre EXACTO de esta lista, sin abreviar ni traducir:
-${lists}
-   Si recomiendas un ejercicio nuevo, escribe su nombre completo con el equipo, por ejemplo "Elevación de Talones en Prensa".
-5. Peso: solo el número en ${u}, con punto o coma decimal (ej. 32.5). Peso corporal = 0. Mancuernas = peso de UNA mancuerna.
-6. Reps: un número o un rango (ej. 10 o 10-12).
-7. RIR: un número del 0 al 4.
-8. Descanso: segundos (ej. 90).
-9. No agregues texto, notas, emojis ni negritas dentro del bloque. Nada después del último bloque.
-10. Si recomiendas varios días, un título y un bloque por cada día.
+  const names = d => d.exercises.map(e => e.name).join(', ');
+  const list = !days.length ? '' : days.length === 1 ? names(days[0]) : days.map(d => `${aixWdUp(d)}: ${d.name} → ${names(d)}`).join('; ');
+  const exTxt = list ? `Ejercicio: nombre EXACTO de esta lista ${list}, igual en todas sus filas; si es nuevo, nombre completo con el equipo.`
+    : 'Ejercicio: nombre completo con el equipo (por ejemplo "Prensa 45°" o "Remo Sentado con Cable"), igual en todas sus filas.';
+  return `FORMATO OBLIGATORIO (lo lee mi app automáticamente):
+Al final, UN SOLO bloque de código con todo lo que debo importar. Dentro del bloque, antes de cada tabla, una línea con el día y el nombre de la rutina: 'DÍA: nombre' (LUNES, MARTES, MIÉRCOLES, JUEVES, VIERNES, SÁBADO, DOMINGO). Debajo, el encabezado exacto 'Ejercicio | Peso | Reps | RIR | Descanso' y una fila por SERIE en el orden en que se hacen. ${exTxt} Peso: solo el número en ${u} (0 = peso corporal; mancuernas = una). Reps: número o rango. RIR: 0 a 4. Descanso: segundos. Una línea en blanco entre días. Nada de texto, notas, emojis ni negritas dentro del bloque. Para la sesión del día: un solo día (el próximo de esa rutina). Para la semana: un bloque con todos los días de la rutina activa.
 Ejemplo:
-RECOMENDACIÓN PARA EL PRÓXIMO LUNES: Piernas + Torso (Pesado)
 \`\`\`
+LUNES: Piernas + Torso (Pesado)
 Ejercicio | Peso | Reps | RIR | Descanso
-Prensa 45° | 190 | 15 | 2 | 150
-Prensa 45° | 190 | 15 | 1 | 150
-Prensa 45° | 190 | 15 | 0 | 150
+Prensa 45° | 180 | 12 | 2 | 150
+Prensa 45° | 180 | 12 | 1 | 150
+
+MIÉRCOLES: Full Body (Bombeo)
+Ejercicio | Peso | Reps | RIR | Descanso
+Hip Thrust | 45 | 12 | 2 | 120
 \`\`\``;
 }
 const aixPlanDays = () => { const p = activePlan(); return p ? p.days.slice().sort((a, b) => ((a.weekday + 6) % 7) - ((b.weekday + 6) % 7)) : []; };
@@ -285,7 +279,101 @@ function aixRestParse(s) {
   return null;
 }
 const AIX_TITLE = /recomendacion para el proximo\s+([a-z]+)\s*:?\s*(.*)$/;
+/* Línea de día del formato nuevo: "LUNES: Piernas + Torso", "DÍA LUNES: …", "**Lunes – …**", "MIÉRCOLES" */
+const AIX_WDRE = /^(?:d[ií]a\s+)?(lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo)(?![a-záéíóúñ])\s*(?:[:\-–—·|]\s*(.*?))?\s*$/i;
+/* Nombre corto: máx. 40 letras, cortado en una palabra entera */
+function aixCut(s, n) {
+  s = String(s || '').replace(/^[\s:–—\-·|,.]+|[\s:–—\-·|,.]+$/g, '').replace(/\s+/g, ' ').trim(); n = n || 40;
+  if (s.length <= n) return s;
+  const p = s.search(/,\s|\s\(|\s[–—-]\s|;\s/); if (p >= 6 && p <= n) return s.slice(0, p).trim();   // "Pierna y glúteo, con énfasis…" → «Pierna y glúteo»
+  const c = s.slice(0, n + 1), k = c.lastIndexOf(' ');
+  return (k > 10 ? c.slice(0, k) : s.slice(0, n)).replace(/[\s:–—\-·|,.(]+$/, '').trim();
+}
+function aixDayLine(raw) {
+  const t = String(raw || '').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, ' ').replace(/[☀-➿️]/g, ' ').replace(/\*\*|__|`/g, '').replace(/^\s*(?:#+|>)\s*/, '').trim();
+  const m = t.match(AIX_WDRE); if (!m || (m[2] && m[2].indexOf('|') >= 0)) return null;   // "Lunes | Prensa | …" es una fila con columna Día
+  return { day: NS_DAYS.indexOf(normName(m[1])), name: aixCut(m[2] || '') };
+}
+/* ---------- Tablas que llegan sin "|" (al copiar en el celular): se pasan a "|" ----------
+   Mismas ideas que nsParse: encabezado con palabras de columna (NS_HWORD) en una línea con tabulaciones,
+   2+ espacios o un solo espacio (las cifras de cada fila se leen desde la derecha, como NS_SHAPE),
+   o una celda por línea (se juntan de a tantas como columnas). `need`: solo tablas con esa columna. */
+const AIX_HW = w => NS_HWORD.test(w) || /^(dia|day|rutina|enfoque|sesion|nombre)$/.test(w);
+const AIX_UNIT = /^(kg|kgs|lb|lbs|s|seg|segs|segundos|min|mins|minutos|reps?|"|')$/i;
+const aixNumCell = t => /^[~@]?\d/.test(t) || /^[-–?]+$/.test(t);
+function aixPeel(toks, n) {   // las n últimas celdas con cifras; el resto (nombre y lo de antes) queda en `rest`
+  const out = []; let i = toks.length - 1;
+  while (out.length < n && i >= 0) {
+    let j = i, t = toks[j];
+    if (AIX_UNIT.test(t) && j > 0) { j--; t = toks[j] + ' ' + t; }
+    if (j >= 2 && /^(-|–|a)$/i.test(toks[j - 1]) && /^\d/.test(toks[j - 2])) { t = toks[j - 2] + '-' + t; j -= 2; }
+    if (!aixNumCell(t)) return null;
+    out.unshift(t); i = j - 1;
+  }
+  return out.length === n && i >= 0 ? { cells: out, rest: toks.slice(0, i + 1) } : null;
+}
+function aixHeadOf(cells) {
+  const w = cells.map(nsWords).filter(x => x && !/^\(?(kg|kgs|lb|lbs|s|seg)\)?$/.test(x));
+  if (w.length < 3 || w.length > 10 || !w.every(x => x.split(' ').every(AIX_HW))) return null;
+  const at = re => w.findIndex(x => re.test(x));
+  const k = { name: at(/^ejercicios?$/), reps: at(/^(reps?|repeticiones)$/), n: w.length, w };
+  return k.name >= 0 && k.reps >= 0 ? k : null;
+}
+function aixPipes(txt, need) {
+  const L = String(txt || '').replace(/\r/g, '').split('\n'), out = [];
+  let mode = null, H = null, buf = [];
+  const row = a => '| ' + a.join(' | ') + ' |', flush = () => { buf.forEach(x => out.push(L[x.i])); buf = []; };   // con bordes: una celda vacía a la izquierda no se pierde
+  const ok = h => h && (!need || h.w.some(x => need.test(x)));
+  const shapeRow = l => {   // columnas antes del nombre: una palabra cada una ("Día 1" son dos)
+    const toks = nsClean(l).trim().split(/\s+/), pre = [];
+    let p = 0;
+    /* La celda Día puede venir vacía (sigue el día de arriba): entonces tampoco hay celdas antes del nombre */
+    const isDay = t => t && (/^(d[ií]a|day)$/i.test(t) || /^\d{1,2}$/.test(t) || NS_DAYS.indexOf(normName(t)) >= 0);
+    const hasPre = H.name > 0 && (!/^(dia|day)$/.test(H.w[0]) || isDay(toks[0]));
+    for (let c = 0; c < H.name; c++) {
+      if (!hasPre) { pre.push(''); continue; }
+      if (p >= toks.length) return null; let t = toks[p++]; if (/^(d[ií]a|day)$/i.test(t) && /^\d/.test(toks[p] || '')) t += ' ' + toks[p++]; pre.push(t);
+    }
+    const P = aixPeel(toks.slice(p), H.n - H.name - 1); if (!P) return null;
+    const name = P.rest.join(' '); if (!/[a-záéíóúñ]/i.test(name)) return null;
+    return pre.concat([name], P.cells);
+  };
+  for (let i = 0; i < L.length; i++) {
+    const l = L[i], c = nsClean(l);
+    if (l.indexOf('|') >= 0) { mode = null; out.push(l); continue; }
+    if (!c.trim()) { if (mode !== 'v') mode = null; out.push(l); continue; }
+    const cells = nsCells(c);
+    if (cells.length >= 2) { const h = aixHeadOf(cells); if (ok(h)) { flush(); mode = 'c'; H = h; out.push(row(cells)); continue; } }
+    else {
+      const ws = c.trim().split(/\s+/), h = ws.length >= 3 ? aixHeadOf(ws) : null;
+      if (ok(h)) { flush(); mode = 's'; H = h; out.push(row(ws.filter(t => !/^\(?(kg|kgs|lb|lbs|s|seg)\)?$/i.test(t)))); continue; }
+      if (ws.length <= 2 && AIX_HW(nsWords(c))) {   // ¿encabezado en vertical?
+        const hc = [c.trim()]; let j = i + 1;
+        for (; j < L.length && hc.length < 10; j++) { const t = nsClean(L[j]).trim(); if (!t) continue; if (nsCells(t).length !== 1 || !nsWords(t).split(' ').every(AIX_HW)) break; hc.push(t); }
+        const hv = hc.length >= 3 ? aixHeadOf(hc) : null;
+        if (ok(hv)) { flush(); mode = 'v'; H = hv; out.push(row(hc)); i = j - 1; continue; }
+      }
+    }
+    if (mode === 'c' && cells.length === H.n) { out.push(row(cells)); continue; }
+    if (mode === 'c' && cells.length < H.n && cells.length >= H.n - H.name) {   // celdas de la izquierda vacías (Día, Rutina): con espacios no se ven
+      const cs = cells.filter((x, k) => k || x), cc = Array(Math.max(0, H.n - cs.length)).fill('').concat(cs);
+      if (cc.length === H.n && /[a-záéíóúñ]/i.test(cc[H.name]) && cc.slice(H.name + 1).every(aixNumCell)) { out.push(row(cc)); continue; }
+    }
+    if (mode === 's') { const r = shapeRow(c); if (r) { out.push(row(r)); continue; } }
+    if (mode === 'v') {
+      buf.push({ i, c: c.trim() });
+      if (buf.length < H.n) continue;
+      const v = buf.map(x => x.c), nm = v[H.name], rest = v.filter((x, k) => k > H.name);
+      if (/[a-záéíóúñ]/i.test(nm) && rest.every(aixNumCell)) { out.push(row(v)); buf = []; continue; }
+      i = buf[0].i; out.push(L[i]); buf = []; mode = null; continue;   // ahí terminó la tabla: esas líneas se leen de nuevo
+    }
+    mode = null; out.push(l);
+  }
+  flush();
+  return out.join('\n');
+}
 function aixBlocks(txt) {
+  txt = aixPipes(txt, /^descanso/);   // con espacios o una celda por línea: solo la tabla nueva (con Descanso); la vieja la lee nsParse
   const L = String(txt || '').replace(/\r/g, '').split('\n'), out = [];
   let cur = null, head = null;
   const close = () => { if (cur && cur.rows.length) out.push(cur); cur = null; head = null; };
@@ -293,6 +381,13 @@ function aixBlocks(txt) {
     const raw = L[i].replace(/\*\*|__/g, '').trim(), n = normName(raw).replace(/[#>]/g, '').trim();
     const tm = n.match(AIX_TITLE);
     if (tm) { close(); const wd = NS_DAYS.indexOf(tm[1]); cur = { day: wd >= 0 ? wd : null, name: raw.replace(/^.*?:\s*/, '').replace(/[`*]+/g, '').trim(), rows: [] }; continue; }
+    const dl = raw && aixDayLine(raw);
+    if (dl && dl.day >= 0) {
+      /* El título de fuera ("RECOMENDACIÓN PARA EL PRÓXIMO LUNES") y la línea "LUNES: …" de dentro son el mismo día */
+      if (cur && !cur.rows.length && !cur.untitled && (cur.day == null || cur.day === dl.day)) { cur.day = dl.day; if (dl.name) cur.name = dl.name; continue; }
+      const h = head; close(); head = h;   // un mismo encabezado puede valer para varios días
+      cur = { day: dl.day, name: dl.name, rows: [] }; continue;
+    }
     if (!raw || /^`{3}/.test(raw)) continue;
     if (raw.indexOf('|') < 0) { if (cur && cur.rows.length && head) close(); continue; }
     const c = nsCells(nsClean(raw)); if (!c.length) continue;
@@ -342,10 +437,11 @@ nsRead = function () {
   const txt = ($('#ns-txt') || {}).value || '', sel = (($('#ns-day') || {}).value || '').split('|');
   const B = aixBlocks(txt); if (!B.length) return _nsReadAix();
   const S = { planId: sel[0], dayId: sel[1] };
-  const q = B.map((b, i) => { const m = aixDayFor(b, S) || (i === 0 ? { p: { id: S.planId }, d: findDay(S.planId, S.dayId).d } : null); return m && m.d ? { planId: m.p.id, dayId: m.d.id, rows: nsRowsFrom({ rows: b.rows }, m.d), title: b.name } : null; }).filter(Boolean);
+  const skip = [];
+  const q = B.map((b, i) => { const m = aixDayFor(b, S) || (i === 0 ? { p: { id: S.planId }, d: findDay(S.planId, S.dayId).d } : null); if (!m || !m.d) skip.push((b.day != null ? WDL[b.day] : '') + (b.name ? (b.day != null ? ' · ' : '') + b.name : '')); return m && m.d ? { planId: m.p.id, dayId: m.d.id, rows: nsRowsFrom({ rows: b.rows }, m.d), title: b.name } : null; }).filter(Boolean);
   if (!q.length) return _nsReadAix();
   state.aixQ = q.slice(1); state.aixDone = [];
-  state.nsEd = Object.assign({}, q[0], { n: q.length, k: 1 }); nsEditSheet();
+  state.nsEd = Object.assign({}, q[0], { n: q.length, k: 1, skip }); nsEditSheet();
 };
 /* Vista previa: cada serie con peso, reps, RIR y descanso; un ejercicio nuevo se agrega solo para esa sesión */
 nsEditSheet = function () {
@@ -365,6 +461,7 @@ nsEditSheet = function () {
     <input inputmode="numeric" data-ns="srest" data-i="${i}" data-j="${j}" value="${t.rest || ''}" placeholder="plan" aria-label="Descanso serie ${j + 1} en segundos"></div>`;
   openSheet(`<div class="row"><h2 class="grow">${co ? 'Próxima sesión (Coach)' : 'Próxima sesión'} · ${WDL[d.weekday]}</h2><button class="icon-btn" data-act="sheet-close" aria-label="Cerrar">${ic('x', 18)}</button></div>
     <div class="muted ns-help">${esc(d.name)}${E.n > 1 ? ` · día ${E.k} de ${E.n}` : ''} · ${co ? (E.edited ? 'Editada por ti' : 'Armada con tu historial, la semana del bloque y cómo llegas hoy') : E.edit ? 'Importada el ' + nsWhen(E.at) : `Leí ${E.rows.length} ${E.rows.length === 1 ? 'ejercicio' : 'ejercicios'}`}. Revisa y guarda: tu plan no cambia.</div>
+    ${E.skip && E.skip.length ? `<div class="ns-dayw aix-skip" role="status">No ${E.skip.length === 1 ? 'está' : 'están'} en tu plan y no se ${E.skip.length === 1 ? 'guarda' : 'guardan'}: <b>${E.skip.map(esc).join(', ')}</b>.</div>` : ''}
     ${E.rows.map((r, i) => {
       const bad = E.tried && !r.exId;
       return `<div class="ns-ed ${r.exId === 'skip' ? 'off' : ''}" data-i="${i}">

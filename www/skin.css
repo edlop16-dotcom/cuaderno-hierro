@@ -2049,3 +2049,28 @@ body:not(.watch) .ri-dh .ri-dn{flex:1 1 calc(100% - 24px)}
 body:not(.watch) .ri-dh .ri-wd{flex:1}
 body:not(.watch) .ri-help svg{display:inline;vertical-align:-2px;margin-right:4px}
 body:not(.watch) .ri-f input::placeholder{color:var(--dim,#90949b)}
+
+/* Recomendación del coach arriba en la pantalla del ejercicio (sessui.js, 18-oct-2026; solo teléfono) */
+body.su-sess .card.ex > .coach.su-co{position:relative;margin:0;padding:9px 12px;font-size:13.5px;line-height:1.35;flex-shrink:0}
+body.su-sess .su-co[role="button"]{cursor:pointer}
+body.su-sess .su-co .coach-h{display:flex;align-items:flex-start;gap:8px}
+body.su-sess .su-co .coach-h .coach-ic{flex:none;margin-top:1px}
+body.su-sess .su-co .coach-h > span:not(.coach-ic){flex:1;min-width:0;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:1;overflow:hidden}
+body.su-sess .su-co .su-more{position:absolute;right:12px;bottom:9px;font-size:12.5px;font-weight:600;color:var(--fg);text-decoration:underline;white-space:nowrap}
+body.su-sess .su-co ul{margin:3px 0 0 26px;padding:0;min-height:17px;list-style:none;color:var(--muted);font-size:12.5px}
+body.su-sess .su-co ul li{margin:0}
+body.su-sess .su-co:not(.su-open) ul li:not(:first-child){display:none}
+body.su-sess .su-co:not(.su-open) ul li:first-child{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+body.su-sess .su-co.su-open .coach-h > span:not(.coach-ic){display:block;-webkit-line-clamp:unset}
+body.su-sess .su-co.su-open ul li + li{margin-top:4px}
+/* Pantallas bajas: la figura cede alto para que la tabla y la 1.ª serie se vean sin deslizar */
+@media (max-height:780px){body.su-sess .sx-hero,body.su-sess .sx-hero img,body.su-sess .sx-hero .sx-fig{max-height:168px}}
+@media (max-height:680px){body.su-sess .sx-hero,body.su-sess .sx-hero img,body.su-sess .sx-hero .sx-fig{max-height:100px}}
+/* Importar recomendación: días que no están en el plan */
+.ns-dayw.aix-skip{display:block}
+body.su-sess .su-co[role="button"] ul{padding-right:58px}
+body.su-sess .su-co.su-noul[role="button"]{padding-bottom:28px}
+body.su-sess .su-co.su-open[role="button"]{padding-bottom:28px}
+body.su-sess .su-co.su-open[role="button"] ul{padding-right:0}
+body.su-sess .su-co.su-h2:not(.su-open) .coach-h > span:not(.coach-ic){-webkit-line-clamp:2}
+body.su-sess .su-co.su-h2:not(.su-open) ul li:first-child{-webkit-line-clamp:1}

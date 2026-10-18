@@ -3,6 +3,8 @@
    - "Nueva rutina" pregunta: "Crear desde cero" (lo de siempre) o "Importar rutinas".
    - Importar: pegar texto o subir un archivo. Cada día (Día 1, Lunes, Push, Pierna…) = una rutina.
      Lee series, reps, RIR (o RPE), peso y descanso si vienen, en listas, tablas o líneas sueltas.
+   - También tablas con espacios o una celda por línea (aixPipes) y una sola tabla con columna "Día".
+     "LUNES: Piernas + Torso" → rutina «Piernas + Torso» el lunes. Si no hay nada: "Copiar formato para tu IA".
    - Cada ejercicio se empareja con el catálogo (también en inglés). Si no es seguro, se marca y se elige
      uno de la lista, se busca otro o se crea el tuyo (myex.js). Nunca se inventa.
    - Vista previa: nombre, día, series, reps, RIR y kg editables; quitar ejercicios o rutinas.
@@ -31,6 +33,8 @@ const riWds = s => normName(s).split(/[^a-z]+/).filter(w => RI_WD[w] != null).ma
 const RI_RECO = /recomendaci[oó]n\s+para\s+(?:el|la)?\s*pr[oó]xim[oa]/i;
 /* Nombre de la rutina a partir del título: sin "RECOMENDACIÓN PARA EL PRÓXIMO", sin el día de la semana */
 function riDayTitle(t) {
+  const dl = typeof aixDayLine === 'function' ? aixDayLine(t) : null;   /* "LUNES: Piernas + Torso" → lo que va después de los dos puntos */
+  if (dl && dl.day >= 0 && dl.name) return dl.name;
   const wds = riWds(t);
   let n = String(t || '').replace(RI_RECO, ' ');
   if (wds.length) n = n.replace(/\(?\s*\b(lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b\s*\)?/gi, ' ');
@@ -93,7 +97,9 @@ function riHead(cells) {
   const col = {}; let ok = false;
   cells.forEach((c, i) => {
     const n = normName(c);
-    if (/ejercicio|exercise|movimiento|nombre/.test(n)) { col.name = i; ok = true; }
+    if (/^(dia|dias|day)$/.test(n)) col.day = i;   /* una sola tabla con columna Día: una rutina por día */
+    else if (/^(rutina|enfoque|sesion|grupo|split)$/.test(n)) col.rname = i;
+    else if (/ejercicio|exercise|movimiento|nombre/.test(n)) { col.name = i; ok = true; }
     else if (/^(series|sets?|serie)$/.test(n)) col.sets = i;
     else if (/rep/.test(n)) col.reps = i;
     else if (/rir|rpe/.test(n)) col.rir = i;
@@ -103,8 +109,10 @@ function riHead(cells) {
   return ok ? col : null;
 }
 function riParse(text) {
+  /* Tablas con espacios (las barras se pierden al copiar en el celular) o una celda por línea → "|" */
+  if (typeof aixPipes === 'function') text = aixPipes(text);
   const lines = String(text || '').replace(/\r/g, '').split('\n');
-  const days = []; let day = null, skip = false, head = null;
+  const days = []; let day = null, skip = false, head = null, dKey = null, dByKey = {};
   const newDay = t => { day = { title: t, ex: [] }; days.push(day); skip = false; };   /* el encabezado de la tabla sigue valiendo */
   const add = e => { if (!day) newDay(''); if (!e.raw || e.raw.length < 2) return; const last = day.ex[day.ex.length - 1];
     const same = e.merge ? day.ex.filter(x => x.merge && normName(x.raw) === normName(e.raw)).pop() : null;
@@ -117,6 +125,13 @@ function riParse(text) {
       if (cells.every(c => /^[\s:-]*$/.test(c))) continue;
       const h = riHead(cells); if (h) { head = h; continue; }
       if (head && cells[head.name]) {
+        if (head.day != null) {   /* columna Día: cambia de rutina cuando cambia el día (vacío = el de arriba) */
+          const dv = riClean(cells[head.day] || ''), k = normName(dv);
+          if (dv && k !== dKey) {
+            dKey = k; const rn = head.rname != null ? riClean(cells[head.rname] || '') : '';
+            if (dByKey[k]) { day = dByKey[k]; skip = false; } else { newDay(rn ? dv + ': ' + rn : dv); dByKey[k] = day; }
+          }
+        }
         if (skip) continue;
         const g = k => (head[k] != null ? cells[head[k]] || '' : '');
         const nm = riName(cells[head.name]); if (!nm) continue;
@@ -134,7 +149,9 @@ function riParse(text) {
     const c = riClean(l); if (!c) continue;
     const ex = riIsEx(c);
     const short = c.length <= 70;
-    const wds = riWds(c), titled = heading || /:/.test(c) || /^[^a-z]*[A-ZÁÉÍÓÚÑ]{4,}[^a-z]*$/.test(c) || !bullet;
+    const dl = !ex && c.length <= 110 && !/[.!?]$/.test(c) && typeof aixDayLine === 'function' ? aixDayLine(c) : null;
+    if (dl && dl.day >= 0) { newDay(c.replace(/:$/, '')); continue; }   /* "LUNES: nombre" (también largo o con "DÍA") */
+    const wds = riWds(c), titled =heading || /:/.test(c) || /^[^a-z]*[A-ZÁÉÍÓÚÑ]{4,}[^a-z]*$/.test(c) || !bullet;
     if (!ex && short && (RI_DAYRE.test(c) || RI_RECO.test(c) || riWdOf(c) != null || (wds.length && (wds.length === 1 || heading || /:$/.test(c)) && titled) || ((heading || /:$/.test(c) || !bullet) && RI_SPLIT.test(c)))) { newDay(c.replace(/:$/, '')); continue; }
     if (!ex && RI_SKIP.test(c)) { if (heading || /:$/.test(c) || !bullet) skip = true; continue; }
     if (!ex && heading && short) { if (day && day.ex.length) newDay(c.replace(/:$/, '')); else if (day) day.title = day.title || c.replace(/:$/, ''); else newDay(c.replace(/:$/, '')); continue; }
@@ -314,6 +331,7 @@ function riPaste() {
     <div class="muted ri-help">Pega el texto de tu IA. Cada día (Día 1, Lunes, Push, Pierna…) se convierte en una rutina; se leen series, reps, RIR, peso y descanso si vienen.</div>
     <textarea id="ri-txt" class="ri-txt" rows="12" placeholder="Día 1 – Empuje&#10;Press banca 4x6-8 RIR 2&#10;Elevaciones laterales 3x12-15&#10;&#10;Día 2 – Tirón&#10;Dominadas 4x6-10&#10;…">${esc(T.txt)}</textarea>
     ${T.err ? `<div class="se-err" role="alert">${esc(T.err)}</div>` : ''}
+    ${T.fmt ? `<button type="button" class="btn block ri-fmt" data-ri="fmt">${ic('copy', 16)} Copiar formato para tu IA</button>` : ''}
     <label class="btn block ri-file">${ic('download', 16)} Subir un archivo (.txt o .md)<input id="ri-file" type="file" accept=".txt,.md,.csv,text/plain,text/markdown" hidden></label>
     <div class="pk-bottom"><button class="btn primary block" data-ri="read">Leer rutinas</button></div>`);
   const c = document.querySelector('#sheet .sheet-card'); if (c) c.classList.add('pk-sheet', 'ri-sheet');
@@ -322,8 +340,8 @@ function riRead() {
   const T = state.riT, i = document.getElementById('ri-txt'); if (i) T.txt = i.value;
   if (!T.txt.trim()) { T.err = 'Pega el texto de tu IA o sube un archivo.'; return riPaste(); }
   const days = riBuild(T.txt);
-  if (!days.length) { T.err = 'No encontré ejercicios con series o repeticiones. Revisa que el texto traiga, por ejemplo, "Press banca 4x8".'; return riPaste(); }
-  T.err = '';
+  if (!days.length) { T.err = 'No encontré rutinas en el texto. Por cada día necesito una línea como «LUNES: Piernas» y debajo la tabla «Ejercicio | Peso | Reps | RIR | Descanso» (o líneas como «Press banca 4x8»). Copia el formato y pídeselo a tu IA.'; T.fmt = 1; return riPaste(); }
+  T.err = ''; T.fmt = 0;
   const g = activeGym().id;
   state.rI = { days, src: state.riLast || 'claude', on: '', oc: RI_COLORS[0], plan: 'new', gym: g, at: Date.now() };
   riView(true);
@@ -443,6 +461,7 @@ window.addEventListener('click', ev => {
   if (a === 'import') { state.riT = { txt: '', err: '' }; return riPaste(); }
   if (a === 'cancel') { state.riT = null; state.rI = null; return closeSheet(); }
   if (a === 'read') return riRead();
+  if (a === 'fmt') return nsCopy(aixFormat([])).then(ok => toast(ok ? 'Formato copiado: pégalo al final de tu mensaje a la IA.' : 'No se pudo copiar.'));
   if (a === 'chip') return riSrcSheet(b.dataset.day);
   if (a === 'ssrc' || a === 'scol' || a === 'snone' || a === 'ssave') {
     const S = state.riS; if (!S) return; const n = document.getElementById('ri-son'); if (n) S.on = n.value;

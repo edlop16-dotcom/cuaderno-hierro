@@ -205,7 +205,7 @@ function nsImportSheet(planId, dayId) {
   state.nsImp = { planId, dayId, txt: state.nsImp && state.nsImp.dayId === dayId ? state.nsImp.txt : '' };
   const days = nsDays(planId, dayId);
   openSheet(`<div class="row"><h2 class="grow">Importar recomendación</h2><button class="icon-btn" data-act="sheet-close" aria-label="Cerrar">${ic('x', 18)}</button></div>
-    <div class="muted ns-help">Pega la respuesta completa de tu IA. Busco la tabla de recomendaciones (<b>Ejercicio · Peso · Reps · RIR</b>) aunque venga con tabulaciones, espacios o una celda por línea, y las líneas <b>Ejercicio | peso | reps | RIR</b>. Tu plan no cambia.</div>
+    <div class="muted ns-help">Pega la respuesta completa de tu IA (o solo su bloque de código). Cada día va con su línea <b>LUNES: nombre</b> y la tabla <b>Ejercicio · Peso · Reps · RIR · Descanso</b>; también leo las tablas viejas aunque vengan con tabulaciones, espacios o una celda por línea. Tu plan no cambia.</div>
     <textarea id="ns-txt" class="ns-txt" rows="8" placeholder="Prensa 45° | 190 | 15 | 2,1,0&#10;Sentadilla Hack | 60 | 11-12 | 2,1,0">${esc(state.nsImp.txt)}</textarea>
     <small class="pb-err" id="ns-txt-e" role="alert" hidden></small>
     <label class="field"><span class="label">Para el día</span><select id="ns-day">${days.map(x => `<option value="${x.p.id}|${x.d.id}" ${x.d.id === dayId ? 'selected' : ''}>${WDL[x.d.weekday]} · ${esc(x.d.name)}</option>`).join('')}</select></label>

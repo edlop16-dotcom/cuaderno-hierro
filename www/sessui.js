@@ -6,9 +6,9 @@
    3. Figura grande; 4. nombre grande con el equipo entre paréntesis (si el nombre no lo dice ya).
    5. Píldoras deslizables: Técnica · Reemplazar (alternativas de la Tanda B) · Ocupada · Notas ·
       Calentamiento · Descanso · Progreso · 🎵 (si hay música).
-   6. Una línea del coach, el calentamiento plegable y la tabla Serie · Anterior · Kg · Reps · ✓
-      (check redondo grande, fila hecha en verde); 7. "+ Añadir serie" a lo ancho.
-   Debajo, en su orden de siempre: avisos, tu nota, "Anterior en…", el coach completo, barra y discos,
+   6. La recomendación del coach (compacta, "Ver más" si es larga), el calentamiento plegable y la tabla
+      Serie · Anterior · Kg · Reps · ✓ (check redondo grande, fila hecha en verde); 7. "+ Añadir serie" a lo ancho.
+   Debajo, en su orden de siempre: avisos, tu nota, "Anterior en…", barra y discos,
    drop set y notas. 8. Descanso fijo abajo: tiempo grande, −15 s, +15 s y Saltar.
    Sonido al marcar una serie (WebAudio, sin archivos): clic corto; ding si cierra el ejercicio.
    No suena al desmarcar ni encima del fin del descanso; respeta el modo silencio (alertCfg).
@@ -42,11 +42,23 @@ function suCard(card, i) {
   if (restChip) { restChip.classList.add('su-p', 'su-rest'); p.insertBefore(restChip, p.querySelector('[data-act="ex-stats"]')); }
   if (how) how.classList.add('su-hide'); if (busy) busy.classList.add('su-hide');
   const top = card.querySelector(':scope > .ex-top'); if (top) top.classList.add('su-hide');
-  /* 6. Línea del coach (toca para ver el detalle, que queda debajo de la tabla) */
-  const cb = card.querySelector(':scope > .coach, :scope > .sugg'), cl = document.createElement('button');
-  cl.type = 'button'; cl.className = 'su-coach'; cl.dataset.act = 'su-coach'; cl.dataset.ex = i;
-  const ct = cb ? (cb.querySelector('.coach-h span:last-child, span:last-child') || cb).textContent.replace(/\s+/g, ' ').trim() : '';
-  cl.innerHTML = `<b class="num">${e.target} × ${reps(e)}</b>${ct ? `<span>${esc(ct)}</span>` : ''}${cb ? ic('chevron-down', 15) : ''}`;
+  /* 6. Recomendación del coach (🧠) arriba y compacta (18-oct-2026): peso y reps sugeridos y el motivo corto
+     en 2-3 líneas; si el texto es largo, tocarla ("Ver más") la abre ahí mismo. Sin coach: la línea series × reps. */
+  const cb = card.querySelector(':scope > .coach, :scope > .sugg');
+  let cl = cb;
+  if (cb) {
+    const hh = cb.querySelector('.coach-h'), lis = cb.querySelectorAll('ul > li'), key = e.exId || e.name;
+    const h2 = !!hh && hh.textContent.trim().length > 44;   /* titular largo (p. ej. la importada con peso × reps · RIR): 2 líneas y el motivo en 1 */
+    const long = lis.length > 1 || (lis[0] && lis[0].textContent.trim().length > (h2 ? 45 : 90)) || (hh && hh.textContent.trim().length > 88);
+    const open = long && !!(state.suCo || {})[key];
+    cb.classList.add('su-co'); cb.classList.toggle('su-open', open); cb.classList.toggle('su-h2', h2);
+    const ul = cb.querySelector(':scope > ul'), more = `<span class="su-more">${open ? 'Ver menos' : 'Ver más'}</span>`;   /* junto al motivo: el titular usa todo el ancho */
+    if (long) { if (ul) ul.insertAdjacentHTML('beforebegin', more); else { cb.insertAdjacentHTML('beforeend', more); cb.classList.add('su-noul'); } }
+    if (long) { cb.dataset.act = 'su-co'; cb.dataset.ex = i; cb.setAttribute('role', 'button'); cb.tabIndex = 0; cb.setAttribute('aria-expanded', open ? 'true' : 'false'); }
+  } else {
+    cl = document.createElement('button'); cl.type = 'button'; cl.className = 'su-coach'; cl.dataset.act = 'su-coach'; cl.dataset.ex = i;
+    cl.innerHTML = `<b class="num">${e.target} × ${reps(e)}</b>`;
+  }
   /* Tabla: encabezado "Anterior" y "✓"; filas hechas en verde */
   const sets = card.querySelector(':scope > .sets');
   if (sets) {
@@ -142,8 +154,11 @@ document.addEventListener('click', ev => {
     const ta = card.querySelector('textarea.note-in'); if (ta) { ta.scrollIntoView({ block: 'center', behavior: 'smooth' }); setTimeout(() => { try { ta.focus({ preventScroll: true }); } catch (e) { ta.focus(); } }, 350); }
   } else if (a === 'su-warm' && card) {
     const w = card.querySelector('details.warm'); if (w) { w.open = true; w.scrollIntoView({ block: 'start', behavior: 'smooth' }); }
-  } else if (a === 'su-coach' && card) {
-    const c = card.querySelector(':scope > .coach, :scope > .sugg'); if (c) c.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  } else if (a === 'su-co' && card) {   /* "Ver más / Ver menos" sin redibujar; se recuerda por ejercicio en la sesión */
+    const e = state.draft && state.draft.exercises[+b.dataset.ex]; if (!e) return;
+    const key = e.exId || e.name, M = state.suCo = state.suCo || {}, open = !M[key]; M[key] = open;
+    b.classList.toggle('su-open', open); b.setAttribute('aria-expanded', open ? 'true' : 'false');
+    const m = b.querySelector('.su-more'); if (m) m.textContent = open ? 'Ver menos' : 'Ver más';
   } else if (a === 'su-snd') { S.setSound = S.setSound === false; savePlans(); render(); if (S.setSound) suChime(false); }
   else if (a === 'su-vib') { S.setVibe = S.setVibe === false; savePlans(); render(); if (S.setVibe) { try { navigator.vibrate && navigator.vibrate(25); } catch (e) {} } }
 }, true);

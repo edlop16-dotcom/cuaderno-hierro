@@ -1,0 +1,10 @@
+Plan de 3 días (inventado para pruebas):
+
+| Día | Rutina | Ejercicio | Series | Reps | RIR | Descanso |
+|---|---|---|---|---|---|---|
+| Lunes | Empuje | Press Banca Plano (Barra) | 4 | 6-8 | 2 | 180 |
+|  |  | Elevaciones Laterales | 3 | 12-15 | 1 | 60 |
+| Miércoles | Tirón | Jalón al Pecho | 4 | 8-10 | 2 | 120 |
+| Miércoles | Tirón | Curl Martillo | 3 | 10-12 | 1 | 60 |
+| Viernes | Pierna | Sentadilla con Barra | 4 | 6-8 | 2 | 180 |
+|  |  | Curl Femoral Tumbado | 3 | 10-12 | 1 | 90 |

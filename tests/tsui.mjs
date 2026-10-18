@@ -32,9 +32,9 @@ const SPY = () => {
   if (AC) { const co = AC.prototype.createOscillator; AC.prototype.createOscillator = function () { window.__snd.osc++; return co.call(this); }; }
   try { Object.defineProperty(navigator, 'vibrate', { configurable: true, value: p => { window.__snd.vib.push(p); return true; } }); } catch (e) {}
 };
-async function open(dir, { seed, watch, w } = {}) {
+async function open(dir, { seed, watch, w, h } = {}) {
   const srv = await serve(dir);
-  const ctx = await browser.newContext(watch ? { viewport: { width: 410, height: 500 }, hasTouch: true } : { viewport: { width: w || 390, height: 844 }, hasTouch: true });
+  const ctx = await browser.newContext(watch ? { viewport: { width: 410, height: 500 }, hasTouch: true } : { viewport: { width: w || 390, height: h || 844 }, hasTouch: true });
   await ctx.route(/googleapis|gstatic|google\.com|firebase/, r => r.abort());
   const p = await ctx.newPage(); p.errs = [];
   p.on('pageerror', e => p.errs.push(e.message));
@@ -74,7 +74,7 @@ console.log('A. Dueño: sesión de su rutina');
     const th = document.querySelector('.sx-th'), ck = card.querySelector('.check');
     return { sw: !!document.querySelector('#sx .sx-top .su-sw'), fin: !!document.querySelector('#sx .sx-fin'), add: !!document.querySelector('#sx-strip .sx-th-add'),
       th: [th.offsetWidth, getComputedStyle(th).borderRadius], name: card.querySelector('h3').textContent, pills: [...card.querySelectorAll('.su-pills .su-p')].map(b => b.textContent.replace(/\s+/g, ' ').trim()),
-      order: { pills: idx('.su-pills'), coach: idx('.su-coach'), sets: idx('.sets'), ctl: idx('.st-ctl'), note: idx('.field'), cbox: idx('.coach, .sugg') },
+      order: { pills: idx('.su-pills'), coach: idx('.su-co, .su-coach'), sets: idx('.sets'), ctl: idx('.st-ctl'), note: idx('.field'), cbox: idx('.coach, .sugg') },
       heads: [...card.querySelectorAll('.sets > .h')].map(h => h.textContent), ck: [ck.offsetWidth, getComputedStyle(ck).borderRadius], addTxt: (card.querySelector('.st-ctl .st-b.add') || {}).textContent };
   }, cur);
   ok(L.sw && L.fin, 'barra de arriba con tiempo, cronómetro y Terminar');
@@ -82,7 +82,7 @@ console.log('A. Dueño: sesión de su rutina');
   console.log('     ejercicio: ' + L.name.trim() + ' · píldoras: ' + L.pills.join(' | '));
   ok(/\(.+\)/.test(L.name), 'nombre con el equipo entre paréntesis');
   ok(['Técnica', 'Reemplazar', 'Ocupada', 'Notas', 'Progreso'].every(t => L.pills.some(x => x.indexOf(t) >= 0)) && L.pills.some(x => /Descanso/.test(x)), 'píldoras: Técnica, Reemplazar, Ocupada, Notas, Descanso y Progreso');
-  ok(L.order.pills < L.order.coach && L.order.coach < L.order.sets && L.order.sets < L.order.ctl && L.order.ctl < L.order.note && L.order.sets < L.order.cbox, 'orden: píldoras → coach → tabla → Añadir serie → resto (coach completo, notas)');
+  ok(L.order.pills < L.order.coach && L.order.coach < L.order.sets && L.order.sets < L.order.ctl && L.order.ctl < L.order.note && L.order.coach === L.order.cbox, 'orden: píldoras → recomendación del coach (arriba) → tabla → Añadir serie → resto (notas)');
   ok(JSON.stringify(L.heads) === JSON.stringify(['Serie', 'Anterior', 'Kg', 'Reps', '✓']) || JSON.stringify(L.heads) === JSON.stringify(['Serie', 'Anterior', 'Discos', 'Reps', '✓']), 'tabla: ' + L.heads.join(' · '));
   ok(L.ck[0] === 52 && L.ck[1] === '50%', 'check redondo de 52 px');
   ok(/Añadir serie/.test(L.addTxt), '"+ Añadir serie" a lo ancho');
@@ -158,6 +158,35 @@ console.log('C. Pantalla de 360 px');
   const r = await p.evaluate(c => { const card = document.querySelector(c + '.card.ex'), sets = card.querySelector('.sets'); return { doc: document.documentElement.scrollWidth, card: card.getBoundingClientRect().right, sets: sets.scrollWidth <= sets.clientWidth + 1 }; }, cur);
   ok(r.doc <= 360 && r.card <= 360 && r.sets, 'sin desbordes a 360 px (la tabla cabe)');
   await shot(p, 'c1-360');
+  ok(!p.errs.length, 'sin errores de JS ' + p.errs.join(' | '));
+  await p.done();
+}
+/* Recomendación del coach arriba (18-oct-2026): compacta, "Ver más" y la 1.ª serie a la vista sin deslizar */
+for (const [w, h] of [[360, 740], [360, 640], [390, 844]]) {
+  console.log(`C2. Coach arriba a ${w}×${h}`);
+  const p = await open(DIR, { seed: OWNER, w, h });
+  await p.evaluate(START); await p.waitForTimeout(800);
+  const c = await p.evaluate(c => {
+    const card = document.querySelector(c + '.card.ex'), box = card.querySelector('.su-co'), kids = [...card.children], b = box.getBoundingClientRect(), ck = card.querySelector('.sets .check').getBoundingClientRect();
+    const lh = parseFloat(getComputedStyle(box).lineHeight) || 18;
+    return { after: kids.indexOf(box) === kids.indexOf(card.querySelector('.su-pills')) + 1, h: Math.round(b.height), top: Math.round(b.top), ck: Math.round(ck.bottom), vh: innerHeight, icon: !!box.querySelector('.coach-ic svg, .coach-ic'),
+      head: box.querySelector('.coach-h').textContent.trim(), more: (box.querySelector('.su-more') || {}).textContent || '', lines: Math.round((b.height - 18) / lh), sw: document.documentElement.scrollWidth };
+  }, cur);
+  console.log(`     coach: «${c.head}» · ${c.h} px · 1.ª serie termina en ${c.ck} de ${c.vh}`);
+  ok(c.after && c.icon, 'el recuadro del coach va justo bajo las píldoras, antes de la tabla');
+  ok(c.h <= 90, `compacto: ${c.h} px (máx. 90, unas 3 líneas)`);
+  ok(c.ck <= c.vh, '1.ª serie (con su ✓) visible sin deslizar');
+  ok(c.sw <= w, 'sin desbordes');
+  if (c.more) {
+    await p.locator(cur + '.su-co').first().click(); await p.waitForTimeout(200);
+    const o = await p.evaluate(c => { const box = document.querySelector(c + '.su-co'); return { open: box.classList.contains('su-open'), h: Math.round(box.getBoundingClientRect().height), more: box.querySelector('.su-more').textContent, lis: [...box.querySelectorAll('li')].filter(l => l.offsetHeight).length }; }, cur);
+    ok(o.open && o.h > c.h && o.more === 'Ver menos', `"Ver más" lo abre ahí mismo (${c.h} → ${o.h} px)`);
+    await p.evaluate(() => render()); await p.waitForTimeout(200);
+    ok(await p.evaluate(c => document.querySelector(c + '.su-co').classList.contains('su-open'), cur), 'sigue abierto después de redibujar');
+    await p.locator(cur + '.su-co').first().click(); await p.waitForTimeout(200);
+    ok(await p.evaluate(c => !document.querySelector(c + '.su-co').classList.contains('su-open'), cur), '"Ver menos" lo cierra');
+  }
+  await shot(p, `c2-coach-${w}x${h}`);
   ok(!p.errs.length, 'sin errores de JS ' + p.errs.join(' | '));
   await p.done();
 }

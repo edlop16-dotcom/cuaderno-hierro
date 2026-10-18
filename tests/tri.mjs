@@ -86,7 +86,7 @@ console.log('A. Dueño');
   await goImport(p, '');
   ok(await p.evaluate(() => /Pega el texto/.test(document.querySelector('#sheet .se-err') ? document.querySelector('#sheet .se-err').textContent : '')), 'sin texto: avisa y no avanza');
   await p.fill('#ri-txt', 'hola, ¿cómo estás?'); await p.click('#sheet [data-ri="read"]'); await p.waitForTimeout(300);
-  ok(await p.evaluate(() => /No encontré ejercicios/.test((document.querySelector('#sheet .se-err') || {}).textContent || '')), 'texto sin ejercicios: lo dice');
+  ok(await p.evaluate(() => /No encontré rutinas/.test((document.querySelector('#sheet .se-err') || {}).textContent || '') && !!document.querySelector('#sheet [data-ri="fmt"]')), 'texto sin ejercicios: lo dice y ofrece "Copiar formato para tu IA"');
   await p.fill('#ri-txt', TXT('es-markdown')); await p.click('#sheet [data-ri="read"]'); await p.waitForTimeout(400);
   let V = await pv(p);
   console.log('     ' + V.days.map(d => `${d.name} [${d.n}]`).join(' · '));
