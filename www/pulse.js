@@ -3,7 +3,7 @@
    PULSO
    - Durante la sesión se muestra ❤️ en vivo (arriba a la derecha).
    - En el descanso: avisa cuando el pulso baja a tu "pulso de recuperación"
-     (60 % de tu máximo: 220 − edad → 108 lpm a los 40 años). Así descansas lo justo.
+     (60 % de tu máximo: 220 − edad; en Ajustes el ejemplo usa la edad de Tus datos). Así descansas lo justo.
    - Al terminar se guardan el promedio, el máximo y las calorías estimadas (fórmula de Keytel
      con tu pulso, peso y edad) y se ven en el historial.
    PASOS
@@ -17,6 +17,8 @@ const stepsOf = t => Math.max(+(t && t.stepsP) || 0, +(t && t.stepsW) || 0, +(t 
 const stepGoal = () => +state.settings.stepGoal || 8000;
 const hrMax = () => 220 - (+HISTORY.age || 40);
 const hrReady = () => +state.settings.hrReady || Math.round(hrMax() * 0.6);
+/* Texto del máximo: con la edad de Tus datos, la cuenta; sin edad, solo la fórmula (el cálculo no cambia) */
+const hrMaxTxt = () => +HISTORY.age ? `220 − ${+HISTORY.age} = ${hrMax()} lpm` : '220 − tu edad';
 const fmtN = n => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 
 function bsInfo() {
@@ -188,7 +190,7 @@ vSettings = function () {
     ${!BS ? `<div class="muted" style="font-size:12.5px">El pulso y los pasos se leen en la app del celular y del reloj. Aquí ves lo que se sincroniza.</div>` : !i ? '<div class="muted">Revisando sensores…</div>' : `
     ${row('Pulso', i.hr ? (i.hrPerm ? 'Se mide durante tus sesiones.' : 'Este equipo tiene sensor de pulso.') + (i.hrName ? `<br><small>Sensor: ${esc(i.hrName)}</small>` : '') : 'Este equipo no tiene sensor de pulso que la app pueda leer.', i.hr && !i.hrPerm ? '<button class="btn small" data-act="hr-perm">Permitir</button>' : i.hr ? '<button class="btn small" data-act="hr-test">Probar</button>' : '')}
     ${row('Pasos', i.steps ? (i.stepsPerm ? 'Contando los pasos del día.' : 'Falta el permiso de actividad física.') : 'Este equipo no tiene contador de pasos.', i.steps && !i.stepsPerm ? '<button class="btn small" data-act="st-perm">Permitir</button>' : '')}`}
-    <form id="f-hrr" class="row" style="gap:8px"><label class="grow" for="hrr">Pulso de recuperación<div class="muted" style="font-size:12px">En el descanso te aviso al bajar a este valor (60 % de ${hrMax()}).</div></label><input id="hrr" inputmode="numeric" value="${hrReady()}" style="max-width:76px"><button class="btn small" type="submit">OK</button></form>
+    <form id="f-hrr" class="row" style="gap:8px"><label class="grow" for="hrr">Pulso de recuperación<div class="muted" style="font-size:12px">En el descanso te aviso al bajar a este valor (${isWatch() ? '60 % de ' + hrMax() : '60 % de tu máximo: ' + hrMaxTxt()}).</div></label><input id="hrr" inputmode="numeric" value="${hrReady()}" style="max-width:76px"><button class="btn small" type="submit">OK</button></form>
     <div class="hr-test-out muted num" style="font-size:13px"></div>
     ${BS ? '<button class="btn small" data-act="bs-list" style="align-self:flex-start">Ver sensores del equipo</button><div class="bs-list muted"></div>' : ''}</div>`;
   return _vSettingsHr() + card;
