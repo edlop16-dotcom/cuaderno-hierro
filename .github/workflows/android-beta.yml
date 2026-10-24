@@ -9,6 +9,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    # Beta usa el número de la última versión oficial (v1.0.N → versionCode N, nombre 1.0.N-beta):
+    # se instala encima de esa oficial y la oficial siguiente (N+1) se instala encima de beta.
+    - name: Número de versión de beta
+      run: |
+        n=$(git tag -l 'v1.0.*' --sort=-v:refname | head -n1 | sed 's/^v1\.0\.//')
+        case "$n" in ''|*[!0-9]*) echo "No hay etiqueta v1.0.N"; exit 1;; esac
+        echo "BUILD_NUMBER=$n" >> "$GITHUB_ENV"
+        echo "VERSION_SUFFIX=-beta" >> "$GITHUB_ENV"
+        echo "Beta: versionCode $n, versionName 1.0.$n-beta"
     - uses: actions/setup-node@v4
       with:
         node-version: 20
@@ -17,11 +28,9 @@ jobs:
         distribution: temurin
         java-version: 17
     - name: Compilar (sin publicar)
-      env:
-        BUILD_NUMBER: "1"
       run: bash ci/build.sh
     - uses: actions/upload-artifact@v4
       with:
-        name: Forja-beta
+        name: Forja-1.0.${{ env.BUILD_NUMBER }}-beta
         path: Forja.apk
         retention-days: 7

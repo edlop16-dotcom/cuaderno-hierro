@@ -1,6 +1,6 @@
 p = 'android/app/build.gradle'; s = open(p).read()
 s = s.replace('versionCode 1\n', 'versionCode Integer.parseInt(System.getenv("BUILD_NUMBER") ?: "1")\n')
-s = s.replace('versionName "1.0"', 'versionName "1.0." + (System.getenv("BUILD_NUMBER") ?: "0")')
+s = s.replace('versionName "1.0"', 'versionName "1.0." + (System.getenv("BUILD_NUMBER") ?: "0") + (System.getenv("VERSION_SUFFIX") ?: "")')
 s = s.replace('    buildTypes {\n        release {\n', """    signingConfigs {
         fixed {
             storeFile file('cuaderno.keystore')

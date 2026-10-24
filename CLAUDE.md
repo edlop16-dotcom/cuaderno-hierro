@@ -103,7 +103,7 @@ Bug de la v1.0.45: al abrir, la pantalla parpadeaba. Medido (Edge, CPU ×4): `#a
   - Novedades `n5` (`rem`, `remperm`); quien no vio la n4 la ve también (`NEWS_N4`).
   - Pruebas: tests/thal.mjs partes E-J (plugin simulado con `log` y `events`). Las pruebas fijan `newsSeen` en "n5".
 - "Hábitos de hoy": el botón de la campana pasó a ser la **rueda de ajustes** (`settings`, "Ajustes de los recordatorios"); abre Ajustes con la tarjeta Recordatorios entera a la vista (`scrollMarginTop` 12 px). La campanita por hábito de "Tus hábitos" (`ha-rem`) no cambia.
-- `.github/workflows/android-beta.yml` compila en cada push a `beta` sin publicar release (solo comprueba).
+- `.github/workflows/android-beta.yml` compila en cada push a `beta` sin `[skip ci]`, sin publicar release; el APK queda como artifact `Forja-1.0.N-beta` (7 días). N = número de la última etiqueta oficial `v1.0.N` (versionCode N, versionName `1.0.N-beta` con `VERSION_SUFFIX` en patch_gradle.py): se instala encima de la oficial N sin perder datos, y la oficial N+1 se instala encima de beta. Una beta vieja no se instala encima de una oficial más nueva.
 - Para Google Play: USE_EXACT_ALARM y pantalla completa requieren justificar el uso (o quitarlos).
 
 ## Versión web
