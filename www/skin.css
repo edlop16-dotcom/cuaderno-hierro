@@ -2085,3 +2085,7 @@ body:not(.watch) .wx-card .btn{align-self:flex-start;margin-top:8px}
 body:not(.watch) .ex-hrow{flex-shrink:0;margin-bottom:12px}
 body:not(.watch) .ex-fs{justify-content:center}
 body:not(.watch) .aix-kindw,body:not(.watch) .aix-skipk{flex-shrink:0}
+/* Tanda I2 · Ajustes → Fin del descanso: pantalla completa con el celular apagado (descanso.js). Solo teléfono. */
+body:not(.watch) .rf-row{gap:12px;align-items:center;margin-top:4px}
+body:not(.watch) .rf-row .switch{border:0;cursor:pointer;flex-shrink:0}
+body:not(.watch) .rf-perm{display:flex;flex-direction:column;gap:6px}

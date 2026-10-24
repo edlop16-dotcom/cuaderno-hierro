@@ -85,7 +85,9 @@ public class HabitAlarmActivity extends Activity {
         HabitAlarms.removeVeil(this);
         HabitAlarms.removeOverlay(this);
         HabitAlarms.markOpened(this, item.optInt("id"));
-        setContentView(HabitAlarms.buildUi(this, item, this::finish));
+        boolean rest = HabitAlarms.isRest(item);
+        HabitAlarms.restAct = rest ? new java.lang.ref.WeakReference<android.app.Activity>(this) : null;
+        setContentView(rest ? HabitAlarms.buildRestUi(this, item, this::finish) : HabitAlarms.buildUi(this, item, this::finish));
         return true;
     }
 

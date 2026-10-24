@@ -110,6 +110,31 @@ public class HabitAlarmPlugin extends Plugin {
         call.resolve();
     }
 
+    /** Fin del descanso (I2): a la hora `at`, si la pantalla está apagada, la enciende con "Descanso terminado". */
+    @PluginMethod
+    public void rest(PluginCall call) {
+        try {
+            JSONObject o = new JSONObject();
+            o.put("id", HabitAlarms.REST_ID);
+            o.put("kind", "rest");
+            Double at = call.getDouble("at");
+            o.put("at", at != null ? at.longValue() : System.currentTimeMillis());
+            o.put("title", call.getString("title", "Descanso terminado"));
+            o.put("body", call.getString("body", ""));
+            o.put("snd", call.getBoolean("snd", true));
+            o.put("vib", call.getBoolean("vib", true));
+            HabitAlarms.channel(getContext());
+            HabitAlarms.arm(getContext(), o);
+            call.resolve();
+        } catch (Exception e) { call.reject(e.getMessage()); }
+    }
+
+    @PluginMethod
+    public void restCancel(PluginCall call) {
+        HabitAlarms.restCancel(getContext());
+        call.resolve();
+    }
+
     /** Prueba: muestra la pantalla en N segundos. */
     @PluginMethod
     public void test(PluginCall call) {

@@ -132,7 +132,107 @@ public class HabitAlarms {
         return PendingIntent.getBroadcast(c, rc, i, flags(PendingIntent.FLAG_UPDATE_CURRENT));
     }
 
+    /* ---------- Fin del descanso (I2, 24-oct-2026): con la pantalla apagada se enciende y sale "Descanso terminado" ----------
+       La app lo programa al quedar en segundo plano durante un descanso (`rest`) y lo cancela al volver (`restCancel`).
+       No va en la lista `items`: reprogramar los recordatorios no lo toca. Con la pantalla encendida no hace nada: queda
+       la notificación normal de la app ("¡A la siguiente serie!", id 9001). */
+    static final int REST_ID = 2998, REST_LN_ID = 9001;
+    static java.lang.ref.WeakReference<android.app.Activity> restAct;
+    static boolean isRest(JSONObject o) { return "rest".equals(o.optString("kind")); }
+    static Intent appIntent(Context c) {
+        Intent i = c.getPackageManager().getLaunchIntentForPackage(c.getPackageName());
+        if (i == null) i = new Intent();
+        return i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+    }
+    static void showRest(Context c, JSONObject o) {
+        NotificationManager nm = (NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE);
+        boolean on = true, over = false;
+        try {
+            android.os.PowerManager pm = (android.os.PowerManager) c.getSystemService(Context.POWER_SERVICE);
+            on = pm == null || pm.isInteractive();
+            over = Build.VERSION.SDK_INT >= 23 && android.provider.Settings.canDrawOverlays(c);
+        } catch (Exception ignored) {}
+        if (on) return;
+        channel(c);
+        final Context app = c.getApplicationContext();
+        Intent full = new Intent(c, HabitAlarmActivity.class).putExtra("item", o.toString())
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_USER_ACTION);
+        PendingIntent fullPI = PendingIntent.getActivity(c, REST_ID * 4 + 3, full, flags(PendingIntent.FLAG_UPDATE_CURRENT));
+        PendingIntent appPI = PendingIntent.getActivity(c, REST_ID * 4 + 1, appIntent(c), flags(PendingIntent.FLAG_UPDATE_CURRENT));
+        NotificationCompat.Builder b = new NotificationCompat.Builder(c, CH)
+            .setSmallIcon(R.drawable.ic_stat_notify)
+            .setColor(0xFFFF7A1A)
+            .setContentTitle(o.optString("title", "Descanso terminado"))
+            .setContentText(o.optString("body", ""))
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setDefaults(0).setSound(null).setVibrate(null)
+            .setAutoCancel(true)
+            .setContentIntent(appPI)
+            .setFullScreenIntent(fullPI, true)
+            .addAction(0, "Volver a la sesión", appPI);
+        if (nm != null) { nm.cancel(REST_LN_ID); nm.notify(REST_ID, b.build()); }
+        /* La notificación normal puede llegar un instante después: se quita para no avisar dos veces */
+        new Handler(Looper.getMainLooper()).postDelayed(() -> { try { if (nm != null) nm.cancel(REST_LN_ID); } catch (Throwable ignored) { } }, 1500);
+        if (o.optBoolean("snd", true)) ding(c);
+        else if (o.optBoolean("vib", true)) {
+            try { Vibrator vib = (Vibrator) c.getSystemService(Context.VIBRATOR_SERVICE); if (vib != null) { if (Build.VERSION.SDK_INT >= 26) vib.vibrate(VibrationEffect.createOneShot(450, VibrationEffect.DEFAULT_AMPLITUDE), ALARM_ATTR); else vib.vibrate(450); } } catch (Throwable ignored) { }
+        }
+        if (over) openWithVeil(app, full);   // sin "Aparecer encima" la abre Android por la notificación (pantalla completa, Android 14+ con permiso)
+        new Handler(Looper.getMainLooper()).postDelayed(() -> removeVeil(app), 2800);
+    }
+    static void restCancel(Context c) {
+        AlarmManager am = (AlarmManager) c.getSystemService(Context.ALARM_SERVICE);
+        PendingIntent pi = firePI(c, REST_ID, null, PendingIntent.FLAG_NO_CREATE);
+        if (pi != null && am != null) { am.cancel(pi); pi.cancel(); }
+        NotificationManager nm = (NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE);
+        if (nm != null) nm.cancel(REST_ID);
+        android.app.Activity a = restAct != null ? restAct.get() : null;
+        if (a != null && !a.isFinishing()) a.finish();
+    }
+    /* La vista: "Descanso terminado", qué sigue y un botón grande para volver a la sesión (pide desbloquear si hace falta) */
+    static android.view.View buildRestUi(final Context c, final JSONObject item, final Runnable close) {
+        android.widget.FrameLayout root = new android.widget.FrameLayout(c);
+        root.setBackground(new android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM, new int[] { 0xFF0B0D12, 0xFF2A1410, 0xFF8A3414, 0xFFFF6A1F }));
+        root.setClickable(true);
+        android.widget.LinearLayout top = new android.widget.LinearLayout(c);
+        top.setOrientation(android.widget.LinearLayout.VERTICAL);
+        top.setGravity(android.view.Gravity.CENTER_HORIZONTAL);
+        top.setPadding(dp(c, 28), dp(c, 150), dp(c, 28), 0);
+        top.addView(text(c, item.optString("title", "Descanso terminado"), 36, true));
+        String body = item.optString("body", "");
+        if (body.length() > 0) { android.widget.TextView bd = text(c, body, 18, false); bd.setPadding(0, dp(c, 18), 0, 0); bd.setAlpha(0.9f); top.addView(bd); }
+        root.addView(top, new android.widget.FrameLayout.LayoutParams(-1, -2, android.view.Gravity.TOP));
+
+        android.widget.LinearLayout bottom = new android.widget.LinearLayout(c);
+        bottom.setOrientation(android.widget.LinearLayout.VERTICAL);
+        bottom.setPadding(dp(c, 36), 0, dp(c, 36), dp(c, 56));
+        android.widget.TextView go = text(c, "Volver a la sesión", 20, true);
+        android.graphics.drawable.GradientDrawable pill = new android.graphics.drawable.GradientDrawable();
+        pill.setColor(0xFFFAFAFA); pill.setCornerRadius(dp(c, 40));
+        go.setBackground(pill); go.setTextColor(0xFFFF5A1F);
+        go.setPadding(dp(c, 22), dp(c, 20), dp(c, 22), dp(c, 20));
+        go.setOnClickListener(v -> {
+            final Runnable open = () -> { try { c.startActivity(appIntent(c)); } catch (Exception ignored) { } close.run(); };
+            android.app.KeyguardManager km = (android.app.KeyguardManager) c.getSystemService(Context.KEYGUARD_SERVICE);
+            if (Build.VERSION.SDK_INT >= 26 && c instanceof android.app.Activity && km != null && km.isKeyguardLocked()) {
+                km.requestDismissKeyguard((android.app.Activity) c, new android.app.KeyguardManager.KeyguardDismissCallback() {
+                    @Override public void onDismissSucceeded() { open.run(); }
+                });
+            } else open.run();
+        });
+        bottom.addView(go);
+        android.widget.TextView no = text(c, "Cerrar", 16, false);
+        no.setAlpha(0.85f); no.setPadding(0, dp(c, 22), 0, dp(c, 6));
+        no.setOnClickListener(v -> { NotificationManager nm = (NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE); if (nm != null) nm.cancel(REST_ID); close.run(); });
+        bottom.addView(no);
+        root.addView(bottom, new android.widget.FrameLayout.LayoutParams(-1, -2, android.view.Gravity.BOTTOM));
+        return root;
+    }
+
     static void show(Context c, JSONObject o) {
+        if (isRest(o)) { showRest(c, o); return; }
         channel(c);
         final int id = o.optInt("id");
         String item = o.toString();
