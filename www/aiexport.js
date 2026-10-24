@@ -45,9 +45,9 @@ function aixRest(s, e) {
   for (const p of state.plans) for (const d of p.days) { const x = d.exercises.find(y => y.name === e.name); if (x && x.rest) return aixSec(x.rest) + ' (rutina)'; }
   return '';
 }
-function aixSessLine(s) {
-  const d = new Date(s.date), u = aixU();
-  const head = `${dk(d)} ${WD[d.getDay()]} · ${s.gymName || gymName(sGym(s))} · ${s.dayName} · ${s.planId === 'quick' ? 'entreno rápido' : (KINDS[sKind(s)] || '').toLowerCase()}${s.durationSec ? ' · ' + Math.round(s.durationSec / 60) + ' min' : ''}${s.edited ? ' · editada' : ''}`;
+function aixSessLine(s, o) {
+  const d = new Date(s.date), u = aixU(), day = o && o.day ? `DÍA ${WDL[d.getDay()].toUpperCase()} · ${dk(d)}` : `${dk(d)} ${WD[d.getDay()]}`;
+  const head = `${day} · ${s.gymName || gymName(sGym(s))} · ${s.dayName} · ${s.planId === 'quick' ? 'entreno rápido' : (KINDS[sKind(s)] || '').toLowerCase()}${s.durationSec ? ' · ' + Math.round(s.durationSec / 60) + ' min' : ''}${s.edited ? ' · editada' : ''}${s.live ? ' · en curso' : ''}`;
   const ex = s.exercises.map(e => {
     const bar = BAR_DEFAULT[e.name] ? ` (${u} en discos + barra ${fmtKg(BAR_DEFAULT[e.name])})` : '', r = aixRest(s, e);
     return `- ${e.name}${bar}: ${e.sets.length ? e.sets.map(x => ddSetTxt(x, e)).join(', ') : 'sin series'}${r ? ' · descanso ' + r : ''}${e.note ? ' · nota: ' + e.note.replace(/\s+/g, ' ') : ''}`;
@@ -77,14 +77,8 @@ function aixStreak() { try { const s = streakInfo(); return `${s.count} entrenos
 
 /* ---------- 3. Prompts de coach ---------- */
 const AIX_DEF = {
-  day: `Actúa como mi entrenador personal experto en hipertrofia y fuerza, con criterio basado en evidencia. Analiza mi sesión de hoy:
-1. Resumen en 2 líneas: cómo fue la sesión.
-2. Ejercicio por ejercicio: peso, reps y RIR frente a la última vez; si progresé, me estanqué o retrocedí, y por qué puede ser.
-3. Señales de fatiga o de técnica a vigilar (caídas de reps entre series, fallo temprano, peso bajado a mitad).
-4. Qué hacer la próxima vez en cada ejercicio: subir, mantener o bajar, con números concretos.
-5. Descanso entre series de cada ejercicio en segundos según mi objetivo y el tipo de ejercicio (compuestos pesados más descanso, aislamientos menos), y duración estimada de la próxima sesión en minutos. Si mi sesión duró demasiado, dime dónde recortar.
-6. Una sola recomendación prioritaria.
-Mi objetivo es {objetivo}. Considera mis molestias: {molestias}. Sé directo y breve.`,
+  /* I1 (24-oct-2026): lo que se pide va al final ("LO QUE TE PIDO", con el objetivo y el tipo de sesión) */
+  day: `Actúa como mi entrenador personal experto en hipertrofia y fuerza, con criterio basado en evidencia. Abajo van mis datos, mi sesión y, al final, lo que te pido. Sé directo y breve.`,
   week: `Actúa como mi entrenador personal experto en hipertrofia. Analiza mi semana completa:
 1. Resumen: sesiones hechas frente a las planeadas, racha y constancia.
 2. Volumen por músculo: series efectivas frente a la meta de 10-20; qué músculos quedaron cortos o pasados.
@@ -125,22 +119,28 @@ function aixFill(tpl, v) {
 /* Un solo bloque de código; dentro, antes de cada tabla, la línea "DÍA: nombre" (18-oct-2026: algunas IA
    dejaban el título fuera del bloque y su botón Copiar lo perdía). Sin días = para importar rutinas nuevas. */
 const aixWdUp = d => WDL[d.weekday].toUpperCase();
-function aixFormat(days) {
-  days = (days || []).filter(Boolean); const u = aixU();
+/* Tipo de un día de la rutina (fuerza o bombeo) y su etiqueta en el formato: "LUNES (FUERZA): nombre" */
+const aixDayKind = d => (d ? d.kind || kindOfName(d.name) : null);
+const aixKindUp = k => (KINDS[k] || KINDS.fuerza).toUpperCase();
+/* `o.dia`: la línea empieza con "DÍA " ("DÍA LUNES (FUERZA): nombre"), como en la exportación de la semana */
+function aixFormat(days, o) {
+  days = (days || []).filter(Boolean); const u = aixU(), D = o && o.dia ? 'DÍA ' : '';
   const names = d => d.exercises.map(e => e.name).join(', ');
-  const list = !days.length ? '' : days.length === 1 ? names(days[0]) : days.map(d => `${aixWdUp(d)}: ${d.name} → ${names(d)}`).join('; ');
+  const list = !days.length ? '' : days.length === 1 ? names(days[0]) : days.map(d => `${aixWdUp(d)} (${aixKindUp(aixDayKind(d))}): ${d.name} → ${names(d)}`).join('; ');
   const exTxt = list ? `Ejercicio: nombre EXACTO de esta lista ${list}, igual en todas sus filas; si es nuevo, nombre completo con el equipo.`
     : 'Ejercicio: nombre completo con el equipo (por ejemplo "Prensa 45°" o "Remo Sentado con Cable"), igual en todas sus filas.';
+  const one = days.length === 1 ? ` (aquí: ${D}${aixWdUp(days[0])} (${aixKindUp(aixDayKind(days[0]))}): ${days[0].name})` : '';
+  const pat = D ? `'DÍA LUNES (TIPO): nombre' (con LUNES, MARTES, MIÉRCOLES, JUEVES, VIERNES, SÁBADO o DOMINGO` : `'DÍA (TIPO): nombre' (DÍA: LUNES, MARTES, MIÉRCOLES, JUEVES, VIERNES, SÁBADO o DOMINGO`;
   return `FORMATO OBLIGATORIO (lo lee mi app automáticamente):
-Al final, UN SOLO bloque de código con todo lo que debo importar. Dentro del bloque, antes de cada tabla, una línea con el día y el nombre de la rutina: 'DÍA: nombre' (LUNES, MARTES, MIÉRCOLES, JUEVES, VIERNES, SÁBADO, DOMINGO). Debajo, el encabezado exacto 'Ejercicio | Peso | Reps | RIR | Descanso' y una fila por SERIE en el orden en que se hacen. ${exTxt} Peso: solo el número en ${u} (0 = peso corporal; mancuernas = una). Reps: número o rango. RIR: 0 a 4. Descanso: segundos. Una línea en blanco entre días. Nada de texto, notas, emojis ni negritas dentro del bloque. Para la sesión del día: un solo día (el próximo de esa rutina). Para la semana: un bloque con todos los días de la rutina activa.
+Al final, UN SOLO bloque de código con todo lo que debo importar. Dentro del bloque, antes de cada tabla, una línea con el día, el tipo de sesión y el nombre de la rutina: ${pat}; TIPO: FUERZA o BOMBEO, el de ese día en mi rutina)${one}. Debajo, el encabezado exacto 'Ejercicio | Peso | Reps | RIR | Descanso' y una fila por SERIE en el orden en que se hacen. ${exTxt} Peso: solo el número en ${u} (0 = peso corporal; mancuernas = una). Reps: número o rango. RIR: 0 a 4. Descanso: segundos. Una línea en blanco entre días. Nada de texto, notas, emojis ni negritas dentro del bloque. Para la sesión del día: un solo día (el próximo de esa rutina). Para la semana: un bloque con todos los días de la rutina activa.
 Ejemplo:
 \`\`\`
-LUNES: Piernas + Torso (Pesado)
+${D}LUNES (FUERZA): Piernas + Torso (Pesado)
 Ejercicio | Peso | Reps | RIR | Descanso
 Prensa 45° | 180 | 12 | 2 | 150
 Prensa 45° | 180 | 12 | 1 | 150
 
-MIÉRCOLES: Full Body (Bombeo)
+${D}MIÉRCOLES (BOMBEO): Full Body (Bombeo)
 Ejercicio | Peso | Reps | RIR | Descanso
 Hip Thrust | 45 | 12 | 2 | 120
 \`\`\``;
@@ -154,9 +154,28 @@ function aixDatos() {
   const v = aixProfile(), parts = [v.age ? v.age + ' años' : '', v.kg ? fmtKg(v.kg) + ' kg' : '', v.cm ? v.cm + ' cm' : '', v.goal ? 'objetivo: ' + v.goal : '', v.inj ? 'molestias: ' + v.inj : ''].filter(Boolean);
   return parts.length ? 'MIS DATOS: ' + parts.join(' · ') : '';
 }
+/* ---------- Lo que se pide al final: objetivo de Tus datos (o que la IA lo pregunte) y el tipo de sesión ---------- */
+const AIX_KIND_TIP = {
+  fuerza: 'rangos de 6-10 reps con RIR 1-3, descansos de 2-3 min en los compuestos y subir el peso cuando completes el rango; prioriza la técnica y la carga de los ejercicios principales',
+  bombeo: 'rangos de 10-15 reps (más en aislamientos) con RIR 0-2, descansos de 60-90 s y progresar primero en reps o series y luego en peso; drop sets o superseries solo si encajan',
+};
+const aixKindLow = k => (KINDS[k] || KINDS.fuerza).toLowerCase();
+function aixGoalLine(goal) {
+  return goal ? `Mi objetivo: ${goal}.` : 'Aún no te dije mi objetivo: pregúntamelo antes de recomendarme (ganar músculo, fuerza, bajar grasa, salud…) y no lo supongas.';
+}
+function aixAskDay(list, d) {
+  const v = aixProfile(), s = list[0] || {}, k = sKind(s), kd = aixDayKind(d), live = list.some(x => x.live);
+  return ['LO QUE TE PIDO (sesión de ' + aixKindLow(k) + (live ? ', todavía en curso' : '') + '):',
+    `1. Un análisis breve de esta sesión (máximo 5 líneas): qué progresó, qué se estancó o bajó y por qué puede ser.`,
+    `2. Recomendaciones propias de una sesión de ${aixKindLow(k)}: ${AIX_KIND_TIP[k] || AIX_KIND_TIP.fuerza}.`,
+    d ? `3. Los ejercicios de mi próxima sesión del ${WDL[d.weekday].toLowerCase()} (${d.name}, de ${aixKindLow(kd)}): peso, reps, RIR y descanso de cada serie, en el formato obligatorio de abajo.`
+      : '3. Los ejercicios de mi próxima sesión de este tipo: peso, reps, RIR y descanso de cada serie, en el formato obligatorio de abajo.',
+    aixGoalLine(v.goal), v.inj ? `Considera mis molestias: ${v.inj}.` : ''].filter(Boolean).join('\n');
+}
 sessionPrompt = function (list) {
   const days = []; list.forEach(s => { const d = aixDayOf(s); if (d && days.indexOf(d) < 0) days.push(d); });
-  return [aixHead('day'), aixDatos(), 'MI SESIÓN (peso×reps por serie, @ = reps en reserva, ↓ = drop set, pesos en ' + aixU() + '):', list.map(aixSessLine).join('\n\n'), aixFormat(days.slice(0, 1))].filter(Boolean).join('\n\n');
+  const live = list.some(s => s.live);
+  return [aixHead('day'), aixDatos(), `MI SESIÓN${live ? ' (en curso: solo lo hecho hasta ahora)' : ''} (peso×reps por serie, @ = reps en reserva, ↓ = drop set, pesos en ${aixU()}):`, list.map(s => aixSessLine(s)).join('\n\n'), aixAskDay(list, days[0]), aixFormat(days.slice(0, 1))].filter(Boolean).join('\n\n');
 };
 function aixWeekBody(off) {
   const ws = weekStartOf(new Date()); ws.setDate(ws.getDate() - 7 * off); const we = new Date(ws); we.setDate(we.getDate() + 7);
@@ -176,6 +195,29 @@ function aixAllText(per) {
   return { txt, n: list.length };
 }
 nsAskText = function (d) { return aixFormat(d ? [d] : []); };
+/* ---------- Exportar semana (I1): de lunes a domingo, el día en cada bloque y la próxima semana importable ---------- */
+function aixWeekOf(off) {
+  const ws = weekStartOf(new Date()); ws.setDate(ws.getDate() - 7 * off); const we = new Date(ws); we.setDate(we.getDate() + 7);
+  const list = state.sessions.filter(s => { const t = new Date(s.date); return t >= ws && t < we; }).slice().sort((a, b) => a.date.localeCompare(b.date));
+  return { off, ws, we, key: dk(ws), list };
+}
+function aixWeekText(off) {
+  const W = aixWeekOf(off), v = aixProfile(), days = aixPlanDays(), last = new Date(W.we.getTime() - 864e5), kinds = [];
+  days.forEach(d => { const k = aixDayKind(d); if (kinds.indexOf(k) < 0) kinds.push(k); });
+  let sets = ''; try { const S = weekSets(off); sets = MM_MAIN.map(k => `${zoneName(k)} ${Math.round(S.sets[k] * 2) / 2}`).join(', '); } catch (e) {}
+  const ask = [`LO QUE TE PIDO (semana del lunes ${fmtDate(W.ws.toISOString())} al domingo ${fmtDate(last.toISOString())}):`,
+    '1. Un análisis breve de la semana (máximo 6 líneas): constancia, volumen por músculo y qué progresó, se estancó o bajó.',
+    '2. Recomendaciones para la próxima semana según el tipo de cada día: ' + (kinds.length ? kinds : ['fuerza', 'bombeo']).map(k => `en los de ${aixKindLow(k)}, ${AIX_KIND_TIP[k] || AIX_KIND_TIP.fuerza}`).join('; ') + '.',
+    days.length ? `3. Mis sesiones de la próxima semana, día por día según mi rutina (${days.map(d => `${aixWdUp(d)} (${aixKindUp(aixDayKind(d))}): ${d.name}`).join('; ')}), con peso, reps, RIR y descanso de cada serie, en el formato obligatorio de abajo (lo importo como recomendación o como rutina).`
+      : '3. Una propuesta de sesiones para la próxima semana, día por día, con peso, reps, RIR y descanso de cada serie, en el formato obligatorio de abajo.',
+    aixGoalLine(v.goal), v.inj ? `Considera mis molestias: ${v.inj}.` : ''].filter(Boolean).join('\n');
+  const txt = ['Actúa como mi entrenador personal experto en hipertrofia y fuerza, con criterio basado en evidencia. Abajo van mis datos, mi rutina, mis sesiones de la semana y, al final, lo que te pido. Sé directo y breve.',
+    aixDatos(), 'MI RUTINA:\n' + aixPlanTxt(),
+    W.list.length ? `MIS SESIONES DE LA SEMANA (${W.list.length}; peso×reps por serie, @ = reps en reserva, ↓ = drop set, pesos en ${aixU()}):\n` + W.list.map(s => aixSessLine(s, { day: 1 })).join('\n\n') : 'Esa semana no registré sesiones.',
+    sets && W.list.length ? 'SERIES POR MÚSCULO ESA SEMANA (meta 10-20): ' + sets : '',
+    ask, aixFormat(days, { dia: 1 })].filter(Boolean).join('\n\n');
+  return { txt, n: W.list.length, W };
+}
 
 /* ---------- 6. Hoja "Exportar todo para tu IA" ---------- */
 const AIX_LONG = 6000;
@@ -280,7 +322,10 @@ function aixRestParse(s) {
 }
 const AIX_TITLE = /recomendacion para el proximo\s+([a-z]+)\s*:?\s*(.*)$/;
 /* Línea de día del formato nuevo: "LUNES: Piernas + Torso", "DÍA LUNES: …", "**Lunes – …**", "MIÉRCOLES" */
-const AIX_WDRE = /^(?:d[ií]a\s+)?(lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo)(?![a-záéíóúñ])\s*(?:[:\-–—·|]\s*(.*?))?\s*$/i;
+/* Con el tipo opcional entre paréntesis (I1): "LUNES (FUERZA): …", "DÍA MIÉRCOLES (BOMBEO): …" */
+const AIX_WDRE = /^(?:d[ií]a\s+)?(lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo)(?![a-záéíóúñ])\s*(?:\(\s*(fuerza|bombeo)\s*\)\s*)?(?:[:\-–—·|]\s*(.*?))?\s*$/i;
+/* Tipo que dice el texto: la etiqueta "(FUERZA)" / "TIPO: bombeo" o una palabra del nombre ("Pesado", "Bombeo") */
+const aixKindWord = s => { const n = normName(String(s || '')); return /\b(bombeo|pump|ligero)\b/.test(n) ? 'bombeo' : /\b(pesado|fuerza|heavy|strength)\b/.test(n) ? 'fuerza' : null; };
 /* Nombre corto: máx. 40 letras, cortado en una palabra entera */
 function aixCut(s, n) {
   s = String(s || '').replace(/^[\s:–—\-·|,.]+|[\s:–—\-·|,.]+$/g, '').replace(/\s+/g, ' ').trim(); n = n || 40;
@@ -291,8 +336,8 @@ function aixCut(s, n) {
 }
 function aixDayLine(raw) {
   const t = String(raw || '').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, ' ').replace(/[☀-➿️]/g, ' ').replace(/\*\*|__|`/g, '').replace(/^\s*(?:#+|>)\s*/, '').trim();
-  const m = t.match(AIX_WDRE); if (!m || (m[2] && m[2].indexOf('|') >= 0)) return null;   // "Lunes | Prensa | …" es una fila con columna Día
-  return { day: NS_DAYS.indexOf(normName(m[1])), name: aixCut(m[2] || '') };
+  const m = t.match(AIX_WDRE); if (!m || (m[3] && m[3].indexOf('|') >= 0)) return null;   // "Lunes | Prensa | …" es una fila con columna Día
+  return { day: NS_DAYS.indexOf(normName(m[1])), name: aixCut(m[3] || ''), kind: m[2] ? normName(m[2]) : null };
 }
 /* ---------- Tablas que llegan sin "|" (al copiar en el celular): se pasan a "|" ----------
    Mismas ideas que nsParse: encabezado con palabras de columna (NS_HWORD) en una línea con tabulaciones,
@@ -384,11 +429,12 @@ function aixBlocks(txt) {
     const dl = raw && aixDayLine(raw);
     if (dl && dl.day >= 0) {
       /* El título de fuera ("RECOMENDACIÓN PARA EL PRÓXIMO LUNES") y la línea "LUNES: …" de dentro son el mismo día */
-      if (cur && !cur.rows.length && !cur.untitled && (cur.day == null || cur.day === dl.day)) { cur.day = dl.day; if (dl.name) cur.name = dl.name; continue; }
+      if (cur && !cur.rows.length && !cur.untitled && (cur.day == null || cur.day === dl.day)) { cur.day = dl.day; if (dl.name) cur.name = dl.name; if (dl.kind) cur.kind = dl.kind; continue; }
       const h = head; close(); head = h;   // un mismo encabezado puede valer para varios días
-      cur = { day: dl.day, name: dl.name, rows: [] }; continue;
+      cur = { day: dl.day, name: dl.name, kind: dl.kind, rows: [] }; continue;
     }
     if (!raw || /^`{3}/.test(raw)) continue;
+    const tk = n.match(/^tipo\s*:?\s*(fuerza|bombeo)\b/); if (tk) { if (cur) cur.kind = tk[1]; continue; }   // "TIPO: FUERZA" debajo del día
     if (raw.indexOf('|') < 0) { if (cur && cur.rows.length && head) close(); continue; }
     const c = nsCells(nsClean(raw)); if (!c.length) continue;
     const H = nsWords(c.join(' '));
@@ -418,6 +464,7 @@ function aixBlocks(txt) {
   close();
   /* Sin título: solo cuenta si la tabla tiene la columna Descanso o va en un bloque de código (si no, lo lee nsParse como siempre) */
   const blocks = out.filter(b => !b.untitled || /```/.test(txt) || /descanso/i.test(txt));
+  blocks.forEach(b => { if (!b.kind) b.kind = aixKindWord(b.name); });   // sin etiqueta: "Pesado" / "Bombeo" en el nombre
   return blocks.length > 1 ? blocks : blocks.filter(b => !b.legacy);
 }
 const _nsParseAix = nsParse;
@@ -437,22 +484,52 @@ nsRowsFrom = function (parsed, d) {
   return out;
 };
 /* Leer: cada bloque a su día (del título); varios días = una vista previa por día */
+/* I1: con tipo (fuerza/bombeo) en el texto, solo un día de ese tipo; si el día de la semana es del otro tipo, no se guarda (`why`) */
 function aixDayFor(b, sel) {
-  const list = nsDays(sel.planId, sel.dayId);
-  if (b.day != null) { const byName = list.find(x => x.d.weekday === b.day && normName(x.d.name) === normName(b.name)); const byDay = list.find(x => x.d.weekday === b.day); if (byName || byDay) return byName || byDay; }
-  if (b.name) { const x = list.find(y => normName(y.d.name) === normName(b.name)); if (x) return x; }
+  const list = nsDays(sel.planId, sel.dayId), kOk = x => !b.kind || aixDayKind(x.d) === b.kind, same = x => normName(x.d.name) === normName(b.name);
+  if (b.day != null) {
+    const wd = list.filter(x => x.d.weekday === b.day), hit = wd.find(x => same(x) && kOk(x)) || wd.find(kOk);
+    if (hit) return hit;
+    if (wd.length) return { why: aixKindWhy(b.kind, wd[0].d) };
+  }
+  if (b.name) { const x = list.find(y => same(y) && kOk(y)); if (x) return x; }
   return null;
 }
+const aixKindWhy = (k, d) => `el ${WDL[d.weekday].toLowerCase()} de tu rutina es de ${aixKindLow(aixDayKind(d))} y esta recomendación es de ${aixKindLow(k)}`;
+/* Tipo que dice un texto sin bloques (tablas viejas): uno solo en los títulos o líneas de día; si no, null */
+function aixKindOfTxt(txt) {
+  const ks = []; String(txt || '').split('\n').forEach(l => { const n = normName(l.replace(/[*_#`>]/g, '')).trim(); if (!n || n.indexOf('|') >= 0) return;
+    const dl = aixDayLine(l), k = dl && dl.day >= 0 ? (dl.kind || aixKindWord(dl.name)) : /^tipo\s*:?\s*(fuerza|bombeo)\b/.test(n) || AIX_TITLE.test(n) ? aixKindWord(n) : null;
+    if (k && ks.indexOf(k) < 0) ks.push(k); });
+  return ks.length === 1 ? ks[0] : null;
+}
+const aixRowsLabel = b => (b.day != null ? WDL[b.day] : '') + (b.name ? (b.day != null ? ' · ' : '') + b.name : '');
 const _nsReadAix = nsRead;
 nsRead = function () {
   const txt = ($('#ns-txt') || {}).value || '', sel = (($('#ns-day') || {}).value || '').split('|');
-  const B = aixBlocks(txt); if (!B.length) return _nsReadAix();
-  const S = { planId: sel[0], dayId: sel[1] };
-  const skip = [];
-  const q = B.map((b, i) => { const m = aixDayFor(b, S) || (i === 0 ? { p: { id: S.planId }, d: findDay(S.planId, S.dayId).d } : null); if (!m || !m.d) skip.push((b.day != null ? WDL[b.day] : '') + (b.name ? (b.day != null ? ' · ' : '') + b.name : '')); return m && m.d ? { planId: m.p.id, dayId: m.d.id, rows: nsRowsFrom({ rows: b.rows }, m.d), title: b.name } : null; }).filter(Boolean);
-  if (!q.length) return _nsReadAix();
-  state.aixQ = q.slice(1); state.aixDone = [];
-  state.nsEd = Object.assign({}, q[0], { n: q.length, k: 1, skip }); nsEditSheet();
+  const S = { planId: sel[0], dayId: sel[1] }, selD = findDay(S.planId, S.dayId).d, err = $('#ns-txt-e');
+  const B = aixBlocks(txt);
+  if (!B.length) {   // tabla vieja: el día lo eliges tú; si el texto es del otro tipo, no se lee
+    const k = aixKindOfTxt(txt);
+    if (k && selD && aixDayKind(selD) !== k) { if (err) { err.textContent = `La recomendación es de ${aixKindLow(k)} y el ${WDL[selD.weekday].toLowerCase()} (${selD.name}) es de ${aixKindLow(aixDayKind(selD))}. Elige un día de ${aixKindLow(k)} en «Para el día»: solo se aplica a días del mismo tipo.`; err.hidden = false; } return; }
+    state.nsEd = null; _nsReadAix();
+    if (state.nsEd) { state.nsEd.kind = aixDayKind(findDay(state.nsEd.planId, state.nsEd.dayId).d); state.nsEd.kindTxt = !!k; nsEditSheet(); }
+    return;
+  }
+  const skip = [], skipK = [];
+  const q = B.map((b, i) => {
+    let m = aixDayFor(b, S);
+    if (!m && i === 0 && selD) m = !b.kind || aixDayKind(selD) === b.kind ? { p: { id: S.planId }, d: selD } : { why: aixKindWhy(b.kind, selD) };
+    if (m && m.why) { skipK.push(`${aixRowsLabel(b) || 'Sin día'}: ${m.why}`); return null; }
+    if (!m || !m.d) { skip.push(aixRowsLabel(b)); return null; }
+    return { planId: m.p.id, dayId: m.d.id, rows: nsRowsFrom({ rows: b.rows }, m.d), title: b.name, kind: aixDayKind(m.d), kindTxt: !!b.kind };
+  }).filter(Boolean);
+  if (!q.length) {
+    if (skipK.length && err) { err.textContent = 'No guardé nada: ' + skipK.join('; ') + '. Solo se aplica a días del mismo tipo.'; err.hidden = false; return; }
+    return _nsReadAix();
+  }
+  state.aixQ = q.slice(1).map(x => Object.assign(x, { skipK: [] })); state.aixDone = [];
+  state.nsEd = Object.assign({}, q[0], { n: q.length, k: 1, skip, skipK }); nsEditSheet();
 };
 /* Vista previa: cada serie con peso, reps, RIR y descanso; un ejercicio nuevo se agrega solo para esa sesión */
 nsEditSheet = function () {
@@ -473,6 +550,9 @@ nsEditSheet = function () {
   openSheet(`<div class="row"><h2 class="grow">${co ? 'Próxima sesión (Coach)' : 'Próxima sesión'} · ${WDL[d.weekday]}</h2><button class="icon-btn" data-act="sheet-close" aria-label="Cerrar">${ic('x', 18)}</button></div>
     <div class="muted ns-help">${esc(d.name)}${E.n > 1 ? ` · día ${E.k} de ${E.n}` : ''} · ${co ? (E.edited ? 'Editada por ti' : 'Armada con tu historial, la semana del bloque y cómo llegas hoy') : E.edit ? 'Importada el ' + nsWhen(E.at) : `Leí ${E.rows.length} ${E.rows.length === 1 ? 'ejercicio' : 'ejercicios'}`}. Revisa y guarda: tu plan no cambia.</div>
     ${E.skip && E.skip.length ? `<div class="ns-dayw aix-skip" role="status">No ${E.skip.length === 1 ? 'está' : 'están'} en tu plan y no se ${E.skip.length === 1 ? 'guarda' : 'guardan'}: <b>${E.skip.map(esc).join(', ')}</b>.</div>` : ''}
+    ${E.skipK && E.skipK.length ? `<div class="ns-dayw aix-skip aix-skipk" role="status">No se ${E.skipK.length === 1 ? 'guarda' : 'guardan'} (solo se aplica a días del mismo tipo): <b>${E.skipK.map(esc).join('; ')}</b>.</div>` : ''}
+    ${co || E.edit ? '' : E.kindTxt ? `<div class="muted ns-help aix-kind">Recomendación de <b>${aixKindLow(E.kind || aixDayKind(d))}</b>: se aplica solo a tu ${WDL[d.weekday].toLowerCase()} de ${aixKindLow(aixDayKind(d))}.</div>`
+      : `<div class="ns-dayw aix-kindw" role="status">El texto no dice si es de fuerza o de bombeo: la tomé como <b>${aixKindLow(aixDayKind(d))}</b>, el tipo de tu ${WDL[d.weekday].toLowerCase()} (${esc(d.name)}).</div>`}
     ${E.rows.map((r, i) => {
       const bad = E.tried && !r.exId;
       return `<div class="ns-ed ${r.exId === 'skip' ? 'off' : ''}" data-i="${i}">

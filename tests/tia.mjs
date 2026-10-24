@@ -74,8 +74,8 @@ console.log('A. Dueño: los tres textos');
   ok(/Considera mi edad \(31 años\)(?:,| y) mi peso \([\d,.]+ kg\)/.test(A), 'edad y peso llenados');
   ok(clean(A) && clean(T.day) && clean(T.week), 'sin {} ni huecos');
   ok(!/[\w.-]+@[\w-]+\.[a-z]{2,}|\bacc\b/i.test(A), 'sin correo ni cuenta');
-  const FD = t => ((t.split('FORMATO OBLIGATORIO')[1] || '').split('Ejemplo:')[0].match(/\b(LUNES|MARTES|MIÉRCOLES|JUEVES|VIERNES|SÁBADO|DOMINGO): [^→;]+ → /g) || []).length;
-  ok(FD(A) >= 3 && /UN SOLO bloque de código/.test(A) && /'DÍA: nombre'/.test(A), 'formato nuevo: un solo bloque con "DÍA: nombre" y los ejercicios de cada día de la rutina activa');
+  const FD = t => ((t.split('FORMATO OBLIGATORIO')[1] || '').split('Ejemplo:')[0].match(/\b(LUNES|MARTES|MIÉRCOLES|JUEVES|VIERNES|SÁBADO|DOMINGO) \((FUERZA|BOMBEO)\): [^→;]+ → /g) || []).length;
+  ok(FD(A) >= 3 && /UN SOLO bloque de código/.test(A) && /'DÍA \(TIPO\): nombre'/.test(A), 'formato nuevo: un solo bloque con "DÍA (TIPO): nombre" y los ejercicios de cada día de la rutina activa');
   ok(/^Actúa como mi entrenador personal experto en hipertrofia y fuerza, con criterio basado en evidencia\./.test(T.day) && FD(T.day) === 0 && /nombre EXACTO de esta lista [^;]+, igual en todas sus filas/.test(T.day), 'sesión del día: su prompt y la lista de un solo día');
   ok(/^Actúa como mi entrenador personal experto en hipertrofia\. Analiza mi semana completa:/.test(T.week) && /entreno \d días en Gimnasio/.test(T.week), 'semana: su prompt con días y gimnasio');
   fs.mkdirSync(SHOTS || '.', { recursive: true }); if (SHOTS) { fs.writeFileSync(path.join(SHOTS, 'historial-3m.txt'), A); fs.writeFileSync(path.join(SHOTS, 'dia.txt'), T.day); fs.writeFileSync(path.join(SHOTS, 'semana.txt'), T.week); }

@@ -2074,3 +2074,14 @@ body.su-sess .su-co.su-open[role="button"]{padding-bottom:28px}
 body.su-sess .su-co.su-open[role="button"] ul{padding-right:0}
 body.su-sess .su-co.su-h2:not(.su-open) .coach-h > span:not(.coach-ic){-webkit-line-clamp:2}
 body.su-sess .su-co.su-h2:not(.su-open) ul li:first-child{-webkit-line-clamp:1}
+/* ==========================================================================
+   Tanda I1 · Exportar (exportar.js): píldora en la sesión, tarjeta de la semana en Hoy,
+   botón en Historial y fila de botones del resumen. Solo teléfono.
+   ========================================================================== */
+body.su-sess .su-pills .ex-exp{flex-shrink:0}
+body:not(.watch) .wx-card{border-color:rgba(255,176,32,.35)!important}
+body:not(.watch) .wx-card .pb-ic{width:34px;height:34px;margin-right:10px}
+body:not(.watch) .wx-card .btn{align-self:flex-start;margin-top:8px}
+body:not(.watch) .ex-hrow{flex-shrink:0;margin-bottom:12px}
+body:not(.watch) .ex-fs{justify-content:center}
+body:not(.watch) .aix-kindw,body:not(.watch) .aix-skipk{flex-shrink:0}

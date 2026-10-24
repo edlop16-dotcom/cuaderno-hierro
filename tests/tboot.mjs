@@ -25,7 +25,8 @@ const serve = dir => new Promise(res => {
 let fail = 0;
 const ok = (c, msg) => { if (c) console.log('  ok  ', msg); else { fail++; console.log('  FALLA', msg); } };
 const browser = await chromium.launch({ channel: process.env.PW_CHANNEL === 'chromium' ? undefined : 'msedge', headless: process.env.PW_CHANNEL === 'chromium', args: ['--headless=new'] });
-const OWNER = OWNER_SETTINGS;
+/* I1: la tarjeta "Exportar semana" de Hoy (lunes) es nueva; ya vista, la pantalla se compara igual que antes */
+const OWNER = Object.assign({}, OWNER_SETTINGS, { wxSeen: '2026-10-12' });
 
 /* Se inyecta antes que todo: cuenta las escrituras de #app y guarda cada estado distinto que llega a un cuadro */
 const SPY = () => {

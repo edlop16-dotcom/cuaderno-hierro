@@ -95,7 +95,7 @@ console.log('B. Instrucción, texto inválido y análisis');
 {
  const p=await open(DIR,{owner:true}); await openImport(p);
  const ask=await p.evaluate(()=>nsAskText(activePlan().days[0]));
- ok(/UN SOLO bloque de código/.test(ask)&&/'DÍA: nombre'/.test(ask)&&/Ejercicio \| Peso \| Reps \| RIR \| Descanso/.test(ask),'instrucción con día dentro y nombres exactos');
+ ok(/UN SOLO bloque de código/.test(ask)&&/'DÍA \(TIPO\): nombre'/.test(ask)&&/Ejercicio \| Peso \| Reps \| RIR \| Descanso/.test(ask),'instrucción con día dentro y nombres exactos');
  for(const [text,pattern] of [[NADA,/No encontré una recomendación/],[ANALISIS,/tablas de análisis/]]){
   await p.fill('#ns-txt',text);await p.click('[data-ns="read"]');
   ok(pattern.test(await p.textContent('#ns-txt-e')),'mensaje específico para texto sin recomendación');

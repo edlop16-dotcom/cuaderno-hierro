@@ -297,8 +297,8 @@ function riBuild(text) {
   const days = riParse(text).map(d => {
     const ex = d.ex.map(e => { const m = riMatch(e.raw); return Object.assign(e, { name: m.sure ? m.name : null, sure: m.sure, sugg: m.sugg, on: true, top: m.top || (m.sure ? 1 : 0) }); })
       .filter(e => !e.loose || e.sure || e.top >= 0.5);
-    const t = d.title || '', w = riWds(t);
-    return { name: riDayTitle(t) || 'Rutina importada', wd: w.length ? w[0] : null, on: true, ex };
+    const t = d.title || '', w = riWds(t), dl = typeof aixDayLine === 'function' ? aixDayLine(t) : null;
+    return { name: riDayTitle(t) || 'Rutina importada', wd: w.length ? w[0] : null, on: true, ex, kind: dl && dl.kind || null };   /* "LUNES (FUERZA): …" fija el tipo */
   }).filter(d => d.ex.length);
   days.forEach((d, i) => { if (!/[a-záéíóúñ]/i.test(d.name)) d.name = 'Día ' + (i + 1); });
   const free = [1, 2, 3, 4, 5, 6, 0].filter(w => !days.some(d => d.wd === w));
@@ -426,7 +426,7 @@ function riSave() {
       return ex;
     });
     const mx = exercises.map(e => +e.repsMax || 12), avg = mx.reduce((a, b) => a + b, 0) / (mx.length || 1);
-    return { id: uid(), name, weekday: d.wd, kind: avg <= 10 ? 'fuerza' : 'bombeo', exercises, src: { n: src.n, c: src.c }, imp: Date.now() };
+    return { id: uid(), name, weekday: d.wd, kind: d.kind || (avg <= 10 ? 'fuerza' : 'bombeo'), exercises, src: { n: src.n, c: src.c }, imp: Date.now() };
   });
   made.forEach(d => p.days.push(d));
   p.days.sort((x, y) => ((x.weekday + 6) % 7) - ((y.weekday + 6) % 7));
