@@ -36,9 +36,9 @@ function badgeStats() {
   Object.keys(state.daily).forEach(d => { const c = (state.daily[d].cardio || []).filter(x => !x.del); c.forEach(x => { cdTotal += x.min; const w = wkKey(d + 'T12:00:00'); wk[w] = (wk[w] || 0) + x.min * ({ s: 0, m: 1, v: 2 }[x.z || 'm']); }); });
   const habs = habList().filter(h => !h.hidden); let run = 0, habRun = 0;
   if (habs.length) Object.keys(state.daily).sort().forEach((d, i, arr) => {
-    const t = state.daily[d], ok = habs.every(h => t[h.k]);
+    const t = state.daily[d], ok = habs.every(h => t[h.k]), om = !ok && habs.every(h => t[h.k] || (t.skip && t.skip[h.k]));   // con omitidos: pausa (ni suma ni corta)
     const prev = i ? arr[i - 1] : null, cont = prev && (new Date(d) - new Date(prev)) <= 864e5 * 1.5;
-    run = ok ? (cont ? run + 1 : 1) : 0; habRun = Math.max(habRun, run);
+    run = ok ? (cont ? run + 1 : 1) : om && cont ? run : 0; habRun = Math.max(habRun, run);
   });
   let weeks = 0; try { weeks = (streakInfo() || {}).weeks || 0; } catch (e) {}
   const lbs = state.settings.unit === 'lb';

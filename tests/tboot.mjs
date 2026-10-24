@@ -100,6 +100,7 @@ console.log('A. Dueño: apertura de todos los días');
   ok(p.B.frames.filter(f => !f.hidden).every(f => f.hoy && f.nav === F.nav), 'después no cambia de diseño ni de barra');
   ok(await p.evaluate(() => getComputedStyle(document.body).backgroundColor) === 'rgb(21, 23, 26)', 'al mostrarse, el fondo es el de siempre (#15171a)');
   ok(await p.evaluate(() => scrollY) === 0, 'abre arriba del todo (antes podía quedar bajado 14 px)');
+  await p.addStyleTag({ content: '.hab-omb{display:none!important}' });   // "Omitir hoy" en Hábitos de hoy es nuevo: fuera de la comparación con la versión anterior
   const now = await shot(p, 'a-duenio');
   console.log('G. Redibujo tardío con los mismos datos (como los avisos nativos al abrir)');
   await p.evaluate(() => { safeRender(); render(); }); await p.waitForTimeout(300);

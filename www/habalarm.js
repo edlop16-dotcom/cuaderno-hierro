@@ -17,7 +17,17 @@ function habKeyOf(r) {
   const k = r.kind === 'hab' ? r.hab : (HA_OLD.indexOf(r.kind) >= 0 ? r.kind : null);
   return k && habOf(k) ? k : null;
 }
-const habDoneOn = (k, date) => !!((state.daily[dk(date)] || {})[k]);
+/* ¿Ya no hay que avisar ese día? Hecho u omitido ("Omitir hoy", `daily[día].skip[k]`): las alarmas, repeticiones y avisos se saltan igual */
+const habDoneOn = (k, date) => { const t = state.daily[dk(date)] || {}; return !!(t[k] || (t.skip && t.skip[k])); };
+/* "Omitir hoy" (omitir.js): omitido y sin hacer; on = omitir / deshacer; quiet = sin guardar (lo hace quien llama) */
+const habSkipped = (k, date) => { const t = state.daily[dk(date)] || {}; return !!(t.skip && t.skip[k]) && !t[k]; };
+function habSkip(k, day, on, quiet) {
+  const t = state.daily[day] = state.daily[day] || { water: 0 }, s = Object.assign({}, t.skip || {});
+  if (on) s[k] = 1; else delete s[k];
+  if (Object.keys(s).length) t.skip = s; else delete t.skip;
+  t.edited = Date.now();
+  if (!quiet) saveDaily();
+}
 /* ¿Aparece en toda la pantalla? Hábitos: sí, salvo que lo apaguen (`fs:false`). Agua, entrenamiento y personalizados:
    si lo eligen (`fs:true`); para cuentas owner, por defecto sí. En el reloj, solo los hábitos. */
 const HA_FS_KINDS = { water: 1, train: 1, custom: 1 };
@@ -83,7 +93,7 @@ function haItemFor(r, ri, at, d) {
   const k = habKeyOf(r);
   if (k) {
     if (d === 0 && habDoneOn(k, at)) return null;
-    return { id: 3000 + ri * 20 + d, at: at.getTime(), title: r.label || habOf(k).name, body: haBodyR(r, k), habit: k, kind: 'hab', day: dk(at), name: habOf(k).name, time: r.time, again: +r.again || 0 };
+    return { id: 3000 + ri * 20 + d, at: at.getTime(), title: r.label || habOf(k).name, body: haBodyR(r, k), habit: k, kind: 'hab', day: dk(at), name: habOf(k).name, time: r.time, again: +r.again || 0, skipBtn: !isWatch() };   // "Omitir hoy" solo en el teléfono
   }
   if (_remSkipHA(r, d, at)) return null;
   const tx = _remTextHA(r, d, at);
@@ -124,7 +134,11 @@ async function haTake() {
   if (!HA) return;
   try {
     const r = await HA.takeEvents(), ev = (r && r.events) || [];
-    const done = ev.filter(e => e.habit && e.day && haMark(e.habit, e.day));
+    /* "Omitir hoy" desde la notificación o la pantalla completa */
+    const skip = ev.filter(e => e.habit && e.day && e.skip);
+    skip.forEach(e => habSkip(e.habit, e.day, true, true));
+    if (skip.length) { saveDaily(); render(); toast(`Omitido hoy: ${skip.map(e => (habOf(e.habit) || {}).name || e.habit).join(', ')}. Mañana vuelve a avisar.`); }
+    const done = ev.filter(e => e.habit && e.day && !e.skip && haMark(e.habit, e.day));
     const water = ev.filter(e => !e.habit && e.day && (e.water || e.kind === 'water'));
     water.forEach(e => haWater(e.day, +e.water || 250));
     if (done.length || water.length) {

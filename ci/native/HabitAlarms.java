@@ -31,6 +31,7 @@ public class HabitAlarms {
     static final String A_DONE = "pe.edgwr.cuadernohierro.HABIT_DONE";
     static final String A_SNOOZE = "pe.edgwr.cuadernohierro.HABIT_SNOOZE";
     static final String A_DISMISS = "pe.edgwr.cuadernohierro.HABIT_DISMISS";
+    static final String A_SKIP = "pe.edgwr.cuadernohierro.HABIT_SKIP";
 
     static SharedPreferences prefs(Context c) { return c.getSharedPreferences(PREFS, Context.MODE_PRIVATE); }
 
@@ -128,7 +129,7 @@ public class HabitAlarms {
 
     static PendingIntent actionPI(Context c, String action, int id, String item) {
         Intent i = new Intent(c, HabitAlarmReceiver.class).setAction(action).putExtra("item", item);
-        int rc = id * 4 + (A_DONE.equals(action) ? 1 : A_SNOOZE.equals(action) ? 2 : 0);
+        int rc = A_SKIP.equals(action) ? 100000 + id : id * 4 + (A_DONE.equals(action) ? 1 : A_SNOOZE.equals(action) ? 2 : 0);
         return PendingIntent.getBroadcast(c, rc, i, flags(PendingIntent.FLAG_UPDATE_CURRENT));
     }
 
@@ -256,6 +257,7 @@ public class HabitAlarms {
             .addAction(0, "✓ Hecho", actionPI(c, A_DONE, id, item))
             .addAction(0, "Aplazar " + againText(snzOf(o)), actionPI(c, A_SNOOZE, id, item))
             .setDeleteIntent(actionPI(c, A_DISMISS, id, item));   // deslizar la notificación = ✕
+        if (o.optBoolean("skipBtn")) b.addAction(0, "Omitir hoy", actionPI(c, A_SKIP, id, item));   // solo el teléfono lo pide
         NotificationManager nm = (NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm != null) nm.notify(id, b.build());
         /* Cómo se abre la pantalla completa:
@@ -456,8 +458,41 @@ public class HabitAlarms {
         sn.addView(plus);
         bottom.addView(sn);
 
+        if (item.optBoolean("skipBtn")) {   // "Omitir hoy": no avisa más hoy ese hábito; la app lo marca como omitido (racha en pausa)
+            android.widget.TextView skipBtn = text(c, "Omitir hoy", 16, false);
+            skipBtn.setAlpha(0.9f); skipBtn.setPadding(0, dp(c, 26), 0, dp(c, 4));
+            skipBtn.setOnClickListener(v -> { skip(c, item); toast(c, "Omitido hoy: " + item.optString("name", "") + ". Mañana vuelve a avisar."); close.run(); });
+            bottom.addView(skipBtn);
+        }
+
         root.addView(bottom, new android.widget.FrameLayout.LayoutParams(-1, -2, android.view.Gravity.BOTTOM));
         return root;
+    }
+
+    /** Omitir hoy: la app lo lee al abrirse (takeEvents, `skip`) y se cancelan los demás avisos de ese hábito ese día. */
+    static void skip(Context c, JSONObject o) {
+        String hab = o.optString("habit", ""), day = o.optString("day", "");
+        JSONArray ev = load(c, "events");
+        try {
+            JSONObject e = new JSONObject();
+            e.put("habit", hab); e.put("kind", "hab"); e.put("day", day); e.put("skip", true); e.put("at", System.currentTimeMillis());
+            ev.put(e);
+        } catch (JSONException ignored) {}
+        prefs(c).edit().putString("events", ev.toString()).apply();
+        dismiss(c, o.optInt("id"));
+        if (hab.length() == 0) return;
+        AlarmManager am = (AlarmManager) c.getSystemService(Context.ALARM_SERVICE);
+        NotificationManager nm = (NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE);
+        JSONArray items = load(c, "items"), out = new JSONArray();
+        for (int k = 0; k < items.length(); k++) {
+            JSONObject x = items.optJSONObject(k); if (x == null) continue;
+            if (hab.equals(x.optString("habit")) && day.equals(x.optString("day"))) {
+                PendingIntent pi = firePI(c, x.optInt("id"), null, PendingIntent.FLAG_NO_CREATE);
+                if (pi != null && am != null) { am.cancel(pi); pi.cancel(); }
+                if (nm != null) nm.cancel(x.optInt("id"));
+            } else out.put(x);
+        }
+        save(c, out);
     }
 
     static void dismiss(Context c, int id) {

@@ -29,6 +29,7 @@ public class HabitAlarmReceiver extends BroadcastReceiver {
         }
         else if (HabitAlarms.A_DONE.equals(a)) { HabitAlarms.done(c, o); Toast.makeText(c, HabitAlarms.okText(o), Toast.LENGTH_SHORT).show(); }
         else if (HabitAlarms.A_DISMISS.equals(a)) { HabitAlarms.again(c, o); }
+        else if (HabitAlarms.A_SKIP.equals(a)) { HabitAlarms.skip(c, o); Toast.makeText(c, "Omitido hoy: " + o.optString("name", "") + ". Mañana vuelve a avisar.", Toast.LENGTH_SHORT).show(); }
         else if (HabitAlarms.A_SNOOZE.equals(a)) { int m = HabitAlarms.snzOf(o); HabitAlarms.snooze(c, o, m); Toast.makeText(c, "Te lo recuerdo en " + HabitAlarms.againText(m), Toast.LENGTH_SHORT).show(); }
     }
 }

@@ -133,12 +133,13 @@ function weekReport(offset) {
   const days = []; for (let i = 0; i < ndays; i++) { const d = new Date(ws); d.setDate(d.getDate() + i); days.push(state.daily[dk(d)] || {}); }
   const steps = days.map(t => typeof stepsOf === 'function' ? stepsOf(t) : 0).filter(Boolean), sleep = days.map(t => t.sleepMin).filter(Boolean);
   const habs = habList().filter(h => !h.hidden), hdone = days.reduce((a, t) => a + habs.filter(h => t[h.k]).length, 0);
+  const hskip = days.reduce((a, t) => a + habs.filter(h => !t[h.k] && t.skip && t.skip[h.k]).length, 0);   // "Omitir hoy": aparte, no baja el porcentaje
   const pg = typeof protGoal === 'function' ? protGoal() : 0, pdays = pg ? days.filter(t => protOf(t) >= pg * 0.9).length : 0;
   let mm = null; try { mm = typeof weekSets === 'function' ? weekSets(offset).sets : null; } catch (e) {}
   const low = mm ? ZONES.filter(z => z.k[0] !== '~' && mm[z.k] > 0 && mm[z.k] < 10).map(z => z.name) : [];
   const wa = typeof weekAvgs === 'function' ? weekAvgs() : [], wk = dk(ws), i = wa.findIndex(x => x.d === wk);
   const wchg = i > 0 ? wa[i].v - wa[i - 1].v : null, wpct = wchg != null ? wchg / wa[i - 1].v * 100 : null;
-  return { ws, ndays, n: ss.length, target, sets, prs: Object.keys(prs), cd: cdWeek(offset), steps: steps.length ? Math.round(steps.reduce((a, b) => a + b, 0) / steps.length) : 0, sleep: sleep.length ? Math.round(sleep.reduce((a, b) => a + b, 0) / sleep.length) : 0, hab: habs.length ? Math.round(hdone / (habs.length * ndays) * 100) : 0, pdays, low, wchg, wpct };
+  return { ws, ndays, n: ss.length, target, sets, prs: Object.keys(prs), cd: cdWeek(offset), steps: steps.length ? Math.round(steps.reduce((a, b) => a + b, 0) / steps.length) : 0, sleep: sleep.length ? Math.round(sleep.reduce((a, b) => a + b, 0) / sleep.length) : 0, hab: habs.length && habs.length * ndays > hskip ? Math.round(hdone / (habs.length * ndays - hskip) * 100) : 0, hskip, pdays, low, wchg, wpct };
 }
 function reportTips(r, done) {
   const G = goalNow(), out = [];
@@ -159,7 +160,7 @@ function reportTips(r, done) {
 function reportHTML(r, label, done) {
   const st = (v, l, ok) => `<div class="wk-s ${ok ? 'ok' : ''}"><b class="num">${v}</b><small>${l}</small></div>`;
   return `<div class="wk-grid">${st(r.n + '/' + r.target, 'sesiones', r.n >= r.target)}${st(r.sets, 'series', r.sets > 0)}${st(r.prs.length, 'récords', r.prs.length > 0)}${st(r.cd.act, 'min cardio', r.cd.act >= 150)}
-    ${r.steps ? st(fmtN(r.steps), 'pasos/día', typeof stepGoal === 'function' && r.steps >= stepGoal()) : ''}${r.sleep ? st(fmtHM(r.sleep).replace(' min', ''), 'sueño', r.sleep >= 420) : ''}${st(r.hab + '%', 'hábitos', r.hab >= 80)}${r.wchg != null ? st((r.wchg > 0 ? '+' : '') + fmtKg(Math.round(r.wchg * 10) / 10) + ' kg', 'peso (promedio)', null) : ''}</div>
+    ${r.steps ? st(fmtN(r.steps), 'pasos/día', typeof stepGoal === 'function' && r.steps >= stepGoal()) : ''}${r.sleep ? st(fmtHM(r.sleep).replace(' min', ''), 'sueño', r.sleep >= 420) : ''}${st(r.hab + '%', r.hskip ? `hábitos · ${r.hskip} ${r.hskip === 1 ? 'omitido' : 'omitidos'}` : 'hábitos', r.hab >= 80)}${r.wchg != null ? st((r.wchg > 0 ? '+' : '') + fmtKg(Math.round(r.wchg * 10) / 10) + ' kg', 'peso (promedio)', null) : ''}</div>
     ${r.prs.length ? `<div class="muted" style="font-size:12.5px">🏆 Récords: ${r.prs.slice(0, 4).map(esc).join(', ')}</div>` : ''}
     <div class="label">${done ? 'Para la próxima semana' : 'Para lo que queda de la semana'}</div><ul class="wk-tips">${reportTips(r, done).map(t => `<li>${t}</li>`).join('')}</ul>`;
 }
