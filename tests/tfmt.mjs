@@ -90,13 +90,18 @@ console.log('A. Dueño: ida y vuelta');
   const p = await open(DIR, { seed: OWNER }), D = await planDays(p);
   console.log('     rutina activa: ' + D.map(d => `${d.WD} ${d.name}`).join(' · '));
   /* 1. Exportar */
-  const X = await p.evaluate(() => { const s = state.sessions[0], d = aixDayOf(s); return { day: sessionPrompt([s]), dayName: d.name, dayEx: d.exercises.map(e => e.name), week: wcReportText(), sum: wcSumText(), all: aixAllText('3m').txt, ask: nsAskText(activePlan().days[0]), askEx: activePlan().days[0].exercises.map(e => e.name), rut: aixFormat([]) }; });
+  const X = await p.evaluate(() => { const s = state.sessions[0], d = aixDayOf(s); return { day: sessionPrompt([s]), dayName: d.name, dayEx: d.exercises.map(e => e.name), week: aixWeekText(0).txt, sum: aixWeekText(wcSumOff()).txt, all: aixAllText('3m').txt, ask: nsAskText(activePlan().days[0]), askEx: activePlan().days[0].exercises.map(e => e.name), rut: aixFormat([]) }; });
   const F = t => t.slice(t.indexOf('FORMATO OBLIGATORIO'));
   const groups = t => (F(t).split('Ejemplo:')[0].match(/\b(LUNES|MARTES|MIÉRCOLES|JUEVES|VIERNES|SÁBADO|DOMINGO) \((FUERZA|BOMBEO)\): [^→;]+ → /g) || []).length;
   const core = /UN SOLO bloque de código con todo lo que debo importar\. Dentro del bloque, antes de cada tabla, una línea con el día, el tipo de sesión y el nombre de la rutina: 'DÍA \(TIPO\): nombre' \(DÍA: LUNES, MARTES, MIÉRCOLES, JUEVES, VIERNES, SÁBADO o DOMINGO; TIPO: FUERZA o BOMBEO, el de ese día en mi rutina\)(?: \(aquí: .+?\))?\. Debajo, el encabezado exacto 'Ejercicio \| Peso \| Reps \| RIR \| Descanso' y una fila por SERIE en el orden en que se hacen\./;
-  const tail = /Peso: solo el número en kg \(0 = peso corporal; mancuernas = una\)\. Reps: número o rango\. RIR: 0 a 4\. Descanso: segundos\. Una línea en blanco entre días\. Nada de texto, notas, emojis ni negritas dentro del bloque\. Para la sesión del día: un solo día \(el próximo de esa rutina\)\. Para la semana: un bloque con todos los días de la rutina activa\./;
+  const tail = /Peso: solo el número en kg \(0 = peso corporal; mancuernas = una\)\. Reps: número o rango\. RIR: 0 a 4\. Descanso: segundos\. Una línea en blanco entre días\. Nada de texto, notas, emojis ni negritas dentro del bloque\. /;
+  /* Cada exportación dice solo lo suyo (24-oct-2026): la sesión y "Copiar instrucción" solo el día, la semana solo la semana; el historial, las dos */
+  const SCOPE = { day: /Es para la sesión del día: un solo día \(el próximo de esa rutina\)\.\nEjemplo:/, week: /Es para la semana: un bloque con todos los días de la lista\.\nEjemplo:/, all: /Para la sesión del día: un solo día \(el próximo de esa rutina\)\. Para la semana: un bloque con todos los días de la rutina activa\.\nEjemplo:/ };
+  /* La semana usa "DÍA LUNES (FUERZA): nombre" */
+  const coreW = /UN SOLO bloque de código con todo lo que debo importar\. Dentro del bloque, antes de cada tabla, una línea con el día, el tipo de sesión y el nombre de la rutina: 'DÍA LUNES \(TIPO\): nombre' \(con LUNES, MARTES, MIÉRCOLES, JUEVES, VIERNES, SÁBADO o DOMINGO; TIPO: FUERZA o BOMBEO, el de ese día en mi rutina\)\. Debajo, el encabezado exacto 'Ejercicio \| Peso \| Reps \| RIR \| Descanso' y una fila por SERIE en el orden en que se hacen\./;
+  const exW = /Ejemplo:\n```\nDÍA LUNES \(FUERZA\): Piernas \+ Torso \(Pesado\)\nEjercicio \| Peso \| Reps \| RIR \| Descanso\nPrensa 45° \| 180 \| 12 \| 2 \| 150\nPrensa 45° \| 180 \| 12 \| 1 \| 150\n\nDÍA MIÉRCOLES \(BOMBEO\): Full Body \(Bombeo\)\nEjercicio \| Peso \| Reps \| RIR \| Descanso\nHip Thrust \| 45 \| 12 \| 2 \| 120\n```$/;
   const ex = /Ejemplo:\n```\nLUNES \(FUERZA\): Piernas \+ Torso \(Pesado\)\nEjercicio \| Peso \| Reps \| RIR \| Descanso\nPrensa 45° \| 180 \| 12 \| 2 \| 150\nPrensa 45° \| 180 \| 12 \| 1 \| 150\n\nMIÉRCOLES \(BOMBEO\): Full Body \(Bombeo\)\nEjercicio \| Peso \| Reps \| RIR \| Descanso\nHip Thrust \| 45 \| 12 \| 2 \| 120\n```$/;
-  for (const [k, t] of [['día', X.day], ['semana (viernes)', X.week], ['resumen (domingo)', X.sum], ['historial', X.all], ['Copiar instrucción', X.ask]]) ok(core.test(t) && tail.test(t) && ex.test(t) && !/RECOMENDACIÓN PARA EL PRÓXIMO/.test(F(t)), `${k}: formato nuevo completo con el ejemplo y sin el título viejo`);
+  for (const [k, t, sc] of [['día', X.day, 'day'], ['semana', X.week, 'week'], ['resumen (domingo)', X.sum, 'week'], ['historial', X.all, 'all'], ['Copiar instrucción', X.ask, 'day']]) ok((sc === 'week' ? coreW.test(t) && exW.test(t) : core.test(t) && ex.test(t)) && tail.test(t) && SCOPE[sc].test(t) && !/RECOMENDACIÓN PARA EL PRÓXIMO/.test(F(t)), `${k}: formato nuevo completo con el ejemplo, solo su instrucción (${sc}) y sin el título viejo`);
   ok(groups(X.day) === 0 && F(X.day).indexOf(`nombre EXACTO de esta lista ${X.dayEx.join(', ')}, igual en todas sus filas; si es nuevo, nombre completo con el equipo.`) >= 0, `día: los nombres exactos de «${X.dayName}»`);
   ok(groups(X.week) === D.length && D.every(d => F(X.week).indexOf(`${d.WD} (`) >= 0 && F(X.week).indexOf(`): ${d.name} → ${d.ex.join(', ')}`) >= 0), `semana: los ${D.length} días de la rutina activa, cada uno con sus ejercicios`);
   ok(groups(X.all) === D.length, 'historial: también todos los días');
@@ -214,8 +219,8 @@ console.log('C. Usuario nuevo');
 {
   const p = await open(DIR), D = await planDays(p);
   ok(D.length >= 2, `rutina inicial con ${D.length} días: ` + D.map(d => `${d.WD} ${d.name}`).join(' · '));
-  const X = await p.evaluate(() => ({ week: wcReportText(), ask: nsAskText(activePlan().days[0]) }));
-  ok(/'DÍA \(TIPO\): nombre'/.test(X.week) && !/\{[a-záéíóúñ ]+\}|undefined|NaN/.test(X.week.slice(X.week.indexOf('FORMATO'))), 'semana: formato nuevo sin huecos');
+  const X = await p.evaluate(() => ({ week: aixWeekText(0).txt, ask: nsAskText(activePlan().days[0]) }));
+  ok(/'DÍA LUNES \(TIPO\): nombre'/.test(X.week) && !/\{[a-záéíóúñ ]+\}|undefined|NaN/.test(X.week.slice(X.week.indexOf('FORMATO'))), 'semana: formato nuevo sin huecos');
   const R = D.slice(0, 2), ids = R.map(d => d.id), seen = await importReco(p, D[0], answer(R)), G = await iaOf(p, ids);
   ok(seen.length === 2 && R.every((d, i) => JSON.stringify(G[i]) === JSON.stringify(wantIa(d))), 'importar recomendación: cada día con lo suyo');
   await p.evaluate(() => { closeSheet(); state.riT = { txt: '', err: '' }; riPaste(); }); await p.waitForTimeout(200);
