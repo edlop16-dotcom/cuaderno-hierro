@@ -77,7 +77,7 @@ console.log('A. Dueño');
   let T = await table(p);
   await shot(p, 'a1-vacio');
   ok(T.length === 6 && T.slice(0, 5).map(r => r[0]).join() === 'Alimentación,Servicios,Transporte,Gustos,Imprevistos' && T.every(r => r[1] === '0.00' && r[2] === '0.00'), 'por defecto: 5 categorías, todo en 0');
-  ok(await p.evaluate(() => /octubre 2026/.test(document.querySelector('#sheet .fin-mes b').textContent) && document.querySelector('#sheet [data-fin="ym"][data-d="1"]').disabled), 'mes actual (octubre); no deja ir a meses futuros');
+  ok(await p.evaluate(() => /octubre 2026/.test(document.querySelector('#sheet .fin-mes b').textContent) && !document.querySelector('#sheet [data-fin="ym"][data-d="1"]').disabled), 'mes actual (octubre); se puede ver el siguiente (H2: para revisar su presupuesto)');
   /* Ajustes: sueldo en dos quincenas, vale, presupuestos, nueva categoría y renombrar */
   await tab(p, 'cfg');
   await p.fill('[data-row="pay"][data-i="0"] .fin-nm', 'Quincena 1'); await p.fill('[data-row="pay"][data-i="0"] .fin-am', '1500');

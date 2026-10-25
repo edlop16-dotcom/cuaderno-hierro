@@ -80,7 +80,9 @@ function finResHtml(ym) {
     </tbody></table></div>
     <div class="muted fin-leg">Montos en S/. <i class="fin-dot g"></i> menos de 80 % · <i class="fin-dot y"></i> 80-100 % · <i class="fin-dot r"></i> más de 100 %</div>
     ${S.fundRows.length ? `<div class="label">Fondos aparte</div>${S.fundRows.map(x => `<div class="fin-fund"><b>${esc(x.f.name)}</b>${finCat(x.f.cat) ? ` <small class="muted">(${esc(finCat(x.f.cat).name)})</small>` : ''}<div class="muted">${finS(x.f.amt)} · usado ${finS(x.used)} · queda <b class="${x.left < 0 ? 'neg' : ''}">${finS(x.left)}</b></div></div>`).join('')}` : ''}
-    <button type="button" class="btn primary block" data-fin="tab" data-t="gas">${ic('plus', 16)} Agregar gasto</button>`;
+    ${finPie(S)}${finBars(S)}
+    <button type="button" class="btn primary block" data-fin="tab" data-t="gas">${ic('plus', 16)} Agregar gasto</button>
+    <div class="grid2"><button type="button" class="btn" data-fin="ai">${ic('copy', 16)} Exportar para IA</button><button type="button" class="btn" data-fin="rec">${ic('download', 16)} Importar recomendación</button></div>`;
 }
 
 /* ---------- Gastos ---------- */
@@ -116,12 +118,13 @@ function finExSave() {
   if (!(amt > 0)) return say('Escribe un monto mayor que 0 (por ejemplo 12.50).');
   if (!finCat(cat)) return say('Elige una categoría.');
   const M = finM(d.slice(0, 7)), fund = vale ? (($('#fin-fund') || {}).value || (M.funds[0] || {}).id || null) : null;
-  const E = state.finEd ? F.ex.find(e => e.id === state.finEd) : null;
+  const E = state.finEd ? F.ex.find(e => e.id === state.finEd) : null, pre = finCatPct(d.slice(0, 7), cat);
   const o = { d, c, cat, amt, fund, note };
   if (E) Object.assign(E, o); else F.ex.push(Object.assign({ id: finId('g'), at: Date.now() }, o));
   if (!F.m[d.slice(0, 7)]) F.m[d.slice(0, 7)] = M;   // el mes queda con su configuración de entonces
-  state.finLastCat = cat; state.finEd = null; state.finYM = d.slice(0, 7); finSave(); finSheet();
+  state.finLastCat = cat; state.finEd = null; state.finAlert = null; state.finYM = d.slice(0, 7); finSave(); finSheet();
   toast(E ? 'Gasto actualizado.' : `Gasto agregado: ${finS(amt)}.`);
+  finAlert(d.slice(0, 7), cat, pre);
 }
 
 /* ---------- Ajustes del mes: ingresos, fondos y categorías ---------- */
@@ -154,6 +157,7 @@ function finCfgHtml(ym) {
     <small class="pb-err" id="fin-cfg-err" role="alert" hidden></small>
     <div class="muted fin-hint">${past ? `Se guarda solo para ${finMesTxt(ym)}.` : `Se guarda para ${finMesTxt(ym)} y los meses siguientes.`}</div>
     <button type="submit" class="btn primary block">Guardar</button></form>
+    ${finAlertCard()}
     <div class="card fin-bk"><h3>Respaldo</h3><div class="muted fin-hint">Tus finanzas están <b>solo en este celular</b>: no se suben a tu cuenta ni van en el respaldo de Forja. Exporta un archivo de vez en cuando y guárdalo (Drive, correo…).</div>
       ${state.finImp ? `<div class="ns-dayw fin-impw" role="status"><span>El archivo tiene ${state.finImp.ex.length} gastos y ${state.finImp.cats.length} categorías${state.finImp.exported ? ` (exportado el ${fmtDate(state.finImp.exported)})` : ''}. <b>Reemplaza todo lo que tienes aquí.</b></span><div class="row" style="gap:8px"><button type="button" class="btn small" data-fin="imp-no">Cancelar</button><button type="button" class="btn small primary" data-fin="imp-yes">Reemplazar</button></div></div>` : ''}
       <div class="grid2"><button type="button" class="btn" data-fin="exp">${ic('download', 16)} Exportar archivo</button><button type="button" class="btn" data-fin="imp">${ic('upload', 16)} Importar archivo</button></div>
@@ -192,16 +196,16 @@ function finImportText(txt) {
 }
 
 /* ---------- La pantalla ---------- */
-const FIN_TABS = [['res', 'Resumen'], ['gas', 'Gastos'], ['cfg', 'Ajustes']];
+const FIN_TABS = [['res', 'Resumen'], ['gas', 'Gastos'], ['mes', 'Meses'], ['cfg', 'Ajustes']];
 function finSheet() {
   if (!finOwner()) return;
   const ym = state.finYM || (state.finYM = finYMnow()), t = state.finT || 'res', now = finYMnow();
   if (!fin().m[now]) { fin().m[now] = finM(now); finSave(); }   // el mes actual guarda su configuración
   const keep = $('#sheet .fin-sheet'), y = keep && keep.dataset.t === t ? keep.scrollTop : 0;
   openSheet(`<div class="row"><h2 class="grow">${ic('wallet', 20)} Mis finanzas</h2><button class="icon-btn" data-act="sheet-close" aria-label="Cerrar">${ic('x', 18)}</button></div>
-    <div class="row fin-mes"><button type="button" class="icon-btn" data-fin="ym" data-d="-1" aria-label="Mes anterior">${ic('chevron-left', 18)}</button><b class="grow">${finMesTxt(ym)}</b><button type="button" class="icon-btn" data-fin="ym" data-d="1" aria-label="Mes siguiente" ${ym >= now ? 'disabled' : ''}>${ic('chevron-right', 18)}</button></div>
+    <div class="row fin-mes"><button type="button" class="icon-btn" data-fin="ym" data-d="-1" aria-label="Mes anterior">${ic('chevron-left', 18)}</button><b class="grow">${finMesTxt(ym)}</b><button type="button" class="icon-btn" data-fin="ym" data-d="1" aria-label="Mes siguiente" ${ym >= finYMadd(now, 1) ? 'disabled' : ''}>${ic('chevron-right', 18)}</button></div>
     <div class="seg fin-seg" role="tablist">${FIN_TABS.map(([k, l]) => `<button type="button" role="tab" class="${k === t ? 'on' : ''}" aria-selected="${k === t}" data-fin="tab" data-t="${k}">${l}</button>`).join('')}</div>
-    <div class="fin-body">${t === 'gas' ? finExForm(ym) + finExList(ym) : t === 'cfg' ? finCfgHtml(ym) : finResHtml(ym)}</div>`);
+    <div class="fin-body">${t === 'gas' ? finAlertHtml() + finExForm(ym) + finExList(ym) : t === 'cfg' ? finCfgHtml(ym) : t === 'mes' ? finMesHtml(ym) : t === 'rec' ? finRecHtml(ym) : finResHtml(ym)}</div>`);
   const c = $('#sheet .sheet-card'); if (c) { c.classList.add('pk-sheet', 'fin-sheet'); c.dataset.t = t; c.scrollTop = y; }
 }
 function finOpen() { state.finT = 'res'; state.finYM = finYMnow(); state.finEd = null; state.finCfg = null; state.finImp = null; finSheet(); }
@@ -226,8 +230,8 @@ document.addEventListener('click', ev => {
   const a = b.dataset.fin, F = fin(), ym = state.finYM || finYMnow();
   if (a !== 'ex-del' && a.slice(-3) !== '-rm') state.confirm = null;
   if (a === 'open') finOpen();
-  else if (a === 'tab') { if (state.finT === 'cfg') finCfgRead(); state.finT = b.dataset.t; state.finEd = null; finSheet(); if (b.dataset.t === 'gas') setTimeout(() => { const i = $('#fin-amt'); if (i) i.focus(); }, 60); }
-  else if (a === 'ym') { const n = finYMadd(ym, +b.dataset.d); if (n <= finYMnow()) { state.finYM = n; state.finCfg = null; state.finEd = null; finSheet(); } }
+  else if (a === 'tab') { if (state.finT === 'cfg') finCfgRead(); state.finT = b.dataset.t; state.finEd = null; state.finAlert = null; finSheet(); if (b.dataset.t === 'gas') setTimeout(() => { const i = $('#fin-amt'); if (i) i.focus(); }, 60); }
+  else if (a === 'ym') { const n = finYMadd(ym, +b.dataset.d); if (n <= finYMadd(finYMnow(), 1)) { state.finYM = n; state.finCfg = null; state.finEd = null; state.finAlert = null; if (state.finT === 'rec') state.finT = 'res'; finSheet(); } }
   else if (a === 'ex-edit') { state.finEd = b.dataset.id; finSheet(); const c = $('#sheet .fin-sheet'); if (c) c.scrollTop = 0; }
   else if (a === 'ex-cancel') { state.finEd = null; finSheet(); }
   else if (a === 'ex-del') {
@@ -252,6 +256,7 @@ document.addEventListener('click', ev => {
     }
     finSheet();
   }
+  else if (finClick2(a, b)) return;
   else if (a === 'exp') finExport();
   else if (a === 'imp') { const i = $('#fin-file'); if (i) { i.value = ''; i.click(); } }
   else if (a === 'imp-no') { state.finImp = null; finSheet(); }

@@ -2153,3 +2153,44 @@ body:not(.watch) .fin-row .fin-am{width:96px;flex-shrink:0;text-align:right}
 body:not(.watch) .fin-row .fin-ct{width:100px;flex-shrink:0}
 body:not(.watch) .fin-cfg .btn.small,body:not(.watch) .fin-bk .btn{align-self:flex-start}
 body:not(.watch) .fin-impw{flex-direction:column;align-items:stretch;gap:8px}
+/* Tanda H2 · Mis finanzas: gráficos, alertas, meses, importar recomendación (finanzas2.js). Solo teléfono. */
+body:not(.watch) .fin-seg{grid-template-columns:repeat(4,1fr)}
+body:not(.watch) .fin-seg button{padding:9px 2px;font-size:13px}
+body:not(.watch) .fin-chart{display:flex;flex-direction:column;gap:8px}
+body:not(.watch) .fin-pie{display:flex;align-items:center;gap:12px}
+body:not(.watch) .fin-pie svg{width:140px;height:140px;flex-shrink:0}
+body:not(.watch) .fin-sl{stroke:#16191e;stroke-width:2}
+body:not(.watch) .fin-pt{fill:var(--muted);font-size:10px}
+body:not(.watch) .fin-pv{fill:var(--fg);font-size:12.5px;font-weight:700}
+body:not(.watch) .fin-legend{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;flex:1;min-width:0;font-size:12.5px}
+body:not(.watch) .fin-legend.row{flex-direction:row;flex-wrap:wrap;gap:6px 12px}
+body:not(.watch) .fin-legend li{display:flex;align-items:center;gap:6px;min-width:0}
+body:not(.watch) .fin-legend li .grow{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+body:not(.watch) .fin-legend li .num{color:var(--muted)}
+body:not(.watch) .fin-legend i{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+body:not(.watch) .fin-bar{display:flex;flex-direction:column;gap:4px;font-size:13px}
+body:not(.watch) .fin-bar small{color:var(--muted);font-size:12px;white-space:nowrap}
+body:not(.watch) .fin-bar small b{color:var(--fg)}
+body:not(.watch) .fin-bt{position:relative;height:12px}
+body:not(.watch) .fin-bt i{position:absolute;left:0;border-radius:4px}
+body:not(.watch) .fin-bt .b{top:0;height:12px;background:var(--surface2);border:1px solid var(--line2);box-sizing:border-box}
+body:not(.watch) .fin-bt .s{top:2px;height:8px;background:var(--dim)}
+body:not(.watch) .fin-g .fin-bt .s{background:var(--ok)}
+body:not(.watch) .fin-y .fin-bt .s{background:var(--warn)}
+body:not(.watch) .fin-r .fin-bt .s{background:var(--bad)}
+body:not(.watch) .fin-cols{width:100%;height:auto;display:block}
+body:not(.watch) .fin-base{stroke:var(--line2);stroke-width:1}
+body:not(.watch) .fin-cv{fill:var(--muted);font-size:10px}
+body:not(.watch) .fin-cm{fill:var(--muted);font-size:11px}
+body:not(.watch) .fin-cm.on{fill:var(--fg);font-weight:700}
+body:not(.watch) .fin-mt tr.on td{font-weight:700}
+body:not(.watch) .fin-note{gap:8px}
+body:not(.watch) .fin-note .btn{align-self:flex-start}
+body:not(.watch) .fin-alert{align-items:center;gap:8px}
+body:not(.watch) .fin-alert.fin-al100{border-color:var(--bad)}
+body:not(.watch) .fin-swr{gap:12px;align-items:center}
+body:not(.watch) .fin-swr small{display:block;font-size:12px}
+body:not(.watch) .fin-swr .switch{border:0;cursor:pointer;flex-shrink:0}
+body:not(.watch) .fin-rec,body:not(.watch) .fin-recp{gap:10px}
+body:not(.watch) .fin-recp .fin-new td:first-child{color:var(--fg)}
+body:not(.watch) .fin-recp small{color:var(--muted)}
