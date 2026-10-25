@@ -314,7 +314,13 @@ const PB_TPL = [
   ['home3', 'En casa con mancuernas · 3 días', 'Mancuernas y una silla', { days: 3, split: 'fb', equip: 'home' }],
   ['body3', 'Peso corporal · 3 días', 'Sin equipo, en casa o en el parque', { days: 3, split: 'fb', equip: 'body' }],
 ];
-const pbBase = () => Object.assign({ goal: 'salud', exp: 1, days: 3, mins: 60, equip: 'gym', inj: [] }, pbProf() || {}, !pbProf() && !pubUser() ? { goal: 'musculo', exp: 2, days: 4 } : {});
+/* Valores del perfil sin los vacíos (null, "" o desconocidos): un perfil a medias no pisa los de por defecto */
+const pbBase = () => {
+  const p = pbProf() || {}, o = {};
+  Object.keys(p).forEach(k => { if (p[k] != null && p[k] !== '') o[k] = p[k]; });
+  if (o.goal && !PB_GOALS[o.goal]) delete o.goal; if (o.equip && !PB_EQ[o.equip]) delete o.equip;
+  return Object.assign({ goal: 'salud', exp: 1, days: 3, mins: 60, equip: 'gym', inj: [] }, !pubUser() ? { goal: 'musculo', exp: 2, days: 4 } : {}, o);
+};
 function pbTemplates() {
   const p = pbBase();
   openSheet(`<div class="row"><h2 class="grow">Plantillas</h2><button class="icon-btn" data-act="sheet-close" aria-label="Cerrar">${ic('x', 18)}</button></div>
@@ -408,10 +414,13 @@ function pbHealthCard() {
     <button type="button" class="btn small" data-pb="parq-ok">Ya consulté con un médico</button></div>`;
 }
 function pbGoalCard() {
-  const p = pbProf(), u = state.settings.unit || 'kg';
-  const line = p ? `${esc(PB_GOALS[p.goal][0])} · ${esc(PB_EXP[p.exp])} · ${p.days} días de ${p.mins} min · ${esc(PB_EQ[p.equip][0])}` : 'Aún no elegiste un objetivo.';
+  /* El perfil puede estar a medias: "Tus datos" (desde la v1.0.53) lo crea en un dueño que nunca hizo la bienvenida,
+     solo con nombre, edad y objetivo (vacío = null). Se muestra lo que haya, sin suponer los demás campos. */
+  const p = pbProf(), u = state.settings.unit || 'kg', has = !!(p && PB_GOALS[p.goal]);
+  const parts = p ? [has ? PB_GOALS[p.goal][0] : '', PB_EXP[p.exp] || '', p.days ? `${p.days} días${p.mins ? ` de ${p.mins} min` : ''}` : '', PB_EQ[p.equip] ? PB_EQ[p.equip][0] : ''].filter(Boolean) : [];
+  const line = has ? parts.map(esc).join(' · ') : 'Aún no elegiste un objetivo.';
   return `<div class="card pb-card"><h3>Tu objetivo y plan</h3><div class="muted" style="font-size:13px">${line}</div>
-    <div class="row" style="gap:8px;flex-wrap:wrap"><button type="button" class="btn small" data-pb="redo">${ic('target', 15)} ${p ? 'Cambiar objetivo' : 'Elegir objetivo'}</button><button type="button" class="btn small" data-pb="tpl">${ic('clipboard-list', 15)} Plantillas</button></div>
+    <div class="row" style="gap:8px;flex-wrap:wrap"><button type="button" class="btn small" data-pb="redo">${ic('target', 15)} ${has ? 'Cambiar objetivo' : 'Elegir objetivo'}</button><button type="button" class="btn small" data-pb="tpl">${ic('clipboard-list', 15)} Plantillas</button></div>
     <div class="label" style="margin-top:4px">Pesas y máquinas en</div>
     <div class="seg pb-unit"><button type="button" class="${u === 'kg' ? 'on' : ''}" data-pb="unit" data-v="kg">Kilos (kg)</button><button type="button" class="${u === 'lb' ? 'on' : ''}" data-pb="unit" data-v="lb">Libras (lb)</button></div>
     <div class="muted" style="font-size:12px">Al cambiar, se convierten tus pesos guardados. El peso corporal sigue en kg.</div></div>`;
