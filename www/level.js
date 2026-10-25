@@ -24,7 +24,7 @@ const e1Safe = (w, r) => e1rm(w, Math.min(12, r));
 function lvBest(name, days) {
   const bar = typeof barFor === 'function' ? barFor(name) : (BAR_DEFAULT[name] || 0), cut = Date.now() - (days || 120) * 864e5;
   let b = null;
-  state.sessions.forEach(s => { if (s.approx || new Date(s.date) < cut) return; s.exercises.forEach(e => { if (e.name === name) e.sets.forEach(x => { const v = e1Safe((+x.w || 0) + bar, x.r); if (!b || v > b.v) b = { v, s, x }; }); }); });
+  state.sessions.forEach(s => { if (s.approx || new Date(s.date) < cut) return; s.exercises.forEach(e => { if (exSame(e.name, name)) e.sets.forEach(x => { const v = e1Safe((+x.w || 0) + bar, x.r); if (!b || v > b.v) b = { v, s, x }; }); }); });
   return b;
 }
 function lvOf(name, v) {

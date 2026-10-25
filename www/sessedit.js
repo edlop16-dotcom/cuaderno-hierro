@@ -87,7 +87,7 @@ pkView = function () {
 };
 function seLastSet(name, s) {
   const g = sGym(s);
-  for (const x of state.sessions) { if (x.id === s.id || sGym(x) !== g) continue; const e = x.exercises.find(y => y.name === name); if (e && e.sets.length) return e.sets[e.sets.length - 1]; }
+  for (const x of state.sessions) { if (x.id === s.id || sGym(x) !== g) continue; const e = exIn(x, name); if (e && e.sets.length) return e.sets[e.sets.length - 1]; }
   return null;
 }
 function seApplyPick(names) {

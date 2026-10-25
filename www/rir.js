@@ -57,7 +57,7 @@ const _coachRir = coachFor;
 coachFor = function (ex, gymId, kind) {
   const c = _coachRir(ex, gymId, kind);
   if (!c || !c.last || c.mode === 'pain' || c.mode === 'down' || c.mode === 'back') return c;
-  const H = exHistory(ex.name, gymId, kind, 3); if (!H.length) return c;
+  const H = exHistory(ex.name, gymId, kind, 12).filter(h => h.kind === kind); if (!H.length) return c;
   const last = H[0], top = Math.max.apply(null, last.sets.map(x => x.w));
   const ts = last.sets.filter(x => x.w === top), rs = ts.map(x => x.rir).filter(v => v != null);
   if (!rs.length) return c;

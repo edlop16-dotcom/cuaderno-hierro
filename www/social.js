@@ -28,8 +28,8 @@ function badgeStats() {
     if (new Date(s.date).getHours() < 8) early++;
     s.exercises.forEach(e => {
       let top = 0; e.sets.forEach(x => { vol += (+x.w || 0) * (+x.r || 0); top = Math.max(top, e1rm(+x.w || 0, +x.r || 0)); });
-      if (best[e.name] && top > best[e.name] * 1.001) prs++;
-      best[e.name] = Math.max(best[e.name] || 0, top);
+      const k = exHKey(e.name); if (best[k] && top > best[k] * 1.001) prs++;
+      best[k] = Math.max(best[k] || 0, top);
     });
   });
   const wk = {}; let cdTotal = 0;
@@ -87,13 +87,13 @@ async function socLookup(code) {
 const meName = () => { const p = state.settings.prof; return (p && p.name) || HISTORY.name || 'Atleta'; };
 function socSummary() {
   const r = weekReport(0), st = badgeStats();
-  return { n: r.n, t: r.target, sets: r.sets, prs: r.prs.length, cd: r.cd.act, streak: st.weeks, total: st.total, badges: earned().length, goal: goalNow(), ws: dk(r.ws) };
+  return { n: r.n, t: r.target, sets: r.sets, prs: r.prs.length, cd: r.cd.act, streak: st.weeks, total: st.total, badges: earned().length, goal: goalSet(), ws: dk(r.ws) };
 }
 function shareData() {
   const plan = activePlan(), p = state.settings.prof || {}, r = weekReport(0);
   const last = state.sessions.filter(s => !s.approx).slice(0, 8).map(s => ({ d: s.date, n: s.dayName, m: Math.round((s.durationSec || 0) / 60), x: s.exercises.map(e => ({ n: e.name, s: e.sets.map(x => [+x.w || 0, +x.r || 0, x.rir != null ? x.rir : null]), no: e.note || '' })) }));
   const wa = typeof weekAvgs === 'function' ? weekAvgs() : [];
-  return { name: meName(), goal: goalNow(), exp: p.exp, days: p.days, plan: plan ? plan.name : '', unit: state.settings.unit || 'kg', week: { n: r.n, t: r.target, sets: r.sets, cd: r.cd.act, sleep: r.sleep, steps: r.steps }, kg: wa.length ? Math.round(wa[wa.length - 1].v * 10) / 10 : null, inj: p.inj || [], last, at: Date.now() };
+  return { name: meName(), goal: goalSet(), exp: p.exp, days: p.days, plan: plan ? plan.name : '', unit: state.settings.unit || 'kg', week: { n: r.n, t: r.target, sets: r.sets, cd: r.cd.act, sleep: r.sleep, steps: r.steps }, kg: wa.length ? Math.round(wa[wa.length - 1].v * 10) / 10 : null, inj: p.inj || [], last, at: Date.now() };
 }
 async function socPublish(force) {
   if (!socAuth()) return;

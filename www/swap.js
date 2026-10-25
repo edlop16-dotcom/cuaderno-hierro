@@ -18,7 +18,7 @@ const perHand = name => /mancuerna|bulgara|zancada|martillo|concentrado|arnold|e
 const barFor = name => BAR_DEFAULT[name] != null ? BAR_DEFAULT[name] : 0;
 function bestAny(name) {
   let b = 0; const bar = barFor(name);
-  state.sessions.forEach(s => { if (s.approx) return; s.exercises.forEach(e => { if (e.name === name) e.sets.forEach(x => { const v = e1rm((+x.w || 0) + bar, x.r); if (v > b) b = v; }); }); });
+  state.sessions.forEach(s => { if (s.approx) return; s.exercises.forEach(e => { if (exSame(e.name, name)) e.sets.forEach(x => { const v = e1rm((+x.w || 0) + bar, x.r); if (v > b) b = v; }); }); });
   const rec = typeof baseRec === 'function' && baseRec(name); if (rec) b = Math.max(b, e1rm(rec.w + bar, rec.r));
   return b;
 }
@@ -65,7 +65,7 @@ function swapDo(i, name, keep) {
   const cv = convertW(e.name, name, workW(e));
   const ex = { id: e.exId, name, type: typeOf(name), sets: left, repsMin: e.repsMin, repsMax: e.repsMax, rest: e.rest, weight: cv.w };
   const bar = barFor(name); if (bar) ex.bar = bar;
-  const last = lastPerf(name, d.gymId, d.kind), sg = suggest(d.gymId, d.kind, ex), ln = lastNote(name, d.gymId);
+  const last = lastHere(name, d.gymId) || lastPerf(name, d.gymId, d.kind), sg = suggest(d.gymId, d.kind, ex), ln = lastNote(name, d.gymId);
   const own = !!(last && !last.ref);
   const c = own ? coachFor(ex, d.gymId, d.kind) : { w: cv.w, mode: 'first', goal: null,
     head: `<b>Reemplazo de ${esc(e.name)}</b>: ${cv.how === 'body' ? 'con tu peso corporal' : `empieza con ${fmtKg(cv.w)} kg${perHand(name) ? ' por mano' : ''}`} y busca ${reps(ex)} reps.`,

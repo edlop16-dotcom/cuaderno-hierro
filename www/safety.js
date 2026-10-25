@@ -31,9 +31,9 @@ const zoneName = k => (ZONES.find(z => z.k === k) || {}).name || k;
 const LVL = { 1: 'leve', 2: 'fuerte' };
 
 /* Historial por ejercicio y por zona (sin contar registros aproximados) */
-function doneBefore(name) { return state.sessions.some(s => s.exercises.some(e => e.name === name && e.sets.length)) || !!(typeof baseRec === 'function' && baseRec(name)); }
+function doneBefore(name) { return state.sessions.some(s => s.exercises.some(e => exSame(e.name, name) && e.sets.length)) || !!(typeof baseRec === 'function' && baseRec(name)); }
 function zoneTrained(k) { return state.sessions.some(s => s.exercises.some(e => zonesOf(e.name).includes(k))) || (HISTORY.records || []).some(r => zonesOf(r.name).includes(k)); }
-function timesDone(name) { return state.sessions.filter(s => !s.approx && s.exercises.some(e => e.name === name && e.sets.length)).length; }
+function timesDone(name) { return state.sessions.filter(s => !s.approx && s.exercises.some(e => exSame(e.name, name) && e.sets.length)).length; }
 
 function safetyNotes(name) {
   const notes = [], sore = soreMap(), zs = zonesOf(name);

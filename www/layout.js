@@ -148,7 +148,7 @@ function exActions(key) {
 function exFromLib(x) {
   const [a, b] = String(x.reps || '8-12').split('-').map(n => parseInt(n, 10));
   let w = 0;
-  for (const s of state.sessions) { if (sGym(s) !== activeGym().id) continue; const e = s.exercises.find(y => y.name === x.name); if (e && e.sets.length) { w = Math.max.apply(null, e.sets.map(z => z.w)); break; } }
+  for (const s of state.sessions) { if (sGym(s) !== activeGym().id) continue; const e = exIn(s, x.name); if (e && e.sets.length) { w = Math.max.apply(null, e.sets.map(z => z.w)); break; } }
   if (!w) for (const p of gymPlans()) for (const d of p.days) for (const e of d.exercises) if (!w && e.name === x.name) w = e.weight;
   const bar = BAR_DEFAULT[x.name];
   return Object.assign({ id: uid(), name: x.name, type: x.type, weight: w || 0, sets: 3, repsMin: a || 8, repsMax: b || a || 12, rest: Math.min(600, Math.max(10, Math.round((x.rest || 90) / 10) * 10)) }, bar ? { bar } : {});

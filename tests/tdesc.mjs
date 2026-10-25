@@ -80,7 +80,8 @@ console.log('A. Dueño: fin del descanso con la pantalla apagada');
   let c = await calls(p, 'rest');
   ok(c.length === 1 && c[0].at === R.end && c[0].title === 'Descanso terminado' && c[0].body === `Sigue: ${R.ex} · serie 2 de ${R.n}` && c[0].snd === true && c[0].vib === true, 'al apagarse la pantalla: se programa "Descanso terminado" a la hora de fin, con qué sigue y sonido');
   await vis(p, 'visible'); await p.waitForTimeout(200);
-  ok((await calls(p, 'restCancel')).length === 1, 'al volver a la app se cancela');
+  /* Tanda J: el aviso sigue al descanso (se reprograma con cada cambio y se cancela al terminar o saltar); volver a la app no lo toca */
+  ok(!(await calls(p, 'restCancel')).length && (await calls(p, 'rest')).length === 1, 'al volver a la app sigue programado a la misma hora (sin cambios)');
   /* "Sin sonido" en Fin del descanso: sin ding (vibra si la vibración está activa) */
   await clearCalls(p); await p.evaluate(() => { state.settings.alert = Object.assign({}, state.settings.alert, { sound: 'silencio', vib: 0 }); });
   await vis(p, 'hidden'); c = await calls(p, 'rest'); await vis(p, 'visible');
@@ -95,7 +96,7 @@ console.log('A. Dueño: fin del descanso con la pantalla apagada');
   /* Apagado en Ajustes */
   await p.evaluate(() => { markSet(0, 1, true); state.settings.restFull = false; }); await clearCalls(p);
   await vis(p, 'hidden'); await vis(p, 'visible');
-  ok(!(await calls(p, 'rest')).length && (await calls(p, 'restCancel')).length === 1, 'desactivado en Ajustes: no se programa (solo el aviso normal)');
+  ok(!(await calls(p, 'rest')).length && await p.evaluate(() => rfAt === 0), 'desactivado en Ajustes: no se programa (solo el aviso normal) y se cancela lo que había');
   ok(!p.errs.length, 'sin errores de JS ' + p.errs.join(' | '));
   await p.done();
 }
@@ -149,6 +150,7 @@ console.log('E. Reloj');
 {
   const p = await open(DIR, { seed: OWNER_SETTINGS, watch: true, native: ST }), q = await open(OLD, { seed: OWNER_SETTINGS, watch: true, native: ST });
   for (const x of [p, q]) { await x.evaluate(() => { state.tab = 'settings'; render(); window.scrollTo(0, 0); }); await x.waitForTimeout(300); }
+  ok(await p.evaluate(() => { const r = document.querySelector('.wov-row'); if (r) r.remove(); return !!r; }), 'Ajustes del reloj: "Avisar si me paso del tiempo" (Tanda J)');
   let d = await pixDiff(await shot(p, 'e1-reloj-ajustes'), await shot(q, 'e1-reloj-ajustes-antes'));
   ok(d === 0 && await p.evaluate(() => !document.querySelector('.rf-row')), 'Ajustes del reloj idénticos y sin el interruptor' + (d ? ` (${d} px)` : ''));
   for (const x of [p, q]) { await x.evaluate(() => { state.tab = 'train'; render(); }); await startRest(x); await x.waitForTimeout(500); }
