@@ -2100,3 +2100,120 @@ body:not(.watch) .om-row .hab-ic{flex-shrink:0}
 body:not(.watch) .om-row small{display:block;font-size:12px}
 body:not(.watch) .om-row.om b{color:var(--muted)}
 body:not(.watch) #hab-alarm .ha-skipb{display:block;width:100%;min-height:44px;margin-top:18px;border:0;background:transparent;color:#fff;opacity:.9;font:600 16px/1.2 var(--f-body)}
+/* ==========================================================================
+   Tanda H1 · Mis finanzas (finanzas.js). Solo teléfono y solo el dueño.
+   ========================================================================== */
+body:not(.watch) .fin-card{flex-direction:row;align-items:center;gap:12px;text-align:left;color:var(--fg);flex-shrink:0}
+body:not(.watch) .fin-card small{display:block;color:var(--muted);font-size:12.5px;margin-top:2px}
+body:not(.watch) .fin-sheet{gap:12px}
+body:not(.watch) .fin-sheet>*{flex-shrink:0}
+body:not(.watch) .fin-sheet h2{display:flex;align-items:center;gap:8px}
+body:not(.watch) .fin-mes{align-items:center;text-align:center;font-size:16px}
+body:not(.watch) .fin-mes b::first-letter{text-transform:uppercase}
+body:not(.watch) .fin-mes .icon-btn[disabled]{opacity:.3}
+body:not(.watch) .fin-seg{grid-template-columns:repeat(3,1fr)}
+body:not(.watch) .fin-body{display:flex;flex-direction:column;gap:12px;padding-bottom:24px}
+body:not(.watch) .fin-body>*{flex-shrink:0}
+body:not(.watch) .fin-tiles{display:flex;gap:8px}
+body:not(.watch) .fin-tiles>div{flex:1;min-width:0;padding:10px;border-radius:14px;background:var(--surface2);border:1px solid var(--line)}
+body:not(.watch) .fin-tiles small{display:block;color:var(--muted);font-size:11.5px}
+body:not(.watch) .fin-tiles b{display:block;font-size:14.5px;margin-top:2px;overflow-wrap:anywhere}
+body:not(.watch) .fin-tiles .pos b{color:var(--ok)}
+body:not(.watch) .fin-tiles .neg b,body:not(.watch) .fin-sheet .neg{color:var(--bad)}
+body:not(.watch) .fin-sub,body:not(.watch) .fin-leg,body:not(.watch) .fin-hint{font-size:12px;line-height:1.45}
+body:not(.watch) .fin-tw{overflow-x:auto}
+body:not(.watch) .fin-t{width:100%;border-collapse:collapse;font-size:12px}
+body:not(.watch) .fin-t th{text-align:right;color:var(--muted);font-weight:600;padding:6px 3px;border-bottom:1px solid var(--line2);white-space:nowrap}
+body:not(.watch) .fin-t th:first-child,body:not(.watch) .fin-t td:first-child{text-align:left}
+body:not(.watch) .fin-t td{text-align:right;padding:8px 3px;border-bottom:1px solid var(--line);white-space:nowrap}
+body:not(.watch) .fin-t td:first-child{white-space:normal;overflow-wrap:anywhere}
+body:not(.watch) .fin-t td:first-child .fin-dot{margin-right:5px}
+body:not(.watch) .fin-t .fin-tot td{font-weight:700;border-bottom:0}
+body:not(.watch) .fin-dot{display:inline-block;flex-shrink:0;width:10px;height:10px;border-radius:50%;background:var(--dim);vertical-align:-1px}
+body:not(.watch) .fin-g .fin-dot,body:not(.watch) .fin-dot.g{background:var(--ok)}
+body:not(.watch) .fin-y .fin-dot,body:not(.watch) .fin-dot.y{background:var(--warn)}
+body:not(.watch) .fin-r .fin-dot,body:not(.watch) .fin-dot.r{background:var(--bad)}
+body:not(.watch) .fin-fund{padding:8px 0;border-bottom:1px solid var(--line);font-size:13px}
+body:not(.watch) .fin-form{gap:10px}
+body:not(.watch) .fin-vale{gap:10px;align-items:center;min-height:44px}
+body:not(.watch) .fin-vale input[type=checkbox]{width:22px;height:22px;flex-shrink:0}
+body:not(.watch) .fin-list{display:flex;flex-direction:column}
+body:not(.watch) .fin-ex{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--line)}
+body:not(.watch) .fin-ex.ed{background:var(--surface2);border-radius:10px;padding-left:8px}
+body:not(.watch) .fin-ex small{display:block;font-size:12px}
+body:not(.watch) .fin-ex .num{white-space:nowrap}
+body:not(.watch) .fin-ex .icon-btn,body:not(.watch) .fin-row .icon-btn{min-width:44px;min-height:44px;flex-shrink:0}
+body:not(.watch) .fin-tag{color:var(--ok)}
+body:not(.watch) .fin-empty{padding:12px 0}
+body:not(.watch) .fin-cfg{display:flex;flex-direction:column;gap:12px}
+body:not(.watch) .fin-cfg .card{gap:8px}
+body:not(.watch) .fin-row{gap:6px;align-items:center}
+body:not(.watch) .fin-row input,body:not(.watch) .fin-row select{min-height:44px;min-width:0}
+body:not(.watch) .fin-row .fin-am{width:96px;flex-shrink:0;text-align:right}
+body:not(.watch) .fin-row .fin-ct{width:100px;flex-shrink:0}
+body:not(.watch) .fin-cfg .btn.small,body:not(.watch) .fin-bk .btn{align-self:flex-start}
+body:not(.watch) .fin-impw{flex-direction:column;align-items:stretch;gap:8px}
+/* Tanda H2 · Mis finanzas: gráficos, alertas, meses, importar recomendación (finanzas2.js). Solo teléfono. */
+body:not(.watch) .fin-seg{grid-template-columns:repeat(4,1fr)}
+body:not(.watch) .fin-seg button{padding:9px 2px;font-size:13px}
+body:not(.watch) .fin-chart{display:flex;flex-direction:column;gap:8px}
+body:not(.watch) .fin-pie{display:flex;align-items:center;gap:12px}
+body:not(.watch) .fin-pie svg{width:140px;height:140px;flex-shrink:0}
+body:not(.watch) .fin-sl{stroke:#16191e;stroke-width:2}
+body:not(.watch) .fin-pt{fill:var(--muted);font-size:10px}
+body:not(.watch) .fin-pv{fill:var(--fg);font-size:12.5px;font-weight:700}
+body:not(.watch) .fin-legend{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;flex:1;min-width:0;font-size:12.5px}
+body:not(.watch) .fin-legend.row{flex-direction:row;flex-wrap:wrap;gap:6px 12px}
+body:not(.watch) .fin-legend li{display:flex;align-items:center;gap:6px;min-width:0}
+body:not(.watch) .fin-legend li .grow{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+body:not(.watch) .fin-legend li .num{color:var(--muted)}
+body:not(.watch) .fin-legend i{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+body:not(.watch) .fin-bar{display:flex;flex-direction:column;gap:4px;font-size:13px}
+body:not(.watch) .fin-bar small{color:var(--muted);font-size:12px;white-space:nowrap}
+body:not(.watch) .fin-bar small b{color:var(--fg)}
+body:not(.watch) .fin-bt{position:relative;height:12px}
+body:not(.watch) .fin-bt i{position:absolute;left:0;border-radius:4px}
+body:not(.watch) .fin-bt .b{top:0;height:12px;background:var(--surface2);border:1px solid var(--line2);box-sizing:border-box}
+body:not(.watch) .fin-bt .s{top:2px;height:8px;background:var(--dim)}
+body:not(.watch) .fin-g .fin-bt .s{background:var(--ok)}
+body:not(.watch) .fin-y .fin-bt .s{background:var(--warn)}
+body:not(.watch) .fin-r .fin-bt .s{background:var(--bad)}
+body:not(.watch) .fin-cols{width:100%;height:auto;display:block}
+body:not(.watch) .fin-base{stroke:var(--line2);stroke-width:1}
+body:not(.watch) .fin-cv{fill:var(--muted);font-size:10px}
+body:not(.watch) .fin-cm{fill:var(--muted);font-size:11px}
+body:not(.watch) .fin-cm.on{fill:var(--fg);font-weight:700}
+body:not(.watch) .fin-mt tr.on td{font-weight:700}
+body:not(.watch) .fin-note{gap:8px}
+body:not(.watch) .fin-note .btn{align-self:flex-start}
+body:not(.watch) .fin-alert{align-items:center;gap:8px}
+body:not(.watch) .fin-alert.fin-al100{border-color:var(--bad)}
+body:not(.watch) .fin-swr{gap:12px;align-items:center}
+body:not(.watch) .fin-swr small{display:block;font-size:12px}
+body:not(.watch) .fin-swr .switch{border:0;cursor:pointer;flex-shrink:0}
+body:not(.watch) .fin-rec,body:not(.watch) .fin-recp{gap:10px}
+body:not(.watch) .fin-recp .fin-new td:first-child{color:var(--fg)}
+body:not(.watch) .fin-recp small{color:var(--muted)}
+/* Tanda H3 · Mis finanzas: Forja mis sueños, importar gastos antiguos (finanzas3.js). Solo teléfono. */
+body:not(.watch) .fin-seg{grid-template-columns:repeat(5,1fr)}
+body:not(.watch) .fin-seg button{font-size:12.5px;padding:9px 0}
+body:not(.watch) .fin-goal{gap:8px}
+body:not(.watch) .fin-sc th.on,body:not(.watch) .fin-sc td.on{background:var(--surface2)}
+body:not(.watch) .fin-sc td small{display:block;color:var(--muted);font-size:11px}
+body:not(.watch) .fin-sc td:first-child{color:var(--muted)}
+body:not(.watch) .fin-scb{border:0;background:transparent;color:var(--fg);font:700 12px/1.2 var(--f-body);min-height:44px;padding:0 4px;text-decoration:underline;text-underline-offset:3px;white-space:normal}
+body:not(.watch) .fin-sheet .pos{color:var(--ok)}
+body:not(.watch) .fin-pj .fin-t{font-size:11px}
+body:not(.watch) .fin-pj .fin-t td,body:not(.watch) .fin-pj .fin-t th{padding:6px 2px}
+body:not(.watch) .fin-pj tr.fin-goalm td{background:rgba(46,229,157,.12);font-weight:700}
+body:not(.watch) .fin-pj tr.fin-due td:first-child{text-decoration:underline}
+body:not(.watch) .fin-scf{gap:8px}
+body:not(.watch) .fin-scf .fs-name{min-height:44px;font-weight:700}
+body:not(.watch) .fin-loan{display:flex;flex-direction:column;gap:8px}
+body:not(.watch) .fin-loan[hidden]{display:none}
+body:not(.watch) .fin-oldt td{font-size:11.5px}
+body:not(.watch) .fin-oldt tr.fin-r td{color:var(--bad)}
+body:not(.watch) .fin-oldt tr.fin-n td{color:var(--muted)}
+body:not(.watch) .fin-sc{font-size:11.5px}
+body:not(.watch) .fin-sc td,body:not(.watch) .fin-sc th{padding:6px 1px}
+body:not(.watch) .fin-sc td:first-child{overflow-wrap:normal;min-width:58px;font-size:11px}
