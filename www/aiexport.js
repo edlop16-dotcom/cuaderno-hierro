@@ -45,19 +45,42 @@ function aixRest(s, e) {
   for (const p of state.plans) for (const d of p.days) { const x = d.exercises.find(y => y.name === e.name); if (x && x.rest) return aixSec(x.rest) + ' (rutina)'; }
   return '';
 }
+/* Día de la rutina de una sesión (sin suponer otro); null si no está en tus planes (entreno rápido, completar…) */
+function aixDayFind(s) { for (const p of state.plans) { const d = p.days.find(x => x.id === s.dayId); if (d) return d; } return null; }
+/* Ejercicios hechos en lugar de uno del plan: { nombre: { of, guess } }. `of` se guarda al terminar (exportar.js);
+   en sesiones viejas se deduce solo si hay un único faltante del plan con el mismo músculo principal. */
+function aixSubsOf(s) {
+  const out = {}, d = aixDayFind(s); s.exercises.forEach(e => { if (e.of && e.of !== e.name) out[e.name] = { of: e.of }; });
+  if (!d) return out;
+  const plan = d.exercises.map(e => e.name), done = s.exercises.map(e => e.name), used = Object.keys(out).map(k => out[k].of);
+  const mus = n => { const x = libFind(n); return x ? catMain(x) : null; };
+  const miss = plan.filter(n => done.indexOf(n) < 0 && used.indexOf(n) < 0), extra = done.filter(n => plan.indexOf(n) < 0 && !out[n]);
+  extra.forEach(n => { const m = mus(n); if (!m || m === 'full') return; const c = miss.filter(p => mus(p) === m), e2 = extra.filter(x => mus(x) === m); if (c.length === 1 && e2.length === 1) out[n] = { of: c[0], guess: 1 }; });
+  return out;
+}
+const aixSubTxt = u => u ? ` (${u.guess ? 'parece que ' : ''}en lugar de ${u.of})` : '';
 function aixSessLine(s, o) {
   const d = new Date(s.date), u = aixU(), day = o && o.day ? `DÍA ${WDL[d.getDay()].toUpperCase()} · ${dk(d)}` : `${dk(d)} ${WD[d.getDay()]}`;
   const head = `${day} · ${s.gymName || gymName(sGym(s))} · ${s.dayName} · ${s.planId === 'quick' ? 'entreno rápido' : (KINDS[sKind(s)] || '').toLowerCase()}${s.durationSec ? ' · ' + Math.round(s.durationSec / 60) + ' min' : ''}${s.edited ? ' · editada' : ''}${s.live ? ' · en curso' : ''}`;
+  const subs = aixSubsOf(s);
   const ex = s.exercises.map(e => {
     const bar = BAR_DEFAULT[e.name] ? ` (${u} en discos + barra ${fmtKg(BAR_DEFAULT[e.name])})` : '', r = aixRest(s, e);
-    return `- ${e.name}${bar}: ${e.sets.length ? e.sets.map(x => ddSetTxt(x, e)).join(', ') : 'sin series'}${r ? ' · descanso ' + r : ''}${e.note ? ' · nota: ' + e.note.replace(/\s+/g, ' ') : ''}`;
+    return `- ${e.name}${aixSubTxt(subs[e.name])}${bar}: ${e.sets.length ? e.sets.map(x => ddSetTxt(x, e)).join(', ') : 'sin series'}${r ? ' · descanso ' + r : ''}${e.note ? ' · nota: ' + e.note.replace(/\s+/g, ' ') : ''}`;
   });
   return head + '\n' + ex.join('\n') + (s.note ? '\nNota de la sesión: ' + s.note : '');
 }
+const aixDayTxt = d => `- ${WDL[d.weekday]} · ${d.name} (${KINDS[d.kind || kindOfName(d.name)] || ''}): ` +
+    d.exercises.map(e => `${e.name} ${e.sets}×${reps(e)}${+e.weight ? ' ' + fmtKg(+e.weight) + ' ' + aixU() : ''}${e.rest ? ' desc ' + aixSec(e.rest) : ''}`).join('; ');
 function aixPlanTxt() {
   const plan = activePlan(); if (!plan) return 'Sin plan activo.';
-  return `${plan.name} (${gymName(plan.gymId)})\n` + plan.days.map(d => `- ${WDL[d.weekday]} · ${d.name} (${KINDS[d.kind || kindOfName(d.name)] || ''}): ` +
-    d.exercises.map(e => `${e.name} ${e.sets}×${reps(e)}${+e.weight ? ' ' + fmtKg(+e.weight) + ' ' + aixU() : ''}${e.rest ? ' desc ' + aixSec(e.rest) : ''}`).join('; ')).join('\n');
+  return `${plan.name} (${gymName(plan.gymId)})\n` + plan.days.map(aixDayTxt).join('\n');
+}
+/* Varios días agrupados por su plan ("· plan activo" en el actual) */
+function aixDaysTxt(days) {
+  if (!days.length) return 'Sin plan activo.';
+  const act = activePlan(), by = [];
+  days.forEach(d => { const p = state.plans.find(x => x.days.indexOf(d) >= 0); let g = by.find(x => x.p === p); if (!g) by.push(g = { p, days: [] }); g.days.push(d); });
+  return by.map(g => `${g.p ? g.p.name : 'Rutina'} (${gymName(g.p && g.p.gymId)})${g.p && g.p === act ? ' · plan activo' : ''}\n` + g.days.map(aixDayTxt).join('\n')).join('\n');
 }
 function aixRecords(list) {
   const best = {};
@@ -79,15 +102,7 @@ function aixStreak() { try { const s = streakInfo(); return `${s.count} entrenos
 const AIX_DEF = {
   /* I1 (24-oct-2026): lo que se pide va al final ("LO QUE TE PIDO", con el objetivo y el tipo de sesión) */
   day: `Actúa como mi entrenador personal experto en hipertrofia y fuerza, con criterio basado en evidencia. Abajo van mis datos, mi sesión y, al final, lo que te pido. Sé directo y breve.`,
-  week: `Actúa como mi entrenador personal experto en hipertrofia. Analiza mi semana completa:
-1. Resumen: sesiones hechas frente a las planeadas, racha y constancia.
-2. Volumen por músculo: series efectivas frente a la meta de 10-20; qué músculos quedaron cortos o pasados.
-3. Equilibrio: empuje/tirón, pierna anterior/posterior, músculos olvidados.
-4. Progresión: ejercicios que mejoraron, estancados y los que bajaron.
-5. Recuperación y fatiga: sueño y energía si los registré, sesiones con caída de rendimiento, si conviene descarga.
-6. Tiempos: duración de mis sesiones y descansos; descanso recomendado por ejercicio en segundos y duración ideal de cada sesión en minutos.
-7. Plan para la próxima semana: qué ajustar en series, ejercicios o cargas, y qué priorizar.
-Mi objetivo es {objetivo}, entreno {días por semana} días en {gym}. Considera mis molestias: {molestias}. Sé directo, usa números y no repitas los datos.`,
+  week: `Actúa como mi entrenador personal experto en hipertrofia y fuerza, con criterio basado en evidencia. Abajo van mis datos, mi rutina, mis sesiones de la semana y, al final, lo que te pido. Sé directo y breve.`,
   all: `Actúa como mi entrenador personal experto en hipertrofia y fuerza. Analiza mi historial de {período}:
 1. Tendencia general: fuerza y volumen a lo largo del tiempo, mejores y peores etapas.
 2. Por músculo y por ejercicio principal: progreso real (1RM estimado), estancamientos largos y desequilibrios.
@@ -125,14 +140,14 @@ const aixKindUp = k => (KINDS[k] || KINDS.fuerza).toUpperCase();
 /* `o.dia`: la línea empieza con "DÍA " ("DÍA LUNES (FUERZA): nombre"), como en la exportación de la semana */
 function aixFormat(days, o) {
   days = (days || []).filter(Boolean); const u = aixU(), D = o && o.dia ? 'DÍA ' : '';
-  const names = d => d.exercises.map(e => e.name).join(', ');
+  const X = (o && o.extra) || {}, names = d => d.exercises.map(e => e.name).concat(X[d.id] || []).join(', ');
   const list = !days.length ? '' : days.length === 1 ? names(days[0]) : days.map(d => `${aixWdUp(d)} (${aixKindUp(aixDayKind(d))}): ${d.name} → ${names(d)}`).join('; ');
   const exTxt = list ? `Ejercicio: nombre EXACTO de esta lista ${list}, igual en todas sus filas; si es nuevo, nombre completo con el equipo.`
     : 'Ejercicio: nombre completo con el equipo (por ejemplo "Prensa 45°" o "Remo Sentado con Cable"), igual en todas sus filas.';
   const one = days.length === 1 ? ` (aquí: ${D}${aixWdUp(days[0])} (${aixKindUp(aixDayKind(days[0]))}): ${days[0].name})` : '';
   const pat = D ? `'DÍA LUNES (TIPO): nombre' (con LUNES, MARTES, MIÉRCOLES, JUEVES, VIERNES, SÁBADO o DOMINGO` : `'DÍA (TIPO): nombre' (DÍA: LUNES, MARTES, MIÉRCOLES, JUEVES, VIERNES, SÁBADO o DOMINGO`;
   return `FORMATO OBLIGATORIO (lo lee mi app automáticamente):
-Al final, UN SOLO bloque de código con todo lo que debo importar. Dentro del bloque, antes de cada tabla, una línea con el día, el tipo de sesión y el nombre de la rutina: ${pat}; TIPO: FUERZA o BOMBEO, el de ese día en mi rutina)${one}. Debajo, el encabezado exacto 'Ejercicio | Peso | Reps | RIR | Descanso' y una fila por SERIE en el orden en que se hacen. ${exTxt} Peso: solo el número en ${u} (0 = peso corporal; mancuernas = una). Reps: número o rango. RIR: 0 a 4. Descanso: segundos. Una línea en blanco entre días. Nada de texto, notas, emojis ni negritas dentro del bloque. Para la sesión del día: un solo día (el próximo de esa rutina). Para la semana: un bloque con todos los días de la rutina activa.
+Al final, UN SOLO bloque de código con todo lo que debo importar. Dentro del bloque, antes de cada tabla, una línea con el día, el tipo de sesión y el nombre de la rutina: ${pat}; TIPO: FUERZA o BOMBEO, el de ese día en mi rutina)${one}. Debajo, el encabezado exacto 'Ejercicio | Peso | Reps | RIR | Descanso' y una fila por SERIE en el orden en que se hacen. ${exTxt} Peso: solo el número en ${u} (0 = peso corporal; mancuernas = una). Reps: número o rango. RIR: 0 a 4. Descanso: segundos. Una línea en blanco entre días. Nada de texto, notas, emojis ni negritas dentro del bloque. ${o && o.scope === 'day' ? 'Es para la sesión del día: un solo día (el próximo de esa rutina).' : o && o.scope === 'week' ? 'Es para la semana: un bloque con todos los días de la lista.' : 'Para la sesión del día: un solo día (el próximo de esa rutina). Para la semana: un bloque con todos los días de la rutina activa.'}
 Ejemplo:
 \`\`\`
 ${D}LUNES (FUERZA): Piernas + Torso (Pesado)
@@ -150,8 +165,13 @@ function aixDayOf(s) { for (const p of state.plans) { const d = p.days.find(x =>
 
 /* ---------- 5. Los tres textos ---------- */
 const aixHead = (k, per) => aixFill(aixTpl(k), Object.assign(aixProfile(), { per }));
+/* Último peso: el último pesaje de Perfil → Cuerpo (con su fecha) o el de Tus datos */
+function aixLastKg() {
+  try { const w = (body().w || []).filter(x => +x.kg).slice().sort((a, b) => a.d.localeCompare(b.d)), x = w[w.length - 1]; if (x) return { kg: +x.kg, d: x.d }; } catch (e) {}
+  const p = state.settings.prof || {}; return +p.kg ? { kg: +p.kg } : null;
+}
 function aixDatos() {
-  const v = aixProfile(), parts = [v.age ? v.age + ' años' : '', v.kg ? fmtKg(v.kg) + ' kg' : '', v.cm ? v.cm + ' cm' : '', v.goal ? 'objetivo: ' + v.goal : '', v.inj ? 'molestias: ' + v.inj : ''].filter(Boolean);
+  const v = aixProfile(), L = aixLastKg(), parts = [v.age ? v.age + ' años' : '', L ? `último peso ${fmtKg(Math.round(L.kg * 10) / 10)} kg${L.d ? ' (' + fmtDate(L.d + 'T12:00:00') + ')' : ''}` : '', v.cm ? v.cm + ' cm' : '', v.goal ? 'objetivo: ' + v.goal : '', v.inj ? 'molestias: ' + v.inj : ''].filter(Boolean);
   return parts.length ? 'MIS DATOS: ' + parts.join(' · ') : '';
 }
 /* ---------- Lo que se pide al final: objetivo de Tus datos (o que la IA lo pregunte) y el tipo de sesión ---------- */
@@ -175,16 +195,10 @@ function aixAskDay(list, d) {
 sessionPrompt = function (list) {
   const days = []; list.forEach(s => { const d = aixDayOf(s); if (d && days.indexOf(d) < 0) days.push(d); });
   const live = list.some(s => s.live);
-  return [aixHead('day'), aixDatos(), `MI SESIÓN${live ? ' (en curso: solo lo hecho hasta ahora)' : ''} (peso×reps por serie, @ = reps en reserva, ↓ = drop set, pesos en ${aixU()}):`, list.map(s => aixSessLine(s)).join('\n\n'), aixAskDay(list, days[0]), aixFormat(days.slice(0, 1))].filter(Boolean).join('\n\n');
+  return [aixHead('day'), aixDatos(), `MI SESIÓN${live ? ' (en curso: solo lo hecho hasta ahora)' : ''} (peso×reps por serie, @ = reps en reserva, ↓ = drop set, pesos en ${aixU()}):`, list.map(s => aixSessLine(s)).join('\n\n'), aixAskDay(list, days[0]), aixFormat(days.slice(0, 1), { scope: 'day', extra: aixDoneExtra(list) })].filter(Boolean).join('\n\n');
 };
-function aixWeekBody(off) {
-  const ws = weekStartOf(new Date()); ws.setDate(ws.getDate() - 7 * off); const we = new Date(ws); we.setDate(we.getDate() + 7);
-  const list = state.sessions.filter(s => { const t = new Date(s.date); return t >= ws && t < we; }).slice().sort((a, b) => a.date.localeCompare(b.date));
-  return [aixHead('week'), aixDatos(), 'MI PLAN:\n' + aixPlanTxt(), list.length ? `MIS SESIONES DE LA SEMANA (${list.length}):\n` + list.map(aixSessLine).join('\n\n') : 'Esta semana aún no registro sesiones.', 'RACHA: ' + aixStreak()].filter(Boolean).join('\n\n');
-}
-const _wcReportTextAix = wcReportText, _wcSumTextAix = wcSumText;
-wcReportText = function () { return [aixWeekBody(0), 'REPORTE DE FORJA:\n' + _wcReportTextAix(), aixFormat(aixPlanDays())].join('\n\n'); };
-wcSumText = function () { return [aixWeekBody(typeof wcSumOff === 'function' ? wcSumOff() : 0), 'RESUMEN DE FORJA:\n' + _wcSumTextAix(), aixFormat(aixPlanDays())].join('\n\n'); };
+/* (24-oct-2026) "Copiar" y "Compartir" del reporte y del resumen semanal copian solo eso; el texto completo para la IA
+   es "Exportar semana para IA" (aixWeekText, exportar.js) */
 function aixAllText(per) {
   const from = aixFrom(per), P = AIX_PER.find(x => x[0] === per) || AIX_PER[1];
   const list = state.sessions.filter(s => !from || new Date(s.date).getTime() >= from).slice().sort((a, b) => a.date.localeCompare(b.date));
@@ -194,7 +208,21 @@ function aixAllText(per) {
     'RACHA: ' + aixStreak(), aixFormat(aixPlanDays())].filter(Boolean).join('\n\n');
   return { txt, n: list.length };
 }
-nsAskText = function (d) { return aixFormat(d ? [d] : []); };
+nsAskText = function (d) { return aixFormat(d ? [d] : [], d ? { scope: 'day' } : null); };
+/* Nombres hechos que no están en el día de su rutina (con el ejercicio que reemplazaron): { díaId: [texto] } */
+function aixDoneExtra(list) {
+  const ex = {};
+  list.forEach(s => { const d = aixDayFind(s); if (!d) return; const subs = aixSubsOf(s);
+    s.exercises.forEach(e => { if (d.exercises.some(x => x.name === e.name)) return; const L = ex[d.id] = ex[d.id] || [];
+      if (!L.some(t => t === e.name || t.indexOf(e.name + ' (') === 0)) L.push(e.name + aixSubTxt(subs[e.name])); }); });
+  return ex;
+}
+/* Días de la exportación de la semana: los de las rutinas que usaste (aunque sean de otro plan) y los del plan activo */
+function aixWeekDays(W) {
+  const out = [], add = d => { if (d && out.indexOf(d) < 0) out.push(d); };
+  W.list.forEach(s => add(aixDayFind(s))); aixPlanDays().forEach(add);
+  return out.sort((a, b) => ((a.weekday + 6) % 7) - ((b.weekday + 6) % 7));
+}
 /* ---------- Exportar semana (I1): de lunes a domingo, el día en cada bloque y la próxima semana importable ---------- */
 function aixWeekOf(off) {
   const ws = weekStartOf(new Date()); ws.setDate(ws.getDate() - 7 * off); const we = new Date(ws); we.setDate(we.getDate() + 7);
@@ -202,7 +230,7 @@ function aixWeekOf(off) {
   return { off, ws, we, key: dk(ws), list };
 }
 function aixWeekText(off) {
-  const W = aixWeekOf(off), v = aixProfile(), days = aixPlanDays(), last = new Date(W.we.getTime() - 864e5), kinds = [];
+  const W = aixWeekOf(off), v = aixProfile(), days = aixWeekDays(W), last = new Date(W.we.getTime() - 864e5), kinds = [];
   days.forEach(d => { const k = aixDayKind(d); if (kinds.indexOf(k) < 0) kinds.push(k); });
   let sets = ''; try { const S = weekSets(off); sets = MM_MAIN.map(k => `${zoneName(k)} ${Math.round(S.sets[k] * 2) / 2}`).join(', '); } catch (e) {}
   const ask = [`LO QUE TE PIDO (semana del lunes ${fmtDate(W.ws.toISOString())} al domingo ${fmtDate(last.toISOString())}):`,
@@ -211,11 +239,10 @@ function aixWeekText(off) {
     days.length ? `3. Mis sesiones de la próxima semana, día por día según mi rutina (${days.map(d => `${aixWdUp(d)} (${aixKindUp(aixDayKind(d))}): ${d.name}`).join('; ')}), con peso, reps, RIR y descanso de cada serie, en el formato obligatorio de abajo (lo importo como recomendación o como rutina).`
       : '3. Una propuesta de sesiones para la próxima semana, día por día, con peso, reps, RIR y descanso de cada serie, en el formato obligatorio de abajo.',
     aixGoalLine(v.goal), v.inj ? `Considera mis molestias: ${v.inj}.` : ''].filter(Boolean).join('\n');
-  const txt = ['Actúa como mi entrenador personal experto en hipertrofia y fuerza, con criterio basado en evidencia. Abajo van mis datos, mi rutina, mis sesiones de la semana y, al final, lo que te pido. Sé directo y breve.',
-    aixDatos(), 'MI RUTINA:\n' + aixPlanTxt(),
+  const txt = [aixHead('week'), aixDatos(), 'MI RUTINA (los días que usé esta semana y mi plan activo):\n' + aixDaysTxt(days),
     W.list.length ? `MIS SESIONES DE LA SEMANA (${W.list.length}; peso×reps por serie, @ = reps en reserva, ↓ = drop set, pesos en ${aixU()}):\n` + W.list.map(s => aixSessLine(s, { day: 1 })).join('\n\n') : 'Esa semana no registré sesiones.',
     sets && W.list.length ? 'SERIES POR MÚSCULO ESA SEMANA (meta 10-20): ' + sets : '',
-    ask, aixFormat(days, { dia: 1 })].filter(Boolean).join('\n\n');
+    ask, aixFormat(days, { dia: 1, scope: 'week', extra: aixDoneExtra(W.list) })].filter(Boolean).join('\n\n');
   return { txt, n: W.list.length, W };
 }
 
@@ -279,7 +306,7 @@ render = function () {
   if (state.tab === 'progress' && (state.progSub || 'semana') === 'semana') { const ai = app.querySelector('.ai-fab-row'); if (ai) ai.insertAdjacentHTML('afterend', aixBtn()); else app.insertAdjacentHTML('beforeend', aixBtn()); }
   else if (state.tab === 'profile') { const st = app.querySelector('.pf-set'); if (st) st.insertAdjacentHTML('beforebegin', aixBtn()); else app.insertAdjacentHTML('beforeend', aixBtn()); }
 };
-const aixClaudeBtn = k => `<button type="button" class="btn small primary" data-aix="claude-${k}">${ic('sparkles', 15)} Analizar con Claude</button>`;
+const aixClaudeBtn = k => `<button type="button" class="btn small primary" data-xp="week" data-off="${k === 's' && typeof wcSumOff === 'function' ? wcSumOff() : 0}">${ic('sparkles', 15)} Exportar semana para IA</button>`;
 const _wcReportHtmlAix = wcReportHtml, _wcSumHtmlAix = wcSumHtml;
 wcReportHtml = function () { return _wcReportHtmlAix.apply(this, arguments).replace('<div class="dd-acts"><button type="button" class="btn small" data-wc="share-f">', '<div class="dd-acts">' + aixClaudeBtn('f') + '<button type="button" class="btn small" data-wc="share-f">'); };
 wcSumHtml = function () { return _wcSumHtmlAix.apply(this, arguments).replace('<div class="dd-acts"><button type="button" class="btn small" data-wc="share-s">', '<div class="dd-acts">' + aixClaudeBtn('s') + '<button type="button" class="btn small" data-wc="share-s">'); };
@@ -294,8 +321,6 @@ document.addEventListener('click', ev => {
   else if (a === 'share') aixShare('Mis datos de Forja', aixAllText(state.aixPer || '3m').txt);
   else if (a === 'copy') nsCopy(aixAllText(state.aixPer || '3m').txt).then(ok => toast(ok ? 'Copiado: pégalo en tu IA.' : 'No se pudo copiar.'));
   else if (a === 'txt') aixSaveTxt(aixAllText(state.aixPer || '3m').txt);
-  else if (a === 'claude-f') aixOpenClaude(wcReportText());
-  else if (a === 'claude-s') aixOpenClaude(wcSumText());
   else if (a === 'save' || a === 'reset') {
     const k = b.dataset.k, P = Object.assign({}, S.aiP || {});
     if (a === 'reset') delete P[k]; else { const t = document.getElementById('aix-t-' + k); const v = t ? t.value.trim() : ''; if (v && v !== AIX_DEF[k]) P[k] = v; else delete P[k]; }

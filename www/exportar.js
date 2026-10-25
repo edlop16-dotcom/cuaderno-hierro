@@ -9,9 +9,16 @@
    ========================================================================== */
 
 /* ---------- 1. La sesión en curso como sesión guardada (solo las series marcadas) ---------- */
+/* Ejercicio del plan que reemplaza cada uno de la sesión (mismo exId y otro nombre): { nombre: nombre del plan } */
+function exSubsOfDraft(d) {
+  const out = {}, day = d && findDay(d.planId, d.dayId).d; if (!day) return out;
+  d.exercises.forEach(e => { const x = e.exId && day.exercises.find(y => y.id === e.exId); if (x && x.name !== e.name) out[e.name] = x.name; });
+  return out;
+}
 function exDraftSession() {
   const d = state.draft; if (!d) return null;
-  const exs = d.exercises.map(e => ({ name: e.name, type: e.type, rest: e.rest, ...(String(e.note || '').trim() ? { note: String(e.note).trim() } : {}),
+  const of = exSubsOfDraft(d);
+  const exs = d.exercises.map(e => ({ name: e.name, type: e.type, rest: e.rest, ...(of[e.name] ? { of: of[e.name] } : {}), ...(String(e.note || '').trim() ? { note: String(e.note).trim() } : {}),
     sets: e.log.filter(s => s.done).map(s => { const o = { w: +s.w || 0, r: +s.r || 0 }; if (s.rir != null) o.rir = s.rir; const dd = (s.drops || []).filter(x => x.done).map(x => ({ w: +x.w || 0, r: +x.r || 0 })); if (dd.length) o.drops = dd; return o; }) }))
     .filter(e => e.sets.length);
   return { id: d.id, live: 1, date: d.start, planId: d.planId, planName: d.planName, dayId: d.dayId, dayName: d.dayName, gymId: d.gymId || 'rokaz', gymName: d.gymName || gymName(d.gymId),
@@ -90,8 +97,14 @@ fsHtml = function (s) {
 let exIaKind = null;
 const _finishEx = finishSession;
 finishSession = function () {
-  const d = state.draft; exIaKind = d && d.ns && d.ns.src === 'ia' ? (d.kind || kindOfName(d.dayName)) : null;
-  try { return _finishEx.apply(this, arguments); } finally { exIaKind = null; }
+  const d = state.draft, id = d && d.id, of = exSubsOfDraft(d); exIaKind = d && d.ns && d.ns.src === 'ia' ? (d.kind || kindOfName(d.dayName)) : null;
+  try { return _finishEx.apply(this, arguments); }
+  finally {
+    exIaKind = null;
+    /* Guardar en la sesión a qué ejercicio del plan reemplazó cada sustituto (lo usan las exportaciones) */
+    const s = id && !state.draft && state.sessions.find(x => x.id === id);
+    if (s && Object.keys(of).length) { s.exercises.forEach(e => { if (of[e.name]) e.of = of[e.name]; }); saveLocal(); }
+  }
 };
 const _learnWeightsEx = learnWeights;
 learnWeights = function (s) {
