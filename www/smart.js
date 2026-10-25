@@ -7,7 +7,11 @@
    4. Resumen de la semana, de la semana pasada y del mes, con qué cambiar.
    5. Reajuste: sesión de regreso tras 10+ días sin entrenar y aviso de estancamiento.
    ========================================================================== */
-const goalNow = () => { const p = state.settings.prof; return p && p.goal ? p.goal : (pubUser() ? 'salud' : 'musculo'); };
+/* Tu objetivo: un solo dato, settings.prof.goal, que editan "Tus datos" y "Tu objetivo y plan" (la bienvenida).
+   goalSet() = el que elegiste ('' si no hay); goalNow() le pone un valor por defecto solo para los cálculos del coach,
+   nunca para mostrarlo ni exportarlo. */
+const goalSet = () => { const p = state.settings.prof; return p && p.goal && typeof PB_GOALS !== 'undefined' && PB_GOALS[p.goal] ? p.goal : ''; };
+const goalNow = () => goalSet() || (pubUser() ? 'salud' : 'musculo');
 const smTip = (c, t) => { if (c.tips.indexOf(t) < 0) c.tips.push(t); };
 
 /* ---------- 1. Progresión según el objetivo ---------- */
@@ -15,7 +19,7 @@ const _coachForS = coachFor;
 coachFor = function (ex, gymId, kind) {
   const c = _coachForS(ex, gymId, kind), G = goalNow();
   if (!c || !c.last || ['pain', 'back', 'down'].indexOf(c.mode) >= 0) return c;
-  const H = exHistory(ex.name, gymId, kind), topW = c.last.w, inc = increment(ex, topW || 1);
+  const H = exHistory(ex.name, gymId, kind, 12).filter(h => h.kind === kind), topW = c.last.w, inc = increment(ex, topW || 1);
   if (G === 'fuerza' && ex.repsMax <= 6 && H.length) {
     const bar = barOf(ex), e1 = Math.max.apply(null, H[0].sets.map(x => e1rm((+x.w || 0) + bar, Math.min(10, x.r || 0))));
     const rir = typeof rirTarget === 'function' ? rirTarget(0) : 2;
@@ -108,7 +112,7 @@ function plateCard() {
   const carbs = G === 'grasa' ? (f ? '½ a 1' : '1') : G === 'musculo' ? (f ? '1 a 2' : '2 a 3') : String(n);
   const it = (icn, cls, qty, unit, ex) => `<div class="pl-i ${cls}"><span class="pl-q">${qty}</span><span class="grow"><b>${unit}</b><small>${ex}</small></span></div>`;
   return `<div class="card bd-card plate-card"><div class="row"><span class="pb-ic">${ic('target', 18)}</span><h3 class="grow">Tu plato en cada comida</h3></div>
-    <div class="muted bd-tip">Sin balanza: usa tu mano. Para ${esc(PB_GOALS[G] ? PB_GOALS[G][0].toLowerCase() : 'tu objetivo')}, en 3-4 comidas al día:</div>
+    <div class="muted bd-tip">Sin balanza: usa tu mano. Para ${esc(goalSet() ? PB_GOALS[goalSet()][0].toLowerCase() : 'tu objetivo')}, en 3-4 comidas al día:</div>
     <div class="pl-list">${it('beef', 'p', n, n > 1 ? 'palmas de proteína' : 'palma de proteína', 'Pollo, pescado o trucha, huevos, carne, menestras, queso')}
     ${it('sun', 'v', n, n > 1 ? 'puños de verduras' : 'puño de verduras', 'Ensalada, brócoli, zanahoria, vainita, tomate')}
     ${it('zap', 'c', carbs, 'manos ahuecadas de carbohidratos', 'Arroz, papa, camote, quinua, fideos, choclo, pan, fruta')}
@@ -127,8 +131,8 @@ function weekReport(offset) {
   const ss = state.sessions.filter(s => !s.approx && new Date(s.date) >= ws && new Date(s.date) < we);
   const plan = activePlan(), target = plan ? plan.days.length : 3;
   const before = state.sessions.filter(s => !s.approx && new Date(s.date) < ws), best = {};
-  before.forEach(s => s.exercises.forEach(e => e.sets.forEach(x => { const v = e1rm(+x.w || 0, x.r || 0); if (!best[e.name] || v > best[e.name]) best[e.name] = v; })));
-  const prs = {}; ss.forEach(s => s.exercises.forEach(e => e.sets.forEach(x => { const v = e1rm(+x.w || 0, x.r || 0); if (best[e.name] && v > best[e.name] * 1.001) prs[e.name] = 1; })));
+  before.forEach(s => s.exercises.forEach(e => e.sets.forEach(x => { const k = exHKey(e.name), v = e1rm(+x.w || 0, x.r || 0); if (!best[k] || v > best[k]) best[k] = v; })));
+  const prs = {}; ss.forEach(s => s.exercises.forEach(e => e.sets.forEach(x => { const k = exHKey(e.name), v = e1rm(+x.w || 0, x.r || 0); if (best[k] && v > best[k] * 1.001) prs[e.name] = 1; })));
   const sets = ss.reduce((a, s) => a + s.exercises.reduce((b, e) => b + e.sets.length, 0), 0);
   const days = []; for (let i = 0; i < ndays; i++) { const d = new Date(ws); d.setDate(d.getDate() + i); days.push(state.daily[dk(d)] || {}); }
   const steps = days.map(t => typeof stepsOf === 'function' ? stepsOf(t) : 0).filter(Boolean), sleep = days.map(t => t.sleepMin).filter(Boolean);
@@ -217,7 +221,7 @@ function stalled() {
   const out = [], seen = {};
   plan.days.forEach(d => d.exercises.forEach(ex => {
     if (seen[ex.name]) return; seen[ex.name] = 1;
-    const H = exHistory(ex.name, plan.gymId || 'rokaz', d.kind || kindOfName(d.name));
+    const dkd = d.kind || kindOfName(d.name), H = exHistory(ex.name, plan.gymId || 'rokaz', dkd, 12).filter(h => h.kind === dkd);
     if (H.length >= 4) { const recent = Math.max.apply(null, H.slice(0, 3).map(bestE)), before = bestE(H[3]); if (recent <= before * 1.005) out.push(ex.name); }
   }));
   stallCache.k = k; stallCache.list = out; return out;

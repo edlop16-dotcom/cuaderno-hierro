@@ -18,14 +18,43 @@ function rfNext() {
   const n = e.log.findIndex(s => !s.done);
   return n >= 0 ? `Sigue: ${e.name} · serie ${n + 1} de ${e.log.length}` : `Sigue: ${e.name}`;
 }
-function rfArm() {
-  if (!RF || isWatch() || !rfOn() || !state.draft) return;
-  const r = state.rest; if (!r || r.rang || r.end < Date.now() + 1500) return;
-  const c = typeof alertCfg === 'function' ? alertCfg() : {};
-  RF.rest({ at: r.end, title: 'Descanso terminado', body: rfNext(), snd: c.sound !== 'silencio', vib: +c.vib !== 0 }).catch(() => {});
+/* Tanda J: el aviso sigue al descanso real. Se programa al empezar el descanso y se reprograma con la hora nueva
+   cada vez que cambia (−15/+15 s, editar el descanso del ejercicio que está descansando, saltar, drop o superserie);
+   si el descanso termina o se quita, se cancela. Con la pantalla encendida el nativo no hace nada (queda el aviso
+   de la app), así que estar programado mientras usas la app no molesta. `rfAt` = hora programada (0 = nada). */
+let rfAt = 0, rfI = null;
+function rfWant() {
+  const r = state.rest;
+  return RF && !isWatch() && rfOn() && state.draft && r && !r.rang && r.end >= Date.now() + 1500 ? r.end : 0;
 }
-function rfCancel() { if (RF) RF.restCancel().catch(() => {}); }
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') rfArm(); else { rfCancel(); rfStatus(); } });
+function rfArm() {
+  const at = rfWant(); if (!at) return;
+  const c = typeof alertCfg === 'function' ? alertCfg() : {};
+  rfAt = at; RF.rest({ at, title: 'Descanso terminado', body: rfNext(), snd: c.sound !== 'silencio', vib: +c.vib !== 0 }).catch(() => {});
+}
+function rfCancel() { rfAt = 0; if (RF) RF.restCancel().catch(() => {}); }
+function rfSync() { const at = rfWant(); if (at === rfAt) return; if (at) rfArm(); else if (rfAt) rfCancel(); }
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'hidden') { rfSync(); rfStatus(); return; }
+  if (rfWant()) rfArm(); else if (rfAt) rfCancel();   /* al apagar la pantalla: siempre con la hora y el sonido de ahora */
+});
+const _tickRF = tick;
+tick = function () { _tickRF.apply(this, arguments); rfSync(); };
+/* De qué ejercicio es el descanso que corre (para "editar el descanso del ejercicio") */
+const _markSetRF = markSet;
+markSet = function (i) { rfI = i; return _markSetRF.apply(this, arguments); };
+const _startRestRF = startRest;
+startRest = function () { const r = _startRestRF.apply(this, arguments); if (state.rest) state.rest.ex = rfI; return r; };
+/* − / + del descanso del ejercicio: si es el que está descansando, el descanso en marcha cambia igual */
+window.addEventListener('click', ev => {
+  const b = ev.target.closest && ev.target.closest('[data-act="rest-step"]'), d = state.draft; if (!b || !d) return;
+  const i = +b.dataset.ex, e = d.exercises[i]; if (!e) return;
+  const old = e.rest || 60;
+  setTimeout(() => {
+    const r = state.rest, dl = (e.rest || 60) - old; if (!r || r.rang || r.ex !== i || !dl) return;
+    r.end = Math.max(Date.now() + 1000, r.end + dl * 1000); r.total = Math.max(10, r.total + dl); tick();
+  }, 0);
+}, true);
 
 /* ---------- Ajustes → Fin del descanso ---------- */
 function rfStatus() { if (RF && !isWatch() && RF.status) RF.status().then(s => { const ch = JSON.stringify(s) !== JSON.stringify(state.rfSt); state.rfSt = s; if (ch && state.tab === 'settings') render(); }).catch(() => {}); }

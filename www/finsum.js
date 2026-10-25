@@ -22,13 +22,13 @@ function fsPrev(s) {
 function fsCompare(s, prev, bars) {
   if (!prev) return null;
   const rows = s.exercises.map(e => {
-    const p = prev.exercises.find(x => x.name === e.name);
+    const p = exIn(prev, e.name);
     const now = fsBest(e.sets), bef = p && fsBest(p.sets), vn = fsVol(e.sets, bars[e.name]), vb = p ? fsVol(p.sets, bars[e.name]) : 0;
     let t = 'new';
     if (bef) t = now.v > bef.v + 0.05 ? 'up' : now.v < bef.v - 0.05 ? 'down' : vn > vb ? 'up' : vn < vb ? 'down' : 'same';
     return { n: e.name, t, now, bef };
   });
-  const skipped = prev.exercises.filter(x => !s.exercises.some(e => e.name === x.name)).map(x => x.name);
+  const skipped = prev.exercises.filter(x => !exIn(s, x.name)).map(x => x.name);
   const vol = s.exercises.reduce((a, e) => a + fsVol(e.sets, bars[e.name]), 0), volB = prev.exercises.reduce((a, e) => a + fsVol(e.sets, bars[e.name]), 0);
   return { rows, skipped, vol, volB, date: prev.date };
 }

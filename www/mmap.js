@@ -18,7 +18,10 @@ function weekSets(offset) {
   const out = {}; ZONES.forEach(z => out[z.k] = 0);
   const list = state.sessions.filter(s => { const t = new Date(s.date); return t >= ws && t < we; });
   list.forEach(s => s.exercises.forEach(e => { const sh = zoneShares(e.name), n = e.sets.length; for (const k in sh) out[k] += sh[k] * n; }));
-  return { sets: out, n: list.length, ws };
+  /* En vivo (Tanda J): las series ya marcadas de la sesión en curso cuentan en su semana */
+  const d = state.draft, t = d && d.start ? new Date(d.start) : null; let live = 0;
+  if (t && t >= ws && t < we) d.exercises.forEach(e => { const n = e.log.filter(x => x.done).length; if (!n) return; live += n; const sh = zoneShares(e.name); for (const k in sh) out[k] += sh[k] * n; });
+  return { sets: out, n: list.length, ws, live };
 }
 const mmLvl = v => v <= 0 ? 0 : v < 5 ? 1 : v < 10 ? 2 : v <= 20 ? 3 : 4;
 const MM_COL = ['var(--mm0)', 'var(--bad)', 'var(--warn)', 'var(--ok)', 'var(--core)'];

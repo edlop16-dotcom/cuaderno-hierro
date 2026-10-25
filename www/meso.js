@@ -42,7 +42,7 @@ function fatigueSigns() {
   const names = {}; recent.forEach(s => s.exercises.forEach(e => names[e.name] = 1));
   let stalled = 0;
   Object.keys(names).forEach(n => {
-    const H = state.sessions.filter(s => !s.approx && s.exercises.some(e => e.name === n && e.sets.length)).slice(0, 4).map(s => Math.max.apply(null, s.exercises.find(e => e.name === n).sets.map(x => e1rm(x.w, x.r))));
+    const H = state.sessions.filter(s => !s.approx && s.exercises.some(e => exSame(e.name, n) && e.sets.length)).slice(0, 4).map(s => Math.max.apply(null, s.exercises.find(e => exSame(e.name, n) && e.sets.length).sets.map(x => e1rm(x.w, x.r))));
     if (H.length >= 4 && Math.max(H[0], H[1], H[2]) <= H[3] * 1.005) stalled++;
   });
   if (stalled >= 3) out.push(`${stalled} ejercicios llevan 3 sesiones sin mejorar`);

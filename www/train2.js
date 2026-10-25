@@ -54,7 +54,7 @@ function stripRings() {
 /* ---------- 4: máquina ocupada / agregar ejercicio ---------- */
 function draftExFrom(name) {
   const d = state.draft, ex = newEx(name, d.kind);
-  const sg = suggest(d.gymId, d.kind, ex), last = lastPerf(name, d.gymId, d.kind), ln = lastNote(name, d.gymId);
+  const sg = suggest(d.gymId, d.kind, ex), last = lastHere(name, d.gymId) || lastPerf(name, d.gymId, d.kind), ln = lastNote(name, d.gymId);
   let c = null; try { c = coachFor(ex, d.gymId, d.kind); } catch (e) {}
   const W = c && c.w != null ? c.w : sg.w;
   return { name, type: ex.type, target: ex.sets, repsMin: ex.repsMin, repsMax: ex.repsMax, rest: ex.rest, inc: increment(ex, W), exId: ex.id, dropLast: false, bar: barOf(ex), note: '', prevNote: ln, sugg: sg,

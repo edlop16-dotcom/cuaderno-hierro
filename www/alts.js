@@ -210,7 +210,7 @@ nsCoachEntry = function (planId, dayId) {
 
 /* ---------- Al empezar: lo que no hay en este gimnasio se cambia por su mejor alternativa (solo hoy) ---------- */
 function altSwapDraft(d, i, name, coachX) {
-  const e = d.exercises[i], cv = altConvert(e.name, name, workW(e)), bar = barFor(name), last = lastPerf(name, d.gymId, d.kind);
+  const e = d.exercises[i], cv = altConvert(e.name, name, workW(e)), bar = barFor(name), last = lastHere(name, d.gymId) || lastPerf(name, d.gymId, d.kind);
   const ne = Object.assign({}, e, { name, type: typeOf(name), bar, inc: increment({ type: typeOf(name) }, cv.w), swappedFrom: e.name, noEq: 1, prevNote: lastNote(name, d.gymId),
     lastDate: last ? (last.date || 'base') : null, prev: last ? last.sets.map(s => ({ w: s.w, r: s.r, drops: [] })) : [] });
   if (!coachX) {

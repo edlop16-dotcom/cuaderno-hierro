@@ -61,11 +61,11 @@ function aixSubsOf(s) {
 const aixSubTxt = u => u ? ` (${u.guess ? 'parece que ' : ''}en lugar de ${u.of})` : '';
 function aixSessLine(s, o) {
   const d = new Date(s.date), u = aixU(), day = o && o.day ? `DÍA ${WDL[d.getDay()].toUpperCase()} · ${dk(d)}` : `${dk(d)} ${WD[d.getDay()]}`;
-  const head = `${day} · ${s.gymName || gymName(sGym(s))} · ${s.dayName} · ${s.planId === 'quick' ? 'entreno rápido' : (KINDS[sKind(s)] || '').toLowerCase()}${s.durationSec ? ' · ' + Math.round(s.durationSec / 60) + ' min' : ''}${s.edited ? ' · editada' : ''}${s.live ? ' · en curso' : ''}`;
+  const g = sGym(s), head = `${day} · gimnasio ${state.gyms.some(x => x.id === g) ? gymName(g) : s.gymName || gymName(g)} · ${s.dayName} · ${s.planId === 'quick' ? 'entreno rápido' : (KINDS[sKind(s)] || '').toLowerCase()}${s.durationSec ? ' · ' + Math.round(s.durationSec / 60) + ' min' : ''}${s.edited ? ' · editada' : ''}${s.live ? ' · en curso' : ''}`;
   const subs = aixSubsOf(s);
   const ex = s.exercises.map(e => {
-    const bar = BAR_DEFAULT[e.name] ? ` (${u} en discos + barra ${fmtKg(BAR_DEFAULT[e.name])})` : '', r = aixRest(s, e);
-    return `- ${e.name}${aixSubTxt(subs[e.name])}${bar}: ${e.sets.length ? e.sets.map(x => ddSetTxt(x, e)).join(', ') : 'sin series'}${r ? ' · descanso ' + r : ''}${e.note ? ' · nota: ' + e.note.replace(/\s+/g, ' ') : ''}`;
+    const bar = BAR_DEFAULT[e.name] ? ` · ${u} en discos, barra de ${fmtKg(BAR_DEFAULT[e.name])} aparte` : '', r = aixRest(s, e);
+    return `- ${e.name}${aixSubTxt(subs[e.name])}: ${e.sets.length ? e.sets.map(x => ddSetTxt(x, e)).join(', ') : 'sin series'}${bar}${r ? ' · descanso ' + r : ''}${e.note ? ' · nota: ' + e.note.replace(/\s+/g, ' ') : ''}`;
   });
   return head + '\n' + ex.join('\n') + (s.note ? '\nNota de la sesión: ' + s.note : '');
 }
@@ -84,8 +84,8 @@ function aixDaysTxt(days) {
 }
 function aixRecords(list) {
   const best = {};
-  list.forEach(s => { if (s.approx) return; s.exercises.forEach(e => e.sets.forEach(x => { const bar = BAR_DEFAULT[e.name] || 0, v = e1rm((+x.w || 0) + bar, +x.r || 0); if (!best[e.name] || v > best[e.name].v) best[e.name] = { v, x, d: s.date }; })); });
-  return Object.keys(best).sort().map(n => `- ${n}: mejor serie ${fmtKg(+best[n].x.w || 0)}×${best[n].x.r} (${fmtDate(best[n].d)}) · 1RM estimado ${fmtKg(Math.round(best[n].v))} ${aixU()}${BAR_DEFAULT[n] ? ' (con la barra)' : ''}`).join('\n');
+  list.forEach(s => { if (s.approx) return; s.exercises.forEach(e => { const k = exHKey(e.name); e.sets.forEach(x => { const bar = BAR_DEFAULT[exClean(e.name)] || BAR_DEFAULT[e.name] || 0, v = e1rm((+x.w || 0) + bar, +x.r || 0); if (!best[k] || v > best[k].v) best[k] = { v, x, d: s.date, n: best[k] ? best[k].n : exClean(e.name) }; }); }); });
+  return Object.keys(best).map(k => best[k]).sort((a, b) => a.n.localeCompare(b.n)).map(B => `- ${B.n}: mejor serie ${fmtKg(+B.x.w || 0)}×${B.x.r} (${fmtDate(B.d)}) · 1RM estimado ${fmtKg(Math.round(B.v))} ${aixU()}${BAR_DEFAULT[B.n] ? ' (con la barra)' : ''}`).join('\n');
 }
 function aixWeeks(from) {
   const out = [], now = new Date();

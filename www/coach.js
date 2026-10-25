@@ -8,12 +8,15 @@ const PAIN = { test: n => TAG('pain').test(n) };
 const TECH = { test: n => TAG('tech').test(n) };
 const DOWN = { test: n => TAG('down').test(n) };
 
+/* Historial de un ejercicio en un gimnasio, lo más reciente primero, con la regla de toda la app (Tanda J): mismo
+   ejercicio aunque cambie el alias o el texto entre paréntesis (exIn), en ese gimnasio, sin importar el tipo de día
+   ni la rutina. Cada entrada trae su tipo (`kind`): el coach progresa con las de hoy y usa las otras de referencia. */
 function exHistory(name, gymId, kind, n = 6) {
   const out = [];
   for (const s of state.sessions) {
-    if (sGym(s) !== gymId || sKind(s) !== kind) continue;
-    const x = s.exercises.find(e => e.name === name);
-    if (x && x.sets.length) out.push({ date: s.date, sets: x.sets, note: x.note || '' });
+    if (sGym(s) !== gymId) continue;
+    const x = exIn(s, name);
+    if (x && x.sets.length) out.push({ date: s.date, sets: x.sets, note: x.note || '', kind: sKind(s) });
     if (out.length >= n) break;
   }
   return out;
@@ -23,17 +26,23 @@ const daysSince = iso => Math.floor((Date.now() - new Date(iso)) / 864e5);
 const repsTxt = arr => arr.join(' · ');
 
 function coachFor(ex, gymId, kind) {
-  const H = exHistory(ex.name, gymId, kind);
+  const HA = exHistory(ex.name, gymId, kind, 12), H = HA.filter(h => h.kind === kind).slice(0, 6);
   const tips = [];
   const sg = suggest(gymId, kind, ex);
   let w = sg.w, mode = sg.up ? 'up' : 'hold';
+  if (!H.length && HA.length) {   /* aquí solo lo hiciste en el otro tipo de día: esa vez es la referencia, no "primera vez" */
+    const L = HA[0], rw = Math.max(...L.sets.map(x => x.w)), rr = L.sets.filter(x => x.w === rw).map(x => x.r);
+    const t = [`Tu última vez aquí fue en un día de ${(KINDS[L.kind] || '').toLowerCase()} (${ago(L.date)}): ${fmtKg(rw)} kg × ${rr.join(' · ')}.`, `Hoy es de ${(KINDS[kind] || '').toLowerCase()}: con ese peso busca ${reps(ex)} reps y ajusta en la 1.ª serie.`];
+    if (L.note) t.push(`Tu nota de ese día: “${esc(L.note)}”.`);
+    return { w: rw, mode: 'hold', head: `<b>Tu última vez aquí: ${fmtKg(rw)} kg</b>. Busca ${reps(ex)} reps.`, goal: null, tips: t };
+  }
   if (!H.length) {
     const ref = lastPerf(ex.name, gymId, kind);
     if (ref && ref.ref) {
       const rw = Math.max(...ref.sets.map(x => x.w)), rr = ref.sets.filter(x => x.w === rw).map(x => x.r);
-      const rn = ref.base ? null : (state.sessions.find(s => s.date === ref.date) || { exercises: [] }).exercises.find(e => e.name === ex.name);
+      const rn = ref.base ? null : (state.sessions.find(s => s.date === ref.date) || { exercises: [] }); const rnx = rn && exIn(rn, ex.name);
       const t = [ref.base ? `Tu récord en ${esc(gymName(ref.gymId))} (Hevy / Symmetry): ${fmtKg(rw)} kg × ${rr.join(' · ')}.` : `Tu última vez fue en ${esc(gymName(ref.gymId))} (${ago(ref.date)}): ${fmtKg(rw)} kg × ${rr.join(' · ')}.`, 'Las máquinas de cada gym pesan distinto: en la 1ª serie confirma que el peso se sienta igual y ajusta.'];
-      if (rn && rn.note) t.push(`Tu nota de allá: “${esc(rn.note)}”.`);
+      if (rnx && rnx.note) t.push(`Tu nota de allá: “${esc(rnx.note)}”.`);
       return { w: rw, mode: 'hold', head: `<b>Referencia de ${esc(gymName(ref.gymId))}: ${fmtKg(rw)} kg</b>. Busca ${reps(ex)} reps.`, goal: rr, tips: t };
     }
     return { w, mode: 'first', head: sg.up ? sg.msg : !(+w) ? (/flexiones|plancha|crunch abdominal|dominadas|fondos|puente de gluteo|peso corporal/.test(normName(ex.name)) ? `Primera vez: con tu peso corporal, busca ${reps(ex)} reps con buena técnica.` : `Primera vez: elige un peso con el que te sobren 3 reps y busca ${reps(ex)} reps.`) : `Primera vez aquí: empieza con <b>${fmtKg(w)} kg</b> y busca ${reps(ex)} reps.`, goal: null,
@@ -89,7 +98,7 @@ function coachFor(ex, gymId, kind) {
     if (bestE(last) < prevBest * 0.92) tips.push('La última vez rendiste menos de lo normal. Revisa sueño (7-8 h), proteína y la creatina antes de esta sesión.');
   }
   /* 5. Volviste después de mucho tiempo */
-  const gap = daysSince(last.date);
+  const gap = daysSince(HA[0].date);   /* la última vez en este gimnasio, de cualquier tipo de día */
   if (gap >= 14 && mode !== 'down') {
     const inc = increment(ex, topW); w = Math.max(0, Math.round(topW * 0.9 / inc) * inc); mode = 'back';
     tips.unshift(`Hace ${gap} días que no haces este ejercicio aquí: empieza con <b>${fmtKg(w)} kg</b> (−10%) y recupera el ritmo.`);

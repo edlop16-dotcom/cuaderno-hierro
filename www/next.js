@@ -364,11 +364,12 @@ const nsCtx = () => { const rp = typeof readyPlan === 'function' ? readyPlan() :
 function nsCoachEx(ex, gymId, kind, ctx) {
   const [lo, hi] = nsRange(ex), n0 = Math.max(1, +ex.sets || 3);
   const rirOf = j => Math.min(3, Math.max(0, rirTarget(j)));
-  const H = exHistory(ex.name, gymId, kind, 6);
+  const HA = exHistory(ex.name, gymId, kind, 12), H = HA.filter(h => h.kind === kind).slice(0, 6);
   let n = n0, w, why, up = false, goal = null, first = false, base = 0;
   if (!H.length) {
     const ref = lastPerf(ex.name, gymId, kind);
-    if (ref && ref.ref) { w = Math.max.apply(null, ref.sets.map(s => +s.w || 0)); why = `Aún no lo haces aquí: empieza con tu referencia de ${ref.base ? 'tu récord' : gymName(ref.gymId)} (${fmtKg(w)} kg) y ajusta según cómo se sienta.`; }
+    if (ref && ref.kref) { w = Math.max.apply(null, ref.sets.map(s => +s.w || 0)); why = `Tu última vez aquí fue en un día de ${(KINDS[ref.kref] || '').toLowerCase()} (${fmtKg(w)} kg): con ese peso busca el rango de hoy y ajusta según cómo se sienta.`; }
+    else if (ref && ref.ref) { w = Math.max.apply(null, ref.sets.map(s => +s.w || 0)); why = `Aún no lo haces aquí: empieza con tu referencia de ${ref.base ? 'tu récord' : gymName(ref.gymId)} (${fmtKg(w)} kg) y ajusta según cómo se sienta.`; }
     else { const s = !(+ex.weight) && typeof startLoad === 'function' ? startLoad(ex) : null; w = s && s.w > 0 ? s.w : +ex.weight || 0; why = 'Ejercicio nuevo: peso prudente, deja 2-3 reps de sobra; con esta sesión el coach aprende tu nivel.'; }
     first = true;
   } else {

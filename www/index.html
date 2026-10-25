@@ -651,7 +651,7 @@ function defaultPlans() { return starterPlans(); }
 
 /* Perfil de respaldo genérico; los datos del usuario se leen de settings.prof y settings.body. */
 const HISTORY = { name: '', gym: '', age: null, kg: null, cm: null, since: '', goal: '', records: [] };
-const baseRec = name => HISTORY.records.find(r => r.name === name);
+const baseRec = name => HISTORY.records.find(r => exSame(r.name, name));
 const SUPS = [
   { k: 'crea', name: 'Creatina', dose: '5 g' },
   { k: 'prot', name: 'Proteína', dose: '1 scoop' },
@@ -696,7 +696,34 @@ function migrateGyms() {
 const activeGym = () => state.gyms.find(g => g.id === state.settings.activeGymId) || state.gyms[0];
 const gymPlans = (gid = activeGym().id) => state.plans.filter(p => p.gymId === gid);
 const gymName = gid => (state.gyms.find(g => g.id === (gid || 'rokaz')) || { name: gid || "Mi gimnasio" }).name;
-const sGym = s => s.gymId || 'rokaz';
+/* Gimnasio de una sesión. Las muy antiguas no guardaban gymId: se deduce de su rutina (la del plan o la que tiene
+   ese día) o del nombre del gimnasio guardado; si no hay pista, el principal, como siempre. No cambia lo guardado. */
+function sGym(s) {
+  if (s.gymId) return s.gymId;
+  const p = state.plans.find(x => x.id === s.planId) || (s.dayId ? state.plans.find(x => x.days.some(d => d.id === s.dayId)) : null);
+  if (p && p.gymId) return p.gymId;
+  const g = s.gymName && state.gyms.find(x => x.name === s.gymName);
+  return g ? g.id : 'rokaz';
+}
+/* Mismo ejercicio aunque el nombre traiga notas que algunas IA copian de la exportación:
+   "Hip Thrust (kg en discos + barra 20)" o "Remo (en lugar de Jalón)" = "Hip Thrust" / "Remo" */
+const exClean = n => String(n || '').replace(/\s*\((?:kg|lb) en discos[^)]*\)/gi, '').replace(/\s*\((?:parece que )?en lugar de [^)]*\)/gi, '').replace(/\s*\(con la barra\)/gi, '').trim();
+/* Clave del ejercicio: el nombre del catálogo si el nombre (sin esas notas) es el suyo o uno de sus alias exactos
+   ("Gemelos sentado" = "Elevación de Talones Sentado"); si no, el nombre sin notas, sin tildes ni mayúsculas.
+   Nunca por parecido: dos ejercicios distintos no se mezclan. */
+const EXK = { n: -1, m: {} };
+function exHKey(name) {
+  const L = typeof LIB !== 'undefined' ? LIB.length : 0; if (EXK.n !== L) { EXK.n = L; EXK.m = {}; }
+  const raw = String(name || ''); if (EXK.m[raw] != null) return EXK.m[raw];
+  const n = normName(exClean(raw)).replace(/\s+/g, ' ').trim();
+  const lib = t => (L ? LIB.find(y => normName(y.name) === t) || (typeof CAT_ALIAS !== 'undefined' && CAT_ALIAS[t]) || null : null);
+  /* "Elevación de Talones Sentado (Gemelos sentado)": si el nombre entero no es del catálogo pero sin el paréntesis final sí */
+  const x = lib(n) || (/\)$/.test(n) ? lib(n.replace(/\s*\([^()]*\)$/, '')) : null);
+  return (EXK.m[raw] = x ? normName(x.name) : n);
+}
+const exSame = (a, b) => a === b || exHKey(a) === exHKey(b);
+/* El ejercicio dentro de una sesión guardada, con la misma regla */
+const exIn = (s, name) => s.exercises.find(e => exSame(e.name, name));
 function sKind(s) {
   if (s.kind) return s.kind;
   for (const p of state.plans) for (const d of p.days) if (d.id === s.dayId) return d.kind || kindOfName(d.name);
@@ -881,23 +908,37 @@ function increment(ex, w) {
   if (ex.type === P && w >= 50) return 5;
   return 2.5;
 }
-/* Última vez que hiciste este ejercicio en este gym y con este tipo de día (Fuerza o Bombeo) */
+/* Última vez que hiciste este ejercicio en este gym y con este tipo de día (Fuerza o Bombeo).
+   Si aquí solo lo hiciste en el otro tipo de día, esa vez es la referencia (`kref` = su tipo): no es "primera vez". */
 function lastPerf(name, gymId, kind, noRef) {
+  let other = null;
   for (const s of state.sessions) {
-    if (sGym(s) !== gymId || sKind(s) !== kind) continue;
-    const x = s.exercises.find(e => e.name === name);
-    if (x && x.sets.length) return { date: s.date, sets: x.sets, gymId };
+    if (sGym(s) !== gymId) continue;
+    const x = exIn(s, name);
+    if (!x || !x.sets.length) continue;
+    if (sKind(s) === kind) return { date: s.date, sets: x.sets, gymId };
+    if (!other) other = { date: s.date, sets: x.sets, gymId, ref: true, kref: sKind(s) };
   }
+  if (other) return other;
   if (noRef) return null;
   /* Aún no lo haces en este gym: usa como referencia el último gym donde lo hiciste */
   for (const s of state.sessions) {
-    if (sGym(s) === gymId || sKind(s) !== kind) continue;
-    const x = s.exercises.find(e => e.name === name);
+    if (sGym(s) === gymId) continue;
+    const x = exIn(s, name);
     if (x && x.sets.length) return { date: s.date, sets: x.sets, gymId: sGym(s), ref: true };
   }
   /* Referencia previa de una importación explícita, si está disponible. */
   const rec = baseRec(name);
   if (rec && gymId !== BASE_GYM) return { date: null, sets: [{ w: rec.w, r: rec.r }], gymId: BASE_GYM, ref: true, base: true };
+  return null;
+}
+/* "Anterior": tu última vez con ese ejercicio en ese gimnasio, sin importar el tipo de día ni la rutina */
+function lastHere(name, gymId) {
+  for (const s of state.sessions) {
+    if (sGym(s) !== gymId) continue;
+    const x = exIn(s, name);
+    if (x && x.sets.length) return { date: s.date, sets: x.sets, gymId, kind: sKind(s) };
+  }
   return null;
 }
 const BASE_GYM = 'raydac';
@@ -909,6 +950,7 @@ function suggest(gymId, kind, ex) {
   const last = lastPerf(ex.name, gymId, kind);
   if (last && last.ref) {
     const w = Math.max(...last.sets.map(s => s.w)), rr = last.sets.filter(s => s.w === w).map(s => s.r).join('·');
+    if (last.kref) return { w, ref: true, msg: `Tu última vez aquí fue en un día de ${(KINDS[last.kref] || '').toLowerCase()}: ${fmtKg(w)} kg × ${rr}. Empieza con <b>${fmtKg(w)} kg</b> y ajusta a las reps de hoy.` };
     return { w, ref: true, msg: `Referencia de <b>${esc(gymName(last.gymId))}</b>${last.base ? ' (tu récord)' : ''}: ${fmtKg(w)} kg × ${rr}. Aún no lo haces aquí; las máquinas cambian, empieza con <b>${fmtKg(w)} kg</b> y ajusta.` };
   }
   if (!last) {
@@ -1036,7 +1078,7 @@ function noteHint(note) {
 function lastNote(name, gymId) {
   let any = null;
   for (const s of state.sessions) {
-    const x = s.exercises.find(e => e.name === name && e.note);
+    const x = s.exercises.find(e => exSame(e.name, name) && e.note);
     if (!x) continue;
     const n = { text: x.note, date: s.date, gym: s.gymName || gymName(sGym(s)) };
     if (sGym(s) === gymId) return n;
@@ -1053,7 +1095,7 @@ function startSession(planId, dayId) {
     id: uid(), planId, planName: plan.name, dayId, dayName: day.name, gymId, gymName: gymName(gymId), kind,
     start: new Date().toISOString(), cur: 0,
     exercises: day.exercises.map(ex => {
-      const sg = suggest(gymId, kind, ex); const last = lastPerf(ex.name, gymId, kind); const ln = lastNote(ex.name, gymId);
+      const sg = suggest(gymId, kind, ex); const last = lastHere(ex.name, gymId) || lastPerf(ex.name, gymId, kind); const ln = lastNote(ex.name, gymId);
       return {
         name: ex.name, type: ex.type, target: ex.sets, repsMin: ex.repsMin, repsMax: ex.repsMax, rest: ex.rest, inc: increment(ex, sg.w),
         exId: ex.id, dropLast: !!ex.dropLast, bar: barOf(ex), note: '', prevNote: ln,
@@ -1104,7 +1146,7 @@ function discardSession() { state.draft = null; state.rest = null; state.confirm
 function bestE1rm(name, gymId) {
   const rec = gymId === BASE_GYM ? baseRec(name) : null;
   let b = rec ? e1rm(rec.w, rec.r) : 0;
-  for (const s of state.sessions) if (sGym(s) === gymId) for (const e of s.exercises) if (e.name === name) for (const x of e.sets) b = Math.max(b, e1rm(x.w, x.r));
+  for (const s of state.sessions) if (sGym(s) === gymId) for (const e of s.exercises) if (exSame(e.name, name)) for (const x of e.sets) b = Math.max(b, e1rm(x.w, x.r));
   return b;
 }
 let wl = null;
@@ -1327,7 +1369,9 @@ function vProgress() {
   const vol = week.reduce((a, s) => a + s.exercises.reduce((b, e) => b + e.sets.reduce((c, x) => c + x.w * x.r, 0), 0), 0);
   const setsBy = {}; TYPES.forEach(t => setsBy[t] = 0);
   week.forEach(s => s.exercises.forEach(e => setsBy[e.type] = (setsBy[e.type] || 0) + e.sets.length));
-  const names = [...new Set(state.sessions.filter(inGf).flatMap(s => s.exercises.map(e => e.name)))].sort();
+  const nk = {}; state.sessions.filter(inGf).forEach(s => s.exercises.forEach(e => { const k = exHKey(e.name); if (!nk[k]) nk[k] = exClean(e.name); }));
+  const names = Object.keys(nk).map(k => nk[k]).sort();
+  if (state.progEx && !names.includes(state.progEx)) { const k = exHKey(state.progEx); if (nk[k]) state.progEx = nk[k]; }
   if (!state.progEx || !names.includes(state.progEx)) state.progEx = names[0] || null;
   const max = 24;
   const imc = HISTORY.kg && HISTORY.cm ? HISTORY.kg / Math.pow(HISTORY.cm / 100, 2) : null;
@@ -1357,16 +1401,16 @@ function vProgress() {
 }
 function recordsCard() {
   const best = {};
-  if (gf() === 'all' || gf() === BASE_GYM) HISTORY.records.forEach(r => best[r.name] = { w: r.w, r: r.r, e: e1rm(r.w, r.r), when: 'Historial importado', start: r.start });
-  [...state.sessions].filter(inGf).reverse().forEach(s => s.exercises.forEach(e => e.sets.forEach(x => {
-    const v = e1rm(x.w, x.r); const b = best[e.name];
-    if (!b || v > b.e + 0.01) best[e.name] = { w: x.w, r: x.r, e: v, when: fmtDate(s.date) + ' · ' + gymName(sGym(s)).replace(/ Gym$/, ''), start: b ? b.start : undefined, isNew: !!b };
-  })));
+  if (gf() === 'all' || gf() === BASE_GYM) HISTORY.records.forEach(r => best[exHKey(r.name)] = { n: r.name, w: r.w, r: r.r, e: e1rm(r.w, r.r), when: 'Historial importado', start: r.start });
+  [...state.sessions].filter(inGf).reverse().forEach(s => s.exercises.forEach(e => { const k = exHKey(e.name); e.sets.forEach(x => {
+    const v = e1rm(x.w, x.r); const b = best[k];
+    if (!b || v > b.e + 0.01) best[k] = { n: b ? b.n : exClean(e.name), w: x.w, r: x.r, e: v, when: fmtDate(s.date) + ' · ' + gymName(sGym(s)).replace(/ Gym$/, ''), start: b ? b.start : undefined, isNew: !!b };
+  }); }));
   const names = Object.keys(best).sort((a, b) => best[b].e - best[a].e);
   return `<div class="card"><h3>Récords personales</h3>
     <div class="muted" style="font-size:12.5px">Incluye tus récords previos. Cuando superes uno en la app, se actualiza solo.</div>
     <table class="rec">${names.map(n => { const b = best[n];
-      return `<tr><td><b>${esc(n)}</b><small>${b.when}${b.isNew ? ' · 🏆 nuevo' : ''}${b.start ? ` · empezaste con ${b.start} kg <span class="up-pct">+${Math.round((b.w - b.start) / b.start * 100)}%</span>` : ''}</small></td>
+      return `<tr><td><b>${esc(b.n)}</b><small>${b.when}${b.isNew ? ' · 🏆 nuevo' : ''}${b.start ? ` · empezaste con ${b.start} kg <span class="up-pct">+${Math.round((b.w - b.start) / b.start * 100)}%</span>` : ''}</small></td>
       <td>${fmtKg(b.w)} kg × ${b.r}<small>1RM ≈ ${fmtKg(Math.round(b.e))} kg</small></td></tr>`; }).join('')}</table></div>`;
 }
 function calcCard() {
@@ -1397,11 +1441,11 @@ function supHistory() {
 function countPRs() {
   const best = {}; let n = 0;
   HISTORY.records.forEach(r => best[r.name] = e1rm(r.w, r.r));
-  [...state.sessions].reverse().forEach(s => s.exercises.forEach(e => { const b = Math.max(0, ...e.sets.map(x => e1rm(x.w, x.r))); if (best[e.name] && b > best[e.name] + .01) n++; best[e.name] = Math.max(best[e.name] || 0, b); }));
+  [...state.sessions].reverse().forEach(s => s.exercises.forEach(e => { const k = exHKey(e.name), b = Math.max(0, ...e.sets.map(x => e1rm(x.w, x.r))); if (best[k] && b > best[k] + .01) n++; best[k] = Math.max(best[k] || 0, b); }));
   return n;
 }
 function exChart(name) {
-  const pts = [...state.sessions].filter(inGf).reverse().map(s => { const e = s.exercises.find(x => x.name === name); if (!e || !e.sets.length) return null;
+  const pts = [...state.sessions].filter(inGf).reverse().map(s => { const e = exIn(s, name); if (!e || !e.sets.length) return null;
     const top = e.sets.reduce((a, x) => x.w > a.w || (x.w === a.w && x.r > a.r) ? x : a, e.sets[0]);
     return { d: s.date, w: top.w, r: top.r, e: Math.max(...e.sets.map(x => e1rm(x.w, x.r))) }; }).filter(Boolean);
   if (!pts.length) return '';
@@ -1794,5 +1838,6 @@ cloud.init();
 <script src="finanzas2.js"></script>
 <script src="xlsxw.js"></script>
 <script src="finanzas3.js"></script>
+<script src="tandaj.js"></script>
 </body>
 </html>

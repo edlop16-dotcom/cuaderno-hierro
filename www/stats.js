@@ -52,7 +52,7 @@ function setStreak(k, n) {
 const avg = a => a.reduce((x, y) => x + y, 0) / Math.max(1, a.length);
 function exPoints(name, gym) {
   return state.sessions.slice().reverse().filter(s => gym === 'all' || sGym(s) === gym).map(s => {
-    const e = s.exercises.find(x => x.name === name); if (!e || !e.sets.length) return null;
+    const e = exIn(s, name); if (!e || !e.sets.length) return null;
     const top = e.sets.reduce((a, x) => x.w > a.w || (x.w === a.w && x.r > a.r) ? x : a, e.sets[0]);
     return { s, d: s.date, gym: sGym(s), sets: e.sets, top, e: Math.max.apply(null, e.sets.map(x => e1rm(x.w, x.r))), vol: e.sets.reduce((a, x) => a + x.w * x.r, 0) };
   }).filter(Boolean);
@@ -76,7 +76,7 @@ function trendOf(pts) {
   return { pct, dir: pct > 1.5 ? 'up' : pct < -1.5 ? 'down' : 'flat' };
 }
 function exStats(name) {
-  const used = [...new Set(state.sessions.filter(s => s.exercises.some(e => e.name === name)).map(sGym))];
+  const used = [...new Set(state.sessions.filter(s => !!exIn(s, name)).map(sGym))];
   let gym = state.statsGym || 'all'; if (gym !== 'all' && !used.includes(gym)) gym = 'all';
   const pts = exPoints(name, gym), wins = histWins(pts, name), tr = trendOf(pts), rec = typeof baseRec === 'function' ? baseRec(name) : null;
   const chart = pts.length ? stChart(name, pts) : '';

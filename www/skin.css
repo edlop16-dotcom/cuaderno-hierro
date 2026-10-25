@@ -178,7 +178,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)!
 .rest-in{background:rgba(20,24,34,.92)!important;color:var(--fg)!important;border:1px solid rgba(255,255,255,.1);border-radius:24px;padding:12px 14px;gap:14px;-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);box-shadow:0 24px 48px -16px rgba(0,0,0,.8)}
 .rest-in.go{border-color:rgba(46,229,157,.5);box-shadow:0 0 0 3px rgba(46,229,157,.15),0 24px 48px -16px rgba(0,0,0,.8)}
 .rring{position:relative;width:68px;height:68px;flex:none}
-.rring svg{position:absolute;inset:0;transform:rotate(-90deg)}
+.rring > svg{position:absolute;inset:0;transform:rotate(-90deg)}
 .rring .t{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--f-display)!important;font-size:18px!important;font-weight:800;min-width:0!important}
 .rest-in .btn{background:rgba(255,255,255,.06)!important;border:1px solid var(--line2)!important;color:var(--fg)!important;min-height:38px}
 .rest-in .label{color:var(--muted)!important;opacity:1!important}
@@ -1951,7 +1951,7 @@ body.su-sess .st-ctl .st-b:not(.add){flex:none;min-height:52px;padding:0 12px;fo
 body.su-sess .rest{left:0;right:0;bottom:0;padding:0;z-index:30}
 body.su-sess .rest-in{max-width:none;margin:0;border-radius:20px 20px 0 0;padding:12px 16px calc(14px + env(safe-area-inset-bottom,0px));gap:16px}
 body.su-sess .rest-in .rring{width:84px;height:84px}
-body.su-sess .rest-in .rring svg{width:84px;height:84px}
+body.su-sess .rest-in .rring > svg{width:84px;height:84px}
 body.su-sess .rest-in .rring .t{font-size:24px!important}
 body.su-sess .rest-in .row .btn{min-height:44px;flex:1;font-size:15px}
 body.su-sess .sx-page{padding-bottom:calc(150px + env(safe-area-inset-bottom,0px))}
@@ -2217,3 +2217,32 @@ body:not(.watch) .fin-oldt tr.fin-n td{color:var(--muted)}
 body:not(.watch) .fin-sc{font-size:11.5px}
 body:not(.watch) .fin-sc td,body:not(.watch) .fin-sc th{padding:6px 1px}
 body:not(.watch) .fin-sc td:first-child{overflow-wrap:normal;min-width:58px;font-size:11px}
+
+/* ---------- Tanda J (tandaj.js) ---------- */
+/* 1. Reemplazar: buscador, filtro por equipo y las que no hay en el gimnasio */
+body:not(.watch) .alt-q{width:100%;min-height:44px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--text);font:inherit;flex-shrink:0}
+body:not(.watch) .alt-f{flex-wrap:nowrap;overflow-x:auto;flex-shrink:0;padding-bottom:2px}
+body:not(.watch) .alt-f .qk-chip{white-space:nowrap;flex-shrink:0}
+body:not(.watch) .sw-row.alt-off{opacity:.62}
+body:not(.watch) .alt-tag{font-weight:600}
+body:not(.watch) .alt-tag.no{color:var(--warn)}
+body:not(.watch) .alt-tag.inj{color:var(--bad)}
+/* 4-5. Tu semana en vivo bajo cada ejercicio */
+body:not(.watch) .lv-box{margin-top:12px;padding-top:12px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:10px}
+body:not(.watch) .lv-in{display:flex;gap:12px;align-items:flex-start}
+body:not(.watch) .lv-in .mm-svg{width:128px;height:auto;flex-shrink:0}
+body:not(.watch) .lv-txt{min-width:0;display:flex;flex-direction:column;gap:6px}
+body:not(.watch) .lv-ms{display:flex;flex-direction:column;gap:4px}
+body:not(.watch) .lv-m{font-size:13px;display:block;line-height:1.5}
+body:not(.watch) .lv-m i{display:inline-block;width:10px;height:10px;border-radius:50%;vertical-align:-1px}
+body:not(.watch) .lv-m small{color:var(--muted)}
+body:not(.watch) .lv-f{font-size:11.5px}
+body:not(.watch) .lv-next{display:flex;gap:8px;align-items:flex-start;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);font-size:13px;line-height:1.4}
+body:not(.watch) .lv-next > svg{flex-shrink:0;margin-top:2px;color:var(--accent)}
+body:not(.watch) .lv-next.ok > svg{color:var(--ok)}
+body:not(.watch) .lv-next .btn{margin-top:8px;display:inline-flex}
+/* 6. Reloj: aviso de tiempo pasado (sin grid ni gap: WebView viejo) */
+.w2-ov{margin:0 0 6px;padding:5px 8px;border-radius:10px;font-size:13px;font-weight:700;text-align:center;background:rgba(242,194,48,.16);color:#f2c230}
+.w2-ov.lv2{background:rgba(255,106,43,.2);color:#ff8a52}
+.w2-ov.lv3{background:rgba(232,70,110,.25);color:#ff7d9c}
+.wov-row{margin-top:8px}

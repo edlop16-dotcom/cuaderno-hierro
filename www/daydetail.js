@@ -14,11 +14,10 @@ function ddSetTxt(x, e) {
 }
 /* Tipo de día (fuerza o bombeo) y objetivo, para que el texto se entienda fuera de la app */
 const DD_KIND = { fuerza: 'Día de fuerza (pesado, pocas reps, descansos largos)', bombeo: 'Día de bombeo (más reps, descansos cortos)' };
+/* El objetivo que elegiste (Tus datos o Tu objetivo y plan: es el mismo dato); vacío si no elegiste */
 function ddGoal() {
-  const p = state.settings.prof || {};
-  if (p.goal && typeof PB_GOALS !== 'undefined' && PB_GOALS[p.goal]) return PB_GOALS[p.goal][0];
-  if (HISTORY.goal) return HISTORY.goal;
-  return '';
+  const g = typeof goalSet === 'function' ? goalSet() : '';
+  return g ? PB_GOALS[g][0] : '';
 }
 function ddKindLine(s, noGoal) {
   const k = sKind(s), t = s.planId === 'quick' ? 'Entreno rápido' : (DD_KIND[k] || KINDS[k] || ''), g = noGoal ? '' : ddGoal();
@@ -38,7 +37,7 @@ function sessionText(s, noGoal) {
 function sessionPrompt(list) {
   const p = state.settings.prof || {}, G = typeof goalNow === 'function' ? goalNow() : '';
   return `Eres mi entrenador personal. Analiza mi entrenamiento (peso×reps por serie, @ = reps en reserva, ↓ = drop set, pesos en ${ddUnit()}).\n` +
-    `Sobre mí: ${HISTORY.age} años, ${HISTORY.kg} kg, ${HISTORY.cm} cm, objetivo: ${ddGoal() || G}.\n\n` +
+    `Sobre mí: ${HISTORY.age} años, ${HISTORY.kg} kg, ${HISTORY.cm} cm, objetivo: ${ddGoal() || 'sin elegir'}.\n\n` +
     list.map(s => sessionText(s, true)).join('\n\n') +
     `\n\nDime: 1) qué hice bien, 2) qué peso y reps hacer la próxima vez en cada ejercicio, 3) si algo indica fatiga o riesgo de lesión, 4) un consejo concreto de técnica o recuperación. Sé breve.`;
 }

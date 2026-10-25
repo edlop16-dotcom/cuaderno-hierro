@@ -82,7 +82,7 @@ console.log('A. Dueño en Gimnasio de prueba: Remo Sentado con Cable');
   const db = L.list.find(c => c.eq === 'manc' && c.how === 'aprox');
   if (db) ok(db.w <= Math.floor((L.w * 0.42 / 0.8) * 0.9), `peso prudente: ${L.w} kg en polea → ~${db.w} kg por mano en ${db.n} (−10 % y hacia abajo)`);
   const txt = await p.evaluate(() => document.getElementById('sheet').innerText);
-  ok(/Con otro equipo/.test(txt) && /conversión prudente/.test(txt), 'la hoja agrupa "Con otro equipo" y explica el peso');
+  ok(/Mismo movimiento/.test(txt) && /conversión prudente/.test(txt), 'la hoja agrupa por movimiento (Tanda J: todas las alternativas) y explica el peso');
   await shot(p, 'a2-cambiar');
   const pick = L.list[0].n;
   await tap(p, `#sheet [data-act="swap-do"][data-name="${pick}"]`);
@@ -154,8 +154,9 @@ console.log('C. Reloj');
   const d = await pixDiff(await shot(p, 'c-reloj'), await shot(q, 'c-reloj-antes'));
   ok(d === 0, 'inicio del reloj idéntico a la versión anterior' + (d ? ` (${d} píxeles)` : ''));
   const W = pg => pg.evaluate(() => { const pl = activePlan(), d = pl.days.find(x => x.exercises.some(e => e.name === 'Remo Sentado con Cable')) || pl.days[0]; startSession(pl.id, d.id); return state.draft.exercises.map(e => swapCandidates(e).slice(0, 5).map(c => c.n + ':' + c.cv.w).join(',')).join(' | '); });
-  const a = await W(p), b = await W(q);
-  ok(a === b, 'la lista de "Máquina ocupada" del reloj es la misma de antes');
+  /* Tanda J: el orden usa la regla única del historial (tu última vez en ese gimnasio, de cualquier tipo de día); los ejercicios son los mismos */
+  const a = await W(p), b = await W(q), set = x => x.split(' | ').map(l => l.split(',').map(c => c.split(':')[0]).sort().join(',')).join(' | ');
+  ok(set(a) === set(b), 'la lista de "Máquina ocupada" del reloj tiene los mismos ejercicios de antes' + (set(a) === set(b) ? '' : `\n    ahora: ${a}\n    antes: ${b}`));
   ok(!p.errs.length, 'sin errores de JS ' + p.errs.join(' | '));
   await p.done(); await q.done();
 }

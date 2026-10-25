@@ -28,10 +28,12 @@ const wc = { kind: null, day: null, seed: 0 };
 function wcPending() {
   const plan = activePlan(); if (!plan) return [];
   const ws = weekStartOf(new Date()), ti = wcToday(), tk = dk(new Date());
-  const week = state.sessions.filter(s => !s.approx && new Date(s.date) >= ws), done = {};
+  const week = state.sessions.filter(s => !s.approx && new Date(s.date) >= ws), done = {}, dr = state.draft;
   week.forEach(s => { done[s.dayId] = 1; });
-  const trainedToday = week.some(s => dk(s.date) === tk);
-  const left = Math.max(0, plan.days.length - week.length);
+  /* La sesión en curso ya no está "por hacer": sus series marcadas cuentan en vivo y las que faltan van aparte (wcVolume) */
+  const live = !!(dr && dr.start && new Date(dr.start) >= ws); if (live) done[dr.dayId] = 1;
+  const trainedToday = live || week.some(s => dk(s.date) === tk);
+  const left = Math.max(0, plan.days.length - week.length - (live ? 1 : 0));
   return plan.days.filter(d => !done[d.id] && (wcIdx(d.weekday) > ti || (wcIdx(d.weekday) === ti && !trainedToday)))
     .sort((a, b) => wcIdx(a.weekday) - wcIdx(b.weekday)).slice(0, left);
 }
@@ -39,6 +41,8 @@ function wcVolume() {
   const done = weekSets(0).sets, plan = {}, pend = wcPending(), I = wcDl(), dl = !!(I && I.deload);
   ZONES.forEach(z => { plan[z.k] = 0; });
   pend.forEach(d => d.exercises.forEach(e => { const sh = zoneShares(e.name), n = dl ? Math.ceil((+e.sets || 0) / 2) : +e.sets || 0; for (const k in sh) plan[k] += sh[k] * n; }));
+  /* Lo que aún falta marcar de la sesión en curso (las marcadas ya están en weekSets) */
+  const dr = state.draft; if (dr && dr.start && new Date(dr.start) >= weekStartOf(new Date())) dr.exercises.forEach(e => { const n = e.log.filter(x => !x.done).length; if (!n) return; const sh = zoneShares(e.name); for (const k in sh) plan[k] += sh[k] * n; });
   const rows = MM_MAIN.map(k => { const t = done[k] + plan[k]; return { k, d: done[k], p: plan[k], t, st: t < WC_MIN ? 'low' : t > WC_MAX ? 'high' : 'ok' }; });
   return { rows, pend, dl, I };
 }
@@ -101,7 +105,7 @@ function wcLoad(e) {
   const g = activeGym().id, bar = barOf(e);
   for (const s of state.sessions) {
     if (s.approx || sGym(s) !== g) continue;
-    const x = s.exercises.find(y => y.name === e.name); if (!x || !x.sets.length) continue;
+    const x = exIn(s, e.name); if (!x || !x.sets.length) continue;
     const best = Math.max.apply(null, x.sets.map(z => e1rm((+z.w || 0) + bar, Math.min(12, +z.r || 0))));
     if (!(+x.sets[0].w) && !bar) return 0;
     const raw = best / (1 + (e.repsMax + 2) / 30) - bar, inc = increment(e, raw);
