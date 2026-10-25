@@ -82,7 +82,8 @@ function finResHtml(ym) {
     ${S.fundRows.length ? `<div class="label">Fondos aparte</div>${S.fundRows.map(x => `<div class="fin-fund"><b>${esc(x.f.name)}</b>${finCat(x.f.cat) ? ` <small class="muted">(${esc(finCat(x.f.cat).name)})</small>` : ''}<div class="muted">${finS(x.f.amt)} · usado ${finS(x.used)} · queda <b class="${x.left < 0 ? 'neg' : ''}">${finS(x.left)}</b></div></div>`).join('')}` : ''}
     ${finPie(S)}${finBars(S)}
     <button type="button" class="btn primary block" data-fin="tab" data-t="gas">${ic('plus', 16)} Agregar gasto</button>
-    <div class="grid2"><button type="button" class="btn" data-fin="ai">${ic('copy', 16)} Exportar para IA</button><button type="button" class="btn" data-fin="rec">${ic('download', 16)} Importar recomendación</button></div>`;
+    <div class="grid2"><button type="button" class="btn" data-fin="ai">${ic('copy', 16)} Exportar para IA</button><button type="button" class="btn" data-fin="rec">${ic('download', 16)} Importar recomendación</button></div>
+    <button type="button" class="btn block" data-fin="xlsx">${ic('download', 16)} Exportar a Excel</button>`;
 }
 
 /* ---------- Gastos ---------- */
@@ -196,7 +197,7 @@ function finImportText(txt) {
 }
 
 /* ---------- La pantalla ---------- */
-const FIN_TABS = [['res', 'Resumen'], ['gas', 'Gastos'], ['mes', 'Meses'], ['cfg', 'Ajustes']];
+const FIN_TABS = [['res', 'Resumen'], ['gas', 'Gastos'], ['mes', 'Meses'], ['sue', 'Sueños'], ['cfg', 'Ajustes']];
 function finSheet() {
   if (!finOwner()) return;
   const ym = state.finYM || (state.finYM = finYMnow()), t = state.finT || 'res', now = finYMnow();
@@ -205,7 +206,7 @@ function finSheet() {
   openSheet(`<div class="row"><h2 class="grow">${ic('wallet', 20)} Mis finanzas</h2><button class="icon-btn" data-act="sheet-close" aria-label="Cerrar">${ic('x', 18)}</button></div>
     <div class="row fin-mes"><button type="button" class="icon-btn" data-fin="ym" data-d="-1" aria-label="Mes anterior">${ic('chevron-left', 18)}</button><b class="grow">${finMesTxt(ym)}</b><button type="button" class="icon-btn" data-fin="ym" data-d="1" aria-label="Mes siguiente" ${ym >= finYMadd(now, 1) ? 'disabled' : ''}>${ic('chevron-right', 18)}</button></div>
     <div class="seg fin-seg" role="tablist">${FIN_TABS.map(([k, l]) => `<button type="button" role="tab" class="${k === t ? 'on' : ''}" aria-selected="${k === t}" data-fin="tab" data-t="${k}">${l}</button>`).join('')}</div>
-    <div class="fin-body">${t === 'gas' ? finAlertHtml() + finExForm(ym) + finExList(ym) : t === 'cfg' ? finCfgHtml(ym) : t === 'mes' ? finMesHtml(ym) : t === 'rec' ? finRecHtml(ym) : finResHtml(ym)}</div>`);
+    <div class="fin-body">${t === 'gas' ? finAlertHtml() + finExForm(ym) + `<button type="button" class="btn block" data-fin="old">${ic('upload', 16)} Importar gastos antiguos</button>` + finExList(ym) : t === 'cfg' ? finCfgHtml(ym) : t === 'mes' ? finMesHtml(ym) : t === 'sue' ? finSueHtml(ym) : t === 'rec' ? finRecHtml(ym) : t === 'imp' ? finImpHtml(ym) : finResHtml(ym)}</div>`);
   const c = $('#sheet .sheet-card'); if (c) { c.classList.add('pk-sheet', 'fin-sheet'); c.dataset.t = t; c.scrollTop = y; }
 }
 function finOpen() { state.finT = 'res'; state.finYM = finYMnow(); state.finEd = null; state.finCfg = null; state.finImp = null; finSheet(); }
@@ -230,7 +231,7 @@ document.addEventListener('click', ev => {
   const a = b.dataset.fin, F = fin(), ym = state.finYM || finYMnow();
   if (a !== 'ex-del' && a.slice(-3) !== '-rm') state.confirm = null;
   if (a === 'open') finOpen();
-  else if (a === 'tab') { if (state.finT === 'cfg') finCfgRead(); state.finT = b.dataset.t; state.finEd = null; state.finAlert = null; finSheet(); if (b.dataset.t === 'gas') setTimeout(() => { const i = $('#fin-amt'); if (i) i.focus(); }, 60); }
+  else if (a === 'tab') { if (state.finT === 'cfg') finCfgRead(); state.finT = b.dataset.t; state.finEd = null; state.finAlert = null; state.finGoalEd = null; state.finOld = null; finSheet(); if (b.dataset.t === 'gas') setTimeout(() => { const i = $('#fin-amt'); if (i) i.focus(); }, 60); }
   else if (a === 'ym') { const n = finYMadd(ym, +b.dataset.d); if (n <= finYMadd(finYMnow(), 1)) { state.finYM = n; state.finCfg = null; state.finEd = null; state.finAlert = null; if (state.finT === 'rec') state.finT = 'res'; finSheet(); } }
   else if (a === 'ex-edit') { state.finEd = b.dataset.id; finSheet(); const c = $('#sheet .fin-sheet'); if (c) c.scrollTop = 0; }
   else if (a === 'ex-cancel') { state.finEd = null; finSheet(); }
@@ -256,7 +257,7 @@ document.addEventListener('click', ev => {
     }
     finSheet();
   }
-  else if (finClick2(a, b)) return;
+  else if (finClick2(a, b) || finClick3(a, b)) return;
   else if (a === 'exp') finExport();
   else if (a === 'imp') { const i = $('#fin-file'); if (i) { i.value = ''; i.click(); } }
   else if (a === 'imp-no') { state.finImp = null; finSheet(); }

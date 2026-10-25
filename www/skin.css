@@ -2194,3 +2194,26 @@ body:not(.watch) .fin-swr .switch{border:0;cursor:pointer;flex-shrink:0}
 body:not(.watch) .fin-rec,body:not(.watch) .fin-recp{gap:10px}
 body:not(.watch) .fin-recp .fin-new td:first-child{color:var(--fg)}
 body:not(.watch) .fin-recp small{color:var(--muted)}
+/* Tanda H3 · Mis finanzas: Forja mis sueños, importar gastos antiguos (finanzas3.js). Solo teléfono. */
+body:not(.watch) .fin-seg{grid-template-columns:repeat(5,1fr)}
+body:not(.watch) .fin-seg button{font-size:12.5px;padding:9px 0}
+body:not(.watch) .fin-goal{gap:8px}
+body:not(.watch) .fin-sc th.on,body:not(.watch) .fin-sc td.on{background:var(--surface2)}
+body:not(.watch) .fin-sc td small{display:block;color:var(--muted);font-size:11px}
+body:not(.watch) .fin-sc td:first-child{color:var(--muted)}
+body:not(.watch) .fin-scb{border:0;background:transparent;color:var(--fg);font:700 12px/1.2 var(--f-body);min-height:44px;padding:0 4px;text-decoration:underline;text-underline-offset:3px;white-space:normal}
+body:not(.watch) .fin-sheet .pos{color:var(--ok)}
+body:not(.watch) .fin-pj .fin-t{font-size:11px}
+body:not(.watch) .fin-pj .fin-t td,body:not(.watch) .fin-pj .fin-t th{padding:6px 2px}
+body:not(.watch) .fin-pj tr.fin-goalm td{background:rgba(46,229,157,.12);font-weight:700}
+body:not(.watch) .fin-pj tr.fin-due td:first-child{text-decoration:underline}
+body:not(.watch) .fin-scf{gap:8px}
+body:not(.watch) .fin-scf .fs-name{min-height:44px;font-weight:700}
+body:not(.watch) .fin-loan{display:flex;flex-direction:column;gap:8px}
+body:not(.watch) .fin-loan[hidden]{display:none}
+body:not(.watch) .fin-oldt td{font-size:11.5px}
+body:not(.watch) .fin-oldt tr.fin-r td{color:var(--bad)}
+body:not(.watch) .fin-oldt tr.fin-n td{color:var(--muted)}
+body:not(.watch) .fin-sc{font-size:11.5px}
+body:not(.watch) .fin-sc td,body:not(.watch) .fin-sc th{padding:6px 1px}
+body:not(.watch) .fin-sc td:first-child{overflow-wrap:normal;min-width:58px;font-size:11px}
