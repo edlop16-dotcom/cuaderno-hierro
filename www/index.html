@@ -1110,7 +1110,7 @@ function markSet(i, j, val, k) {
   const ex = state.draft.exercises[i]; const main = ex.log[j]; main.drops = main.drops || [];
   const s = k == null ? main : main.drops[k]; if (!s) return;
   s.done = val ?? !s.done;
-  if (s.done && (s.r == null || s.r === '')) s.r = k == null ? ex.repsMax : Math.max(1, Math.round(ex.repsMax * 0.6));
+  if (s.done && (s.r == null || s.r === '')) s.r = k == null ? (typeof pgGoalReps === 'function' ? pgGoalReps(ex, j) : ex.repsMax) : Math.max(1, Math.round(ex.repsMax * 0.6));
   saveDraft();
   if (s.done) {
     const pendingDrop = main.drops.some(d => !d.done);
@@ -1275,7 +1275,7 @@ function vSession() {
       ${e.log.map((s, j) => { const pv = (e.prev || [])[j]; return `<span class="n">${j + 1}<small class="rir">RIR ${Math.max(0, 2 - j)}</small></span>
         ${pv ? `<button class="prev" data-act="use-prev" data-ex="${i}" data-set="${j}" aria-label="Copiar serie anterior ${fmtKg(pv.w)} kg por ${pv.r}"><span class="num">${fmtKg(pv.w)}</span><small>× ${pv.r}</small></button>` : '<span class="prev none">—</span>'}
         <input class="${s.done ? 'done-row' : ''}" id="w-${i}-${j}" inputmode="decimal" data-ex="${i}" data-set="${j}" data-f="w" value="${s.w ?? ''}" aria-label="Kilos serie ${j + 1}">
-        <input class="${s.done ? 'done-row' : ''}" id="r-${i}-${j}" inputmode="numeric" data-ex="${i}" data-set="${j}" data-f="r" value="${s.r ?? ''}" placeholder="${e.repsMax}" aria-label="Repeticiones serie ${j + 1}">
+        <input class="${s.done ? 'done-row' : ''}" id="r-${i}-${j}" inputmode="numeric" data-ex="${i}" data-set="${j}" data-f="r" value="${s.r ?? ''}" placeholder="${typeof pgGoalReps === 'function' ? pgGoalReps(e, j) : e.repsMax}" aria-label="Repeticiones serie ${j + 1}">
         <button class="check ${s.done ? 'on' : ''}" data-act="set" data-ex="${i}" data-set="${j}" aria-label="Serie ${j + 1} hecha" aria-pressed="${s.done}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button>
         ${(s.drops || []).map((dr, k) => { const pd = pv && pv.drops && pv.drops[k]; return `<span class="n drop-n"><button class="drop-x" data-act="drop-del" data-ex="${i}" data-set="${j}" data-k="${k}" aria-label="Quitar drop set">✕</button><small class="rir">DROP</small></span>
         ${pd ? `<button class="prev" data-act="use-prev" data-ex="${i}" data-set="${j}" data-k="${k}" aria-label="Copiar drop anterior"><span class="num">${fmtKg(pd.w)}</span><small>× ${pd.r}</small></button>` : '<span class="prev none">↓</span>'}

@@ -137,6 +137,18 @@ function pgStep(name, w) {
   return legs ? (lb ? 10 : 5) : (lb ? 5 : 2.5);
 }
 const pgRound = (name, w, down) => { const i = pgInc(name, w); return Math.max(0, (down ? Math.floor(w / i + 1e-9) : Math.round(w / i)) * i); };
+/* Tope de subida por sesión, también al cambiar de rango: piernas +10 % (o +10 kg si es menor), tren superior +5 %
+   (sobre la carga total, con la barra); nunca menos que un escalón */
+function pgUpMax(name, from) {
+  const legs = PG_LEGS.indexOf(pgMain(name)) >= 0, lb = state.settings.unit === 'lb', tot = (+from || 0) + barFor(name);
+  return Math.max(pgStep(name, from), legs ? Math.min(tot * 0.10, lb ? 20 : 10) : tot * 0.05);
+}
+/* 1RM estimado de una serie con sus reps en reserva; peso para unas reps y un RIR; reps que salen con un peso */
+const pgE1 = (name, s) => e1rm((+s.w || 0) + barFor(name), (+s.r || 0) + (+s.rir || 0));
+const pgWFor = (name, e1, reps, rir) => e1 / (1 + (reps + rir) / 30) - barFor(name);
+const pgRepsFor = (name, e1, w, rx) => Math.max(rx.rMin, Math.min(rx.rMax, Math.floor(30 * (e1 / ((+w || 0) + barFor(name)) - 1) - rx.rirMax)));
+/* Reps que proponen las casillas de la sesión: el objetivo del coach para esa serie (si no, el máximo del rango) */
+function pgGoalReps(e, j) { const g = e && e.coach && e.coach.goal; const v = g && +g[Math.min(j, g.length - 1)]; return v > 0 ? v : e.repsMax; }
 
 /* ---------- Motor ---------- */
 /* Sesión completa en el tope: todas sus series llegan al máximo del rango (Salud y energía) */
@@ -295,10 +307,13 @@ function pgCoach(ex, gymId, kind) {
   const capped = cap > 0 && H.length && (+pgFirst(H[0]).w || 0) >= cap - 0.01;
   if (capped) rx = Object.assign({}, pgRx(name, 'bombeo', ex), { kind: rx.kind, rMax: 30, cap });
   /* Peso para el rango de hoy a partir de una vez de otro tipo de día (por el 1RM estimado con sus reps en reserva) */
-  const conv = sets => { const top = sets.reduce((a, s) => (e1rm((+s.w || 0) + bar, (+s.r || 0) + (+s.rir || 0)) > e1rm((+a.w || 0) + bar, (+a.r || 0) + (+a.rir || 0)) ? s : a), sets[0]); return { top, w: e1rm((+top.w || 0) + bar, (+top.r || 0) + (+top.rir || 0)) / (1 + (rx.rMin + rx.rirMax) / 30) - bar }; };
+  const conv = sets => { const top = sets.reduce((a, s) => (pgE1(name, s) > pgE1(name, a) ? s : a), sets[0]), e1 = pgE1(name, top);
+    return { top, e1, w: Math.min(pgWFor(name, e1, rx.rMax, rx.rirMax), (+top.w || 0) + pgUpMax(name, +top.w || 0)) }; };
+  const rangeNew = sets => { const f = sets.filter(s => +s.r > 0)[0]; return !!(f && +f.r >= rx.rMax + 3); };
+  const RANGE_TIP = ' Primera vez con este rango: empieza conservador y ajusta tras la 1.ª serie.';
   if (!H.length && HA.length) {   /* en este gimnasio, solo en el otro tipo de día */
-    const C = conv(HA[0].sets); w = pgRound(name, C.w, true); mode = 'first'; src = 'kref';
-    why = `Aquí solo lo hiciste en un día de ${(KINDS[HA[0].kind] || '').toLowerCase()} (${pgSetTxt(C.top)}): ${fmtKg(w)} kg para ${rx.rMin}-${rx.rMax} reps.`;
+    const C = conv(HA[0].sets); w = pgRound(name, C.w, true); mode = 'first'; src = 'kref'; goal = pgRepsFor(name, C.e1, w, rx);
+    why = `Aquí solo lo hiciste en un día de ${(KINDS[HA[0].kind] || '').toLowerCase()} (${pgSetTxt(C.top)}): ${fmtKg(w)} kg y busca ${goal} reps (${rx.rMin}-${rx.rMax}).${rangeNew(HA[0].sets) ? RANGE_TIP : ''}`;
   } else if (!H.length) {
     /* Nunca en este gimnasio: nunca se copian pesos de máquina entre gimnasios */
     const O = pgOtherGym(name, gymId, kind), rec = !O && typeof baseRec === 'function' ? baseRec(name) : null;
@@ -332,19 +347,27 @@ function pgCoach(ex, gymId, kind) {
     else if (rx.g === 'salud' && r1 >= rx.rMax && !(pgFull(L, rx) && pgFull(H[1], rx))) {   /* Salud: sube solo tras 2 sesiones completas en el tope */
       goal = rx.rMax; why = `Salud y energía: subes solo tras 2 sesiones completas en el tope (${rx.rMax} reps en todas las series); ${pgFull(L, rx) ? 'llevas 1' : 'aún no'}. Mantén ${fmtKg(top)} kg.`;
     }
-    else if (r1 >= rx.rMax && (rir1 == null || rir1 >= rx.rirMax || rx.g === 'salud')) {
-      const extra = r1 - rx.rMax, lb = state.settings.unit === 'lb';
-      w = top + (rx.g === 'mov' ? Math.min(pgStep(name, top), lb ? 5 : 2.5) : pgStep(name, top));   /* Movilidad: máximo 2,5 kg por subida */
-      if (extra >= 2 && rx.g !== 'mov' && rx.g !== 'salud') w = Math.max(w, pgRound(name, top * (1 + 0.04 * extra)));
-      mode = 'up'; goal = rx.rMin;
-      why = `Sube: 1.ª serie ${pgSetTxt(s1)} (tope ${rx.rMax}${rir1 == null ? '' : ', RIR ' + rx.rirMax}) → ${fmtKg(w)} kg y vuelve a ${rx.rMin} reps.${rir1 == null ? ' (Sin RIR anotado: decidí por las reps.)' : ''}`;
+    /* 3+ reps por encima del rango: el peso es bajo aunque el RIR sea menor que el objetivo */
+    else if (r1 >= rx.rMax && (rir1 == null || rir1 >= rx.rirMax || rx.g === 'salud' || r1 - rx.rMax >= 3)) {
+      const extra = r1 - rx.rMax, lb = state.settings.unit === 'lb', soft = rx.g === 'mov' || rx.g === 'salud';
+      const step = rx.g === 'mov' ? Math.min(pgStep(name, top), lb ? 5 : 2.5) : pgStep(name, top);   /* Movilidad: máximo 2,5 kg por subida */
+      const e1 = pgE1(name, s1), lim = rx.g === 'mov' ? step : pgUpMax(name, top);
+      let by = '';
+      w = top + step; goal = rx.rMin;
+      if (!soft && extra >= 1 && extra <= 2) w = Math.max(w, pgRound(name, top * (1 + 0.04 * extra)));   /* 1-2 reps de más: ~4 % por rep */
+      else if (!soft && extra >= 3) { w = Math.max(w, pgRound(name, pgWFor(name, e1, rx.rMax, rx.rirMax), true)); by = 'e1'; }   /* 3+: por el 1RM estimado */
+      if (w > top + lim) { w = Math.max(top + step, pgRound(name, top + lim, true)); by = by ? by + '+tope' : 'tope'; }
+      if (by) goal = pgRepsFor(name, e1, w, rx);   /* reps coherentes con el peso nuevo */
+      mode = 'up';
+      why = `Sube: 1.ª serie ${pgSetTxt(s1)} (${extra >= 3 ? `muy por encima de ${rx.rMin}-${rx.rMax}; 1RM estimado ≈ ${fmtKg(Math.round(e1))} kg` : `tope ${rx.rMax}${rir1 == null ? '' : ', RIR ' + rx.rirMax}`}) → ${fmtKg(w)} kg${/tope/.test(by) ? ` (tope de subida: +${fmtKg(w - top)} kg por sesión)` : ''} y ${goal === rx.rMin ? 'vuelve a ' + rx.rMin + ' reps' : 'busca ' + goal + ' reps'}.${rir1 == null ? ' (Sin RIR anotado: decidí por las reps.)' : ''}${extra >= 3 && !H.slice(1).some(h => { const f = pgFirst(h); return +f.r > 0 && +f.r <= rx.rMax + 2; }) ? RANGE_TIP : ''}`;
     } else if (r1 >= rx.rMax) {
       why = `Mantén: llegaste al tope (${pgSetTxt(s1)}) con menos reserva que el RIR ${rx.rirMax}; repite ${fmtKg(top)} kg.`; goal = rx.rMax;
     } else if (r1 > 0 && r1 < rx.rMin) {
       const diff = rx.rMin - r1;
       if (rx.g === 'grasa' && (diff >= 2 || (H[1] && below(H[1])))) { goal = rx.rMin; why = `Perder grasa: mantén ${fmtKg(top)} kg aunque hoy rindas menos (${pgSetTxt(s1)}) por la dieta; mantener ya es ganar.`; }
       else if (H[1] && below(H[1])) { w = Math.min(top - pgInc(name, top), pgRound(name, top * (1 - 0.04 * Math.max(1, diff)), true)); mode = 'down'; goal = rx.rMin; why = `Baja: dos sesiones sin llegar a ${rx.rMin} reps (${pgSetTxt(pgFirst(H[1]))}, ${pgSetTxt(s1)}) → ${fmtKg(w)} kg.`; }
-      else if (diff >= 2) { w = pgRound(name, top * (1 - 0.04 * diff), true); mode = 'down'; goal = rx.rMin; why = `Ajusta: ${pgSetTxt(s1)} quedó ${diff} reps bajo el rango (−4 % por rep) → ${fmtKg(w)} kg.`; }
+      else if (diff === 2) { w = pgRound(name, top * (1 - 0.04 * diff), true); mode = 'down'; goal = rx.rMin; why = `Ajusta: ${pgSetTxt(s1)} quedó ${diff} reps bajo el rango (−4 % por rep) → ${fmtKg(w)} kg.`; }
+      else if (diff >= 3) { const e1 = pgE1(name, s1); w = Math.min(top, pgRound(name, pgWFor(name, e1, rx.rMin, rx.rirMax), true)); mode = 'down'; goal = rx.rMin; why = `Ajusta: ${pgSetTxt(s1)} quedó ${diff} reps bajo el rango; por tu 1RM estimado (≈ ${fmtKg(Math.round(e1))} kg) → ${fmtKg(w)} kg para ${rx.rMin} reps.`; }
       else { goal = rx.rMin; why = `Mantén ${fmtKg(top)} kg: te faltó 1 rep para el mínimo (${rx.rMin}).`; }
     } else if (rir1 != null && rir1 < rx.rirMin) {
       goal = Math.max(rx.rMin, r1); why = `Mantén ${fmtKg(top)} kg: llegaste más cerca del fallo (RIR ${rir1}) que lo planeado (${pgRirTxt(rx)}).`;
