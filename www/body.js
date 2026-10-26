@@ -246,14 +246,15 @@ document.addEventListener('focusout', ev => {
   bdShowErr(k);
 });
 /* Objetivo del coach: un solo dato (settings.prof.goal); vacío = Hipertrofia por defecto */
-const BD_GOALS = [['', 'Hipertrofia (por defecto)'], ['musculo', 'Hipertrofia (ganar músculo)'], ['fuerza', 'Fuerza'], ['grasa', 'Recomposición (bajar grasa y mantener músculo)']];
+/* Se arma al abrir Tus datos: PB_GOALS (los 5 de la bienvenida) está en pub.js, que carga después */
+const bdGoals = () => [['', 'Ganar músculo (por defecto)']].concat(Object.keys(PB_GOALS).map(k => [k, PB_GOALS[k][0]]));
 function dataSheet() {
   const b = body(), p = state.settings.prof || {};
   openSheet(`<div class="row"><h2 class="grow">Tus datos</h2><button class="icon-btn" data-act="sheet-close" aria-label="Cerrar">${ic('x', 18)}</button></div>
     <form id="f-bdd" class="bd-form">
       <label class="field"><span class="label">Nombre</span><input id="bd-name" value="${esc(p.name || '')}" autocomplete="given-name"></label>
       <label class="field"><span class="label">Edad (años)</span><input id="bd-age" inputmode="numeric" value="${p.age || ''}"></label>
-      <label class="field"><span class="label">Objetivo (el coach usa reglas distintas según el objetivo)</span><select id="bd-goal">${BD_GOALS.concat(p.goal && !BD_GOALS.some(g => g[0] === p.goal) && PB_GOALS[p.goal] ? [[p.goal, PB_GOALS[p.goal][0]]] : []).map(([k, n]) => `<option value="${k}" ${(p.goal || '') === k ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></label>
+      <label class="field"><span class="label">Objetivo (el coach usa reglas distintas según el objetivo)</span><select id="bd-goal">${bdGoals().map(([k, n]) => `<option value="${k}" ${(p.goal || '') === k ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></label>
       <label class="field"><span class="label">Tiempo disponible por sesión</span><span class="bd-in"><input id="bd-mins" inputmode="numeric" maxlength="3" value="${+p.mins || ''}" placeholder="75"><i class="pb-u" aria-hidden="true">min</i></span><small class="muted">El coach estima cuánto dura cada día y te propone ajustes si se pasa.</small></label>
       <label class="field"><span class="label">Estatura</span><span class="bd-in"><input id="bd-h" inputmode="decimal" maxlength="5" value="${b.h ? String(b.h).replace('.', ',') : ''}" placeholder="Estatura en cm" aria-describedby="bd-e-h"><i class="pb-u" aria-hidden="true">cm</i></span><small class="bd-err" id="bd-e-h" role="alert" hidden></small></label>
       <div class="field"><span class="label">Sexo (para la fórmula de grasa)</span><div class="seg"><button type="button" class="${b.sex === 'm' ? 'on' : ''}" data-act="bd-sex" data-v="m">Hombre</button><button type="button" class="${b.sex === 'f' ? 'on' : ''}" data-act="bd-sex" data-v="f">Mujer</button></div></div>

@@ -129,8 +129,8 @@ console.log('D. Objetivo: Hipertrofia frente a Fuerza');
     dataSheet(); const sel = document.getElementById('bd-goal'), opts = Array.prototype.map.call(sel.options, o => o.textContent), r = { g: pgGoal(), sel: sel.value, opts, ph: document.getElementById('bd-mins').placeholder, avail: pgAvail() };
     sel.value = 'grasa'; document.getElementById('bd-mins').value = '60'; document.getElementById('f-bdd').requestSubmit(); await new Promise(x => setTimeout(x, 80));
     r.after = { g: pgGoal(), mins: state.settings.prof.mins, avail: pgAvail(), rest: pgRx('Curl Bíceps', 'fuerza').rest }; return r; });
-  ok(T.g === 'hiper' && T.sel === '' && T.opts.join('|') === 'Hipertrofia (por defecto)|Hipertrofia (ganar músculo)|Fuerza|Recomposición (bajar grasa y mantener músculo)' && T.ph === '75' && T.avail === 75, 'Tus datos: Hipertrofia por defecto, Fuerza o Recomposición; tiempo disponible 75 min por defecto');
-  ok(T.after.g === 'recomp' && T.after.mins === 60 && T.after.avail === 60 && T.after.rest === 90, 'Recomposición y 60 min se guardan; en recomposición los descansos van al mínimo del rango');
+  ok(T.g === 'hiper' && T.sel === '' && T.opts.join('|') === 'Ganar músculo (por defecto)|Ganar músculo|Ganar fuerza|Perder grasa|Salud y energía|Movilidad y equilibrio' && T.ph === '75' && T.avail === 75, 'Tus datos: los 5 objetivos de la bienvenida (Ganar músculo por defecto); tiempo disponible 75 min por defecto');
+  ok(T.after.g === 'grasa' && T.after.mins === 60 && T.after.avail === 60 && T.after.rest === 90, 'Perder grasa y 60 min se guardan; con Perder grasa los descansos van al mínimo del rango');
   noErr(p); await p.done();
 }
 
@@ -233,7 +233,7 @@ console.log('J. Exportaciones');
 {
   const p = await open();
   const X1 = await p.evaluate(() => ({ s: sessionPrompt([state.sessions[0]]), w: aixWeekText(0).txt }));
-  for (const [n, t] of [['sesión', X1.s], ['semana', X1.w]]) ok(/SISTEMA DE MI COACH/.test(t) && /Objetivo: Hipertrofia/.test(t) && /Compuesto: pesado 6-10 reps/.test(t) && /Subir: si en la 1\.ª serie/.test(t) && /Tiempo disponible por sesión: 75 min/.test(t) && /NO son comparables entre gimnasios/.test(t) && /gimnasio Gimnasio B/.test(t), `${n}: objetivo, rangos por tipo, RIR, regla de subida, descansos, tiempo y que las máquinas no se comparan entre gimnasios`);
+  for (const [n, t] of [['sesión', X1.s], ['semana', X1.w]]) ok(/SISTEMA DE MI COACH/.test(t) && /Objetivo: Ganar músculo: /.test(t) && /Compuesto: pesado 6-10 reps/.test(t) && /Subir: si en la 1\.ª serie/.test(t) && /Tiempo disponible por sesión: 75 min/.test(t) && /NO son comparables entre gimnasios/.test(t) && /gimnasio Gimnasio B/.test(t), `${n}: objetivo, rangos por tipo, RIR, regla de subida, descansos, tiempo y que las máquinas no se comparan entre gimnasios`);
   ok(/\[compuesto\] 3×6-10 165 kg RIR 1-3/.test(X1.w), 'la rutina exportada lleva los valores del coach');
   noErr(p); await p.done();
 }
@@ -295,6 +295,44 @@ console.log('M. Peso máximo por ejercicio y gimnasio');
   ok(M.inputs === 2 && M.saved === JSON.stringify({ rokaz: {}, raydac: { [M.k]: 200 } }), 'la ficha edita el peso máximo de cada gimnasio: ' + M.saved);
   ok(M.ses.n === 4 && M.ses.w === 200 && M.ses.min === 12 && M.ses.max === 30 && /Peso máximo: 200 kg/.test(M.ses.head), `la sesión lo aplica: ${M.ses.n} series de 200 kg, ${M.ses.min}-${M.ses.max} · ${M.ses.head}`);
   ok(/peso máximo/.test(M.plan) && /200 kg/.test(M.plan), 'Mi plan lo muestra: ' + M.plan);
+  noErr(p); await p.done();
+}
+
+console.log('P. Los 5 objetivos con sus reglas');
+{
+  const p = await open();
+  const P = await p.evaluate(() => {
+    const out = {}, ex = { name: 'Prensa 45°', sets: 3, type: 'Piernas' }, base = state.sessions.slice();
+    const set = g => { state.settings.prof = Object.assign({}, state.settings.prof, { goal: g }); };
+    const add = (id, day, sets) => state.sessions.unshift({ id, date: new Date(Date.UTC(2026, 9, day, 18)).toISOString(), planId: 'planB', dayId: 'b-pes', dayName: 'x', gymId: 'raydac', kind: 'fuerza', exercises: [{ name: 'Prensa 45°', sets }] });
+    const S = (w, r, rir) => [0, 1, 2].map(() => ({ w, r, rir }));
+    ['musculo', 'fuerza', 'grasa', 'salud', 'mayor'].forEach(g => { set(g); const rx = pgRx('Prensa 45°', 'fuerza'), ri = pgRx('Curl Bíceps', 'fuerza'); out[g] = { g: pgGoal(), rx: [rx.rMin, rx.rMax, rx.rirMin, rx.rirMax, rx.rest].join(','), ri: [ri.rMin, ri.rMax, ri.rirMin, ri.rirMax, ri.rest].join(','), exp: sessionPrompt([state.sessions[0]]) }; });
+    /* Perder grasa: dos sesiones bajo el mínimo no bajan el peso; aviso de proteína */
+    set('grasa'); const eg = pgCoach({ name: 'Extensión de Pierna', sets: 3, type: 'Piernas' }, 'raydac', 'fuerza'), hg = coachFor({ name: 'Extensión de Pierna', sets: 3, type: 'Piernas' }, 'raydac', 'fuerza');
+    out.grasa.c = [eg.w, eg.mode].join(':'); out.grasa.why = eg.why; out.grasa.prot = hg.tips.some(t => /proteína/.test(t)); out.grasa.dl = pgStalls(activePlan()).length;
+    state.tab = 'train'; render(); out.grasa.hoy = !!document.querySelector('.pg-prot');
+    /* Salud: sube solo tras 2 sesiones completas en el tope (15 en todas) */
+    set('salud'); state.sessions = base.slice(); add('s1', 24, S(150, 15, 3)); const s1 = pgCoach(ex, 'raydac', 'fuerza');
+    add('s2', 25, S(150, 15, 3)); state.sessions.sort((a, b) => b.date.localeCompare(a.date)); const s2 = pgCoach(ex, 'raydac', 'fuerza');
+    out.salud.c = [s1.w, s1.mode, s2.w, s2.mode].join(':'); out.salud.why = s1.why;
+    /* Movilidad: subida de 2,5 kg como máximo (en pierna sería 5) y primero máquinas/equilibrio */
+    set('mayor'); state.sessions = base.slice(); add('m1', 24, S(150, 20, 3)); const m = pgCoach(ex, 'raydac', 'fuerza');
+    out.mayor.c = [m.w, m.mode].join(':');
+    const cands = pgPrefer(['Sentadilla con Barra', 'Prensa 45°', 'Equilibrio en un Pie']); out.mayor.pref = cands.join(',');
+    set('musculo'); state.sessions = base.slice(); add('h1', 24, S(150, 20, 3)); const h = pgCoach(ex, 'raydac', 'fuerza'); out.musculo.c = [h.w, h.mode].join(':');
+    state.sessions = base; return out;
+  });
+  const G = { musculo: 'Ganar músculo', fuerza: 'Ganar fuerza', grasa: 'Perder grasa', salud: 'Salud y energía', mayor: 'Movilidad y equilibrio' };
+  for (const g of Object.keys(G)) ok(P[g].exp.indexOf('Mi objetivo: ' + G[g]) >= 0 && P[g].exp.indexOf('Objetivo: ' + G[g] + ':') >= 0, `${G[g]}: la exportación dice el objetivo elegido y su regla`);
+  ok(P.musculo.rx === '6,10,1,3,150' && P.musculo.ri === '8,12,0,2,105', 'Ganar músculo: el sistema de hipertrofia (Prensa 6-10 RIR 1-3; Curl 8-12 RIR 0-2)');
+  ok(P.fuerza.rx === '3,6,2,3,240' && P.fuerza.ri === '8,12,0,2,105', 'Ganar fuerza: compuestos pesados 3-6 RIR 2-3 y 240 s; el resto como hipertrofia');
+  ok(P.grasa.rx === '6,10,1,3,120' && P.grasa.ri === '8,12,0,2,90', 'Perder grasa: rangos de hipertrofia con los descansos al mínimo');
+  ok(P.grasa.c === '50:hold' && /mantener ya es ganar/.test(P.grasa.why) && P.grasa.prot && P.grasa.hoy && P.grasa.dl === 0, 'Perder grasa: no baja el peso aunque rinda menos (mantener ya es ganar), sin descarga por eso y con aviso de proteína (coach y Hoy) · ' + P.grasa.why);
+  ok(P.salud.rx === '10,15,2,3,150' && P.salud.ri === '10,15,2,3,105', 'Salud y energía: 10-15 reps, RIR 2-3, nunca al fallo');
+  ok(P.salud.c === '150:hold:155:up' && /2 sesiones completas en el tope/.test(P.salud.why), 'Salud y energía: sube solo tras 2 sesiones completas en el tope · ' + P.salud.c);
+  ok(P.mayor.rx === '12,20,3,3,150' && P.mayor.ri === '12,20,3,3,105', 'Movilidad y equilibrio: 12-20 reps, RIR 3, nunca al fallo');
+  ok(P.mayor.c === '152.5:up' && P.musculo.c.split(':')[0] > 152.5, `Movilidad: sube como máximo 2,5 kg (${P.mayor.c}; con Ganar músculo ${P.musculo.c})`);
+  ok(P.mayor.pref === 'Equilibrio en un Pie,Prensa 45°,Sentadilla con Barra', 'Movilidad: primero equilibrio y máquinas al sugerir ejercicios: ' + P.mayor.pref);
   noErr(p); await p.done();
 }
 
