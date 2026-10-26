@@ -99,7 +99,7 @@ console.log('A. Historial: una sola regla en toda la app');
   });
   ok(G.gym === 'raydac' && G.kind === 'fuerza', '"Completar semana" (fuerza) empieza en el Gimnasio B');
   ok(/^20x20,20x20,20x20/.test(G.prev) && G.last === new Date('2026-10-24T20:51:00').toISOString() && !G.refGym, `"Anterior": 20×20 ×3 de la sesión de bombeo de hace 20 min (${G.prev})`);
-  ok(!/Primera vez/.test(G.head) && /Tu última vez aquí|Aquí solo lo hiciste en un día de bombeo/.test(G.head) && !/Primera vez aquí/.test(G.txt), 'no dice "Primera vez aquí": ' + G.head.replace(/<[^>]+>/g, '').slice(0, 110));
+  ok(!/Primera vez aquí|Primera vez:/.test(G.head) &&   /* "Primera vez con este rango" (cambio de rango) sí puede salir */ /Tu última vez aquí|Aquí solo lo hiciste en un día de bombeo/.test(G.head) && !/Primera vez aquí/.test(G.txt), 'no dice "Primera vez aquí": ' + G.head.replace(/<[^>]+>/g, '').slice(0, 110));
   await shot(p, 'a-gemelos');
   /* (b) la sesión de "Completar semana" se guarda con su gimnasio y la siguiente la encuentra */
   const B = await p.evaluate(() => { markSet(0, 0, true); markSet(0, 1, true); state.rest = null; finishSession(); closeSheet(); const s = state.sessions[0];

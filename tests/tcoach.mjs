@@ -78,7 +78,7 @@ console.log('A. Reglas de progresión');
   const down = await CO(p, 'raydac', 'fuerza', 'Extensión de Pierna');
   ok(down.mode === 'down' && down.w < 50, `bajar: dos sesiones bajo 8 reps (50×6, 50×7) → ${down.w} kg · ${down.why}`);
   const adj = await p.evaluate(() => { const L = state.sessions.find(s => s.id === 'b2'); const e = L.exercises.find(x => x.name === 'Press Banca Plano (Barra)'); e.sets = [{ w: 60, r: 13, rir: 3 }, { w: 60, r: 12, rir: 2 }]; const c = pgCoach({ name: 'Press Banca Plano (Barra)', sets: 3, type: 'Empuje' }, 'raydac', 'fuerza'); e.sets = [{ w: 60, r: 8, rir: 2 }]; return { w: c.w, why: c.why }; });
-  ok(adj.w >= 67.5 && adj.w <= 70, `ajustar ~4 % por rep: 60×13 (3 sobre el tope) → ${adj.w} kg · ${adj.why}`);
+  ok(adj.w === 62.5 && /tope de subida/.test(adj.why), `3 reps sobre el tope (60×13): por el 1RM estimado y con tope de +5 % en tren superior → ${adj.w} kg · ${adj.why}`);
   const pes = await CO(p, 'raydac', 'fuerza', 'Sentadilla Hack'), bom = await CO(p, 'raydac', 'bombeo', 'Sentadilla Hack');
   ok(pes.w === 80 && bom.w === 55 && bom.mode === 'up' && bom.rx.rMin === 12, `pesado y bombeo por separado: Hack pesado ${pes.w} kg (${pes.mode}), bombeo ${bom.w} kg (${bom.mode}, ${bom.rx.rMin}-${bom.rx.rMax})`);
   const rirC = await CO(p, 'raydac', 'bombeo', 'Prensa 45°'), rirA = await CO(p, 'raydac', 'bombeo', 'Curl Bíceps');
@@ -295,6 +295,40 @@ console.log('M. Peso máximo por ejercicio y gimnasio');
   ok(M.inputs === 2 && M.saved === JSON.stringify({ rokaz: {}, raydac: { [M.k]: 200 } }), 'la ficha edita el peso máximo de cada gimnasio: ' + M.saved);
   ok(M.ses.n === 4 && M.ses.w === 200 && M.ses.min === 12 && M.ses.max === 30 && /Peso máximo: 200 kg/.test(M.ses.head), `la sesión lo aplica: ${M.ses.n} series de 200 kg, ${M.ses.min}-${M.ses.max} · ${M.ses.head}`);
   ok(/peso máximo/.test(M.plan) && /200 kg/.test(M.plan), 'Mi plan lo muestra: ' + M.plan);
+  noErr(p); await p.done();
+}
+
+console.log('Q. Saltos grandes (caso real: Prensa 190×15 @3 → el coach proponía 230 kg × 10)');
+{
+  const p = await open();
+  const Q = await p.evaluate(() => {
+    const base = state.sessions.slice(), out = {};
+    const one = (name, sets, kind) => { state.sessions = [{ id: 'q', date: new Date(Date.UTC(2026, 9, 24, 18)).toISOString(), planId: 'planB', dayId: kind === 'bombeo' ? 'b-bom' : 'b-pes', dayName: 'x', gymId: 'raydac', kind: kind || 'fuerza', exercises: [{ name, sets }] }]; };
+    const C = (name, kind) => { const c = pgCoach({ name, sets: 3, type: typeOf(name) }, 'raydac', kind || 'fuerza'); return { w: c.w, goal: c.goal[0], mode: c.mode, why: c.why }; };
+    one('Prensa 45°', [{ w: 190, r: 15, rir: 3 }, { w: 190, r: 14, rir: 2 }, { w: 190, r: 13, rir: 1 }]); out.real = C('Prensa 45°');
+    state.settings.nextS = { 'b-pes': { pick: 'plan' } }; startSession('planB', 'b-pes'); render();
+    const i = state.draft.exercises.findIndex(e => e.name === 'Prensa 45°'), e = state.draft.exercises[i];
+    out.ses = { w: e.log[0].w, ph: (document.getElementById('r-' + i + '-0') || {}).placeholder, head: e.coach.head.replace(/<[^>]+>/g, '') };
+    markSet(i, 0, true); out.marked = state.draft.exercises[i].log[0].r; state.rest = null; discardSession();
+    one('Sentadilla Hack', [{ w: 80, r: 20, rir: 2 }]); out.hack = C('Sentadilla Hack');
+    one('Press Banca Plano (Barra)', [{ w: 60, r: 16, rir: 2 }]); out.banca = C('Press Banca Plano (Barra)');
+    one('Prensa 45°', [{ w: 160, r: 11, rir: 3 }]); out.uno = C('Prensa 45°');
+    one('Prensa 45°', [{ w: 160, r: 10, rir: 3 }]); out.normal = C('Prensa 45°');
+    state.settings.nextS = { 'b-pes': { pick: 'plan' } }; startSession('planB', 'b-pes'); render();
+    out.normalPh = (document.getElementById('r-' + state.draft.exercises.findIndex(x => x.name === 'Prensa 45°') + '-0') || {}).placeholder; discardSession();
+    one('Sentadilla Hack', [{ w: 50, r: 15, rir: 2 }], 'bombeo'); out.kref = C('Sentadilla Hack', 'fuerza');
+    one('Prensa 45°', [{ w: 160, r: 3, rir: 1 }]); out.bajo = C('Prensa 45°');
+    state.sessions = base; return out;
+  });
+  ok(Q.real.w === 200 && Q.real.w - 190 <= 10 && Q.real.mode === 'up', `caso real 190×15 @3: sube a ${Q.real.w} kg (tope de piernas +10 kg), no a 230`);
+  ok(Q.real.goal === 10 && /1RM estimado ≈ 304 kg/.test(Q.real.why) && /tope de subida/.test(Q.real.why) && /Primera vez con este rango: empieza conservador y ajusta tras la 1\.ª serie/.test(Q.real.why), 'reps coherentes (10), por el 1RM estimado y con el aviso de rango nuevo · ' + Q.real.why);
+  ok(Q.ses.w === 200 && Q.ses.ph === '10' && Q.marked === 10 && /Sube a 200 kg/.test(Q.ses.head), `en la sesión: ${Q.ses.w} kg y las casillas proponen ${Q.ses.ph} reps (marcar sin escribir guarda ${Q.marked})`);
+  ok(Q.hack.w === 85 && Q.hack.w <= 88 && Q.hack.goal === 10 && /Primera vez con este rango/.test(Q.hack.why), `80×20 → rango 6-10: ${Q.hack.w} kg × ${Q.hack.goal} (+10 % como máximo en piernas)`);
+  ok(Q.banca.w === 62.5 && (Q.banca.w + 20) <= 80 * 1.05 + 0.01, `tren superior 60×16 → ${Q.banca.w} kg (+5 % como máximo de la carga total)`);
+  ok(Q.uno.w === 165 && Q.uno.goal === 6, `1 rep sobre el tope (160×11): ~4 % → ${Q.uno.w} kg y vuelve a ${Q.uno.goal}`);
+  ok(Q.normal.w === 165 && Q.normal.goal === 6 && /vuelve a 6 reps/.test(Q.normal.why) && Q.normalPh === '6', 'subida normal: "vuelve a 6 reps" y las casillas proponen 6, no 10');
+  ok(Q.kref.w <= 55 && Q.kref.goal >= 6 && Q.kref.goal <= 10 && /Primera vez con este rango/.test(Q.kref.why), `de bombeo (50×15) a pesado: ${Q.kref.w} kg × ${Q.kref.goal}, con tope y aviso · ${Q.kref.why}`);
+  ok(Q.bajo.mode === 'down' && Q.bajo.w < 160 && /1RM estimado/.test(Q.bajo.why), `3+ reps bajo el rango: por el 1RM estimado → ${Q.bajo.w} kg · ${Q.bajo.why}`);
   noErr(p); await p.done();
 }
 
