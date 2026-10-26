@@ -174,7 +174,7 @@ console.log('B. Punto 0: un solo objetivo');
   const p = await open({ settings: Object.assign(structuredClone(SETTINGS), { prof: { name: 'Atleta de prueba', age: 31, goal: null } }) });
   const B = await p.evaluate(async () => {
     const out = {};
-    out.empty = { exp: /Mi objetivo: hipertrofia \(el de la app por defecto/.test(sessionPrompt([state.sessions[0]])), plate: /Para tu objetivo/.test(plateCard()), dd: ddGoal() };
+    out.empty = { exp: /Mi objetivo: ganar músculo \(el de la app por defecto/.test(sessionPrompt([state.sessions[0]])), plate: /Para tu objetivo/.test(plateCard()), dd: ddGoal() };
     dataSheet(); document.getElementById('bd-goal').value = 'fuerza'; document.getElementById('f-bdd').requestSubmit(); await new Promise(r => setTimeout(r, 100));
     state.tab = 'settings'; render(); document.querySelectorAll('#app details').forEach(d => { d.open = true; });
     const name = PB_GOALS.fuerza[0];

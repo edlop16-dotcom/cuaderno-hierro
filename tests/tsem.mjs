@@ -70,7 +70,7 @@ console.log('A. Semana con lunes (fuerza, otro plan) y miércoles (bombeo, plan 
   ok(list.includes('LUNES (FUERZA): Piernas + Torso → Prensa 45°, Press Banca Plano (Barra), Remo Sentado con Cable, Elevaciones Laterales, Press de Banca en Smith (en lugar de Press Banca Plano (Barra)), Pec Deck Inverso'), 'nombres exactos del lunes: los del plan y los que hice (con su sustituto)');
   ok(/MIÉRCOLES \(BOMBEO\): Full Body \(Bombeo\) → [^;]*Prensa 45°[^;]*Press Militar en Smith/.test(list), 'nombres exactos del miércoles: los del plan y Press Militar en Smith');
   ok(/Es para la semana: un bloque con todos los días de la lista\./.test(F) && !/Para la sesión del día/.test(F), 'semana: solo la instrucción de la semana');
-  ok(/Mi objetivo: hipertrofia \(el de la app por defecto/.test(T), 'sin objetivo en Tus datos: el prompt dice Hipertrofia por defecto (no elegido)');
+  ok(/Mi objetivo: ganar músculo \(el de la app por defecto/.test(T), 'sin objetivo en Tus datos: el prompt dice Hipertrofia por defecto (no elegido)');
   ok(/MIS DATOS: 31 años · último peso 75[.,]4 kg \(20 oct\.?\)/.test(T), 'MIS DATOS con la edad y el último peso (con su fecha)');
   /* Exportar sesión: al revés */
   const D = await p.evaluate(() => sessionPrompt([state.sessions.find(s => s.id === 't-lun')]));

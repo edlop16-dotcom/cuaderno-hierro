@@ -185,7 +185,7 @@ const AIX_KIND_TIP = {
 const aixKindLow = k => (KINDS[k] || KINDS.fuerza).toLowerCase();
 function aixGoalLine(goal) {
   /* Sin objetivo elegido, el coach de Forja trabaja con Hipertrofia (por defecto) y así se lo dice a la IA */
-  return goal ? `Mi objetivo: ${goal}.` : 'Mi objetivo: hipertrofia (el de la app por defecto; no lo elegí en Tus datos). Si te parece que otro me conviene más, pregúntamelo.';
+  return goal ? `Mi objetivo: ${goal}.` : 'Mi objetivo: ganar músculo (el de la app por defecto; no lo elegí en Tus datos). Si te parece que otro me conviene más, pregúntamelo.';
 }
 function aixAskDay(list, d) {
   const v = aixProfile(), s = list[0] || {}, k = sKind(s), kd = aixDayKind(d), live = list.some(x => x.live);
