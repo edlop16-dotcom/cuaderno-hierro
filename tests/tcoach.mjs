@@ -298,6 +298,65 @@ console.log('M. Peso máximo por ejercicio y gimnasio');
   noErr(p); await p.done();
 }
 
+console.log('N. Cardio / acondicionamiento, Plancha Copenhague y explosivos (revisados por el usuario)');
+{
+  const p = await open();
+  const N = await p.evaluate(() => {
+    const t = n => pgTypeOf(n);
+    const cardio = ['Escaladores', 'Burpees', 'Saltos de Tijera', 'Cuerdas de Batalla', 'Paseo del Granjero', 'Equilibrio en un Pie', 'Empuje de Trineo', 'Arrastre de Trineo'].map(t);
+    const ex = ['Cargada de Potencia', 'Thruster con Mancuernas', 'Thruster con Barra', 'Cargada con Kettlebell', 'Arranque con Kettlebell'].map(n => { const a = pgRx(n, 'fuerza'), b = pgRx(n, 'bombeo'); return [t(n), a.rMin, a.rMax, a.rirMin, b.rMin, b.rMax, b.rirMin].join(':'); });
+    state.sessions.unshift({ id: 'c1', date: new Date(Date.UTC(2026, 9, 24, 18)).toISOString(), planId: 'planB', dayId: 'b-pes', dayName: 'x', gymId: 'raydac', kind: 'fuerza', exercises: [{ name: 'Burpees', sets: [{ w: 0, r: 15 }, { w: 0, r: 14 }] }, { name: 'Paseo del Granjero', sets: [{ w: 24, r: 40 }] }] });
+    const cb = pgCoach({ name: 'Burpees', sets: 3, type: 'Core' }, 'raydac', 'fuerza'), cg = pgCoach({ name: 'Paseo del Granjero', sets: 2, type: 'Core' }, 'raydac', 'fuerza');
+    const head = coachFor({ name: 'Burpees', sets: 3, type: 'Core' }, 'raydac', 'fuerza').head.replace(/<[^>]+>/g, '');
+    state.sessions.shift();
+    return { cardio, cop: t('Plancha Copenhague'), ex, doubt: LIB.filter(x => x.pdoubt).length, n: (() => { const o = {}; LIB.forEach(x => { o[x.ptype] = (o[x.ptype] || 0) + 1; }); return o; })(), cb: [cb.w, cb.goal[0], cb.mode].join(':'), cg: [cg.w, cg.goal[0]].join(':'), why: cg.why, head, sys: sessionPrompt([state.sessions[0]]) };
+  });
+  ok(N.cardio.every(x => x === 'cardio'), 'Cardio / acondicionamiento: escaladores, burpees, saltos de tijera, cuerdas, paseo del granjero, equilibrio y trineo');
+  ok(N.cop === 'peq', 'Plancha Copenhague: Pequeño');
+  ok(N.ex.every(x => x === 'comp:3:6:2:3:6:2'), 'explosivos: Compuesto con 3-6 reps y RIR 2 o más en los dos tipos de día: ' + N.ex[0]);
+  ok(N.doubt === 0, `los dudosos quedan fijos en el catálogo (${JSON.stringify(N.n)})`);
+  ok(N.cb === '0:17:hold' && N.cg === '24:44' && /mismo peso \(24 kg\)/.test(N.why) && !/RIR/.test(N.head), `cardio sin progresión de peso: Burpees 15 → ${N.cb.split(':')[1]}, Paseo del Granjero 24 kg × 40 → ${N.cg} · ${N.head}`);
+  ok(/Cardio \/ acondicionamiento .*sin progresión de peso/.test(N.sys) && /Explosivos .*nunca al fallo/.test(N.sys), 'la exportación explica el cardio y los explosivos');
+  noErr(p); await p.done();
+}
+
+console.log('O. Regulación de la máquina por gimnasio');
+{
+  const p = await open();
+  const O = await p.evaluate(() => {
+    state.settings.nextS = { 'b-pes': { pick: 'plan' } }; startSession('planB', 'b-pes'); render();
+    const d = state.draft, iP = d.exercises.findIndex(e => e.name === 'Prensa 45°'), iB = d.exercises.findIndex(e => e.name === 'Press Banca Plano (Barra)');
+    const card = i => document.querySelector(`#sx-pager .sx-page[data-i="${i}"] .card.ex`);
+    const r = { add: !!card(iP).querySelector('.pg-reg.add'), free: !card(iB).querySelector('.pg-reg') };
+    card(iP).querySelector('[data-pg-reg="edit"]').click();
+    document.getElementById('pg-reg-in').value = 'asiento 4, rodillo 3, respaldo 2'; document.querySelector('[data-pg-reg="save"]').click();
+    r.saved = ((state.settings.exReg || {}).raydac || {})[exHKey('Prensa 45°')];
+    r.shown = card(iP).querySelector('.pg-reg').getAttribute('aria-label'); r.first = card(iP).querySelector('.su-pills').firstElementChild.classList.contains('pg-reg');
+    card(iP).querySelector('[data-pg-reg="edit"]').click(); document.getElementById('pg-reg-in').value = 'asiento 5, rodillo 3'; document.querySelector('[data-pg-reg="save"]').click();
+    r.edited = state.settings.exReg.raydac[exHKey('Prensa 45°')];
+    discardSession();
+    state.settings.nextS = { 'b-pes': { pick: 'plan' } }; startSession('planB', 'b-pes'); render(); r.again = card(iP).querySelector('.pg-reg') ? card(iP).querySelector('.pg-reg').getAttribute('aria-label') : ''; discardSession();
+    state.settings.activeGymId = 'rokaz'; state.settings.nextS = { 'a-pes': { pick: 'plan' } }; startSession('planA', 'a-pes'); render();
+    const iA = state.draft.exercises.findIndex(e => e.name === 'Prensa 45°'); r.other = !!document.querySelector(`#sx-pager .sx-page[data-i="${iA}"] .pg-reg.add`); discardSession();
+    state.settings.activeGymId = 'raydac';
+    const x = LIB.find(y => y.name === 'Prensa 45°'); exActions(x.key); r.ficha = document.querySelector('#sheet [data-pg-rg="raydac"]').value;
+    const xb = LIB.find(y => y.name === 'Press Banca Plano (Barra)'); exActions(xb.key); r.fichaFree = !document.querySelector('#sheet [data-pg-rg]');
+    return r;
+  });
+  ok(O.add && O.free, 'en una máquina se puede anotar la regulación; en peso libre no aparece');
+  ok(O.saved === 'asiento 4, rodillo 3, respaldo 2' && /Regulación en Gimnasio B: asiento 4, rodillo 3, respaldo 2/.test(O.shown) && O.first, 'se guarda por gimnasio y se muestra en el ejercicio (primera píldora): ' + O.shown);
+  ok(O.edited === 'asiento 5, rodillo 3' && /asiento 5, rodillo 3/.test(O.again), 'se edita durante la sesión y sale al volver a empezar ese ejercicio en ese gimnasio');
+  ok(O.other, 'en el otro gimnasio no se muestra (cada gimnasio la suya)');
+  ok(O.ficha === 'asiento 5, rodillo 3' && O.fichaFree, 'la ficha también la muestra y la deja editar por gimnasio');
+  await shot(p, 'o-regulacion');
+  noErr(p); await p.done();
+  const s = structuredClone(SETTINGS); s.exReg = { raydac: { 'prensa 45°': 'asiento 4, rodillo 3' } };
+  const w = await open({ watch: true, settings: s });
+  const W = await w.evaluate(() => { state.settings.nextS = { 'b-pes': { pick: 'plan' } }; startSession('planB', 'b-pes'); render(); const sk = document.querySelector('[data-act="w2-wuskip"]'); if (sk) sk.click(); render(); return { w: isWatch(), t: document.getElementById('app').textContent }; });
+  ok(W.w && /⚙ asiento 4, rodillo 3/.test(W.t), 'en el reloj se ve al empezar ese ejercicio');
+  noErr(w); await w.done();
+}
+
 if (SHOTS) {   /* capturas para revisar a ojo (no cuentan como prueba) */
   const p = await open();
   await p.evaluate(() => { state.settings.nextS = { 'b-pes': { pick: 'coach' } }; state.tab = 'train'; render(); });
@@ -307,6 +366,8 @@ if (SHOTS) {   /* capturas para revisar a ojo (no cuentan como prueba) */
   await p.waitForTimeout(900); await shot(p, 'x-plan');
   await p.evaluate(() => { const c = document.querySelector('.pg-vol'); if (c) c.scrollIntoView({ block: 'start' }); }); await p.waitForTimeout(300); await shot(p, 'x-volumen');
   await p.evaluate(() => { state.settings.prof.mins = 45; render(); pgFitSheet('planB', 'b-pes'); }); await p.waitForTimeout(400); await shot(p, 'x-ajustar');
+  await p.evaluate(() => { closeSheet(); state.settings.exReg = { raydac: { [exHKey('Prensa 45°')]: 'asiento 4, rodillo 3, respaldo 2' } }; state.settings.nextS = { 'b-pes': { pick: 'plan' } }; startSession('planB', 'b-pes'); render(); });
+  await p.waitForTimeout(1200); await p.evaluate(() => { const r = document.querySelector('.pg-reg'); if (r) r.scrollIntoView({ block: 'center' }); }); await p.waitForTimeout(300); await shot(p, 'x-regulacion-sesion');
   await p.done();
 }
 await browser.close();

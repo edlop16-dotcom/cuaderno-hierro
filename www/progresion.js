@@ -19,14 +19,18 @@
    ========================================================================== */
 
 /* ---------- Tipos y prescripción ---------- */
-const PG_T = { comp: 'Compuesto', aisl: 'Aislamiento', glu: 'Glúteo y cadera', peq: 'Pequeño' };
+const PG_T = { comp: 'Compuesto', aisl: 'Aislamiento', glu: 'Glúteo y cadera', peq: 'Pequeño', cardio: 'Cardio / acondicionamiento' };
 /* [reps mín, reps máx, RIR mín, RIR máx]; descanso [mín, máx] s; duración de una serie (s) */
 const PG_RX = {
   comp: { f: [6, 10, 1, 3], b: [12, 15, 1, 2], rest: [120, 180], restB: [90, 120], dur: 55 },
   aisl: { f: [8, 12, 0, 2], b: [15, 20, 0, 1], rest: [90, 120], restB: [90, 120], dur: 45 },
   glu: { f: [10, 15, 1, 2], b: [15, 20, 0, 1], rest: [90, 120], restB: [90, 120], dur: 50 },
   peq: { f: [12, 15, 0, 2], b: [15, 25, 0, 1], rest: [60, 90], restB: [60, 90], dur: 40 },
+  /* Cardio / acondicionamiento: sin progresión de peso; reps, segundos o metros (lo que anotes) y el coach suma un poco */
+  cardio: { f: [10, 20, 2, 2], b: [10, 20, 2, 2], rest: [60, 90], restB: [60, 90], dur: 45 },
 };
+/* Explosivos (cargadas, thrusters, arranques): compuestos con 3-6 reps, RIR 2 o más y nunca al fallo, en cualquier día */
+const PG_EXPL = [3, 6, 2, 3];
 const PG_FUERZA = [3, 6, 2, 3], PG_FUERZA_REST = [180, 300];
 const PG_GOALS = { hiper: 'Hipertrofia', fuerza: 'Fuerza', recomp: 'Recomposición' };
 const pgGoal = () => { const g = typeof goalSet === 'function' ? goalSet() : ''; return g === 'fuerza' ? 'fuerza' : g === 'grasa' ? 'recomp' : 'hiper'; };
@@ -34,9 +38,10 @@ const pgAvail = () => { const m = +((state.settings.prof || {}).mins); return m 
 
 /* Clasificación por movimiento (patrón del catálogo) y músculo principal, no por el nombre exacto */
 const PG_PAT = {
-  comp: /^(squat|lunge|sled|hinge|hpush|ipush|dpush|dip|vpush|vpull|row|full)$/,
+  cardio: /^(cardio|carry|balance|sled)$/,
+  comp: /^(squat|lunge|hinge|hpush|ipush|dpush|dip|vpush|vpull|row|full)$/,
   glu: /^(hipext|abd|add)$/,
-  peq: /^(lat|rear|front|calf|tib|wrist|grip|flex|legraise|antiext|rotc|rot|shrug|carry|balance|cardio)$/,
+  peq: /^(lat|rear|front|calf|tib|wrist|grip|flex|legraise|antiext|rotc|rot|shrug)$/,
   aisl: /^(fly|pullover|curl|triext|kext|kflex|lumbar|upright)$/,
 };
 const PG_DUDA = { upright: 'remo al mentón: multiarticular de hombro', shrug: 'encogimientos: pueden ir muy pesados', carry: 'cargar y caminar', full: 'cuerpo completo / explosivo', cardio: 'acondicionamiento', sled: 'trineo', add: 'aducción (cadera)', lumbar: 'extensión lumbar (podría ser glúteo)', pullover: 'pullover (brazos rectos)', dip: 'fondos con peso corporal', balance: 'equilibrio' };
@@ -53,7 +58,7 @@ function pgByMuscle(m, n) {
 function pgClassify(x) {
   const n = normName(x.name), m = catMain(x), pat = x.pat;
   if (pat) {
-    let t = PG_PAT.comp.test(pat) ? 'comp' : PG_PAT.glu.test(pat) ? 'glu' : PG_PAT.peq.test(pat) ? 'peq' : PG_PAT.aisl.test(pat) ? 'aisl' : null;
+    let t = PG_PAT.cardio.test(pat) ? 'cardio' : PG_PAT.comp.test(pat) ? 'comp' : PG_PAT.glu.test(pat) ? 'glu' : PG_PAT.peq.test(pat) ? 'peq' : PG_PAT.aisl.test(pat) ? 'aisl' : null;
     let doubt = PG_DUDA[pat] || '';
     if (t === 'comp' && x.iso) { t = 'aisl'; doubt = doubt || 'movimiento compuesto marcado como aislamiento en el catálogo'; }
     if (t === 'glu' && pat === 'hipext' && m !== 'glu') { t = m === 'isq' ? 'aisl' : t; doubt = doubt || 'extensión de cadera con músculo principal ' + m; }
@@ -74,11 +79,14 @@ function pgByName(name) {
   if (/elevacion(es)? lateral|face pull|pajaro|talon|gemelo|pantorr|antebrazo|muneca|abdom|crunch|plancha/.test(n)) return 'peq';
   return 'aisl';
 }
-LIB.forEach(x => { const c = pgClassify(x); x.ptype = c.t; if (c.doubt) x.pdoubt = c.doubt; else delete x.pdoubt; });
+/* Revisado por el usuario (25-oct-2026): los dudosos quedan fijos como los clasifica pgClassify, salvo estos por nombre;
+   los de patrón cardio/carry/balance/sled son Cardio y los "full" (cargadas, thrusters, arranques) son explosivos */
+const PG_FIX = { 'Plancha Copenhague': 'peq' };
+LIB.forEach(x => { x.ptype = PG_FIX[x.name] || pgClassify(x).t; if (x.pat === 'full') x.pexpl = 1; delete x.pdoubt; });
 function pgTypeOf(name) {
   const o = (state.settings.exType || {})[exHKey(name)]; if (o && PG_T[o]) return o;
   const x = libFind(name);
-  if (x) { if (!x.ptype) { const c = pgClassify(x); x.ptype = c.t; if (c.doubt) x.pdoubt = c.doubt; } return x.ptype; }
+  if (x) { if (!x.ptype) { x.ptype = PG_FIX[x.name] || pgClassify(x).t; if (x.pat === 'full') x.pexpl = 1; } return x.ptype; }
   return pgByName(name);
 }
 const pgMain = name => { const sh = zoneShares(name); for (const k in sh) if (sh[k] === 1) return k; return null; };
@@ -88,16 +96,18 @@ function pgRx(name, kind, pe) {
   const t = pgTypeOf(name), g = pgGoal(), b = kind === 'bombeo', R = PG_RX[t];
   let [rMin, rMax, rirMin, rirMax] = b ? R.b : R.f, rest = (b ? R.restB : R.rest).slice();
   if (g === 'fuerza' && t === 'comp' && !b) { [rMin, rMax, rirMin, rirMax] = PG_FUERZA; rest = PG_FUERZA_REST.slice(); }
+  const xl = libFind(name); if (t === 'comp' && xl && xl.pexpl) [rMin, rMax, rirMin, rirMax] = PG_EXPL;
   const fam = pgFam(name), mach = fam === 'maq' || fam === 'polea';
   if (t === 'comp') { rirMin = Math.max(1, rirMin); rest[0] = Math.max(90, rest[0]); }       /* nunca al fallo en compuestos; 90 s mínimo */
   else if (rirMin === 0 && t === 'glu' && !mach) rirMin = 1;                                  /* RIR 0 solo en máquinas y aislamiento */
   rirMax = Math.max(rirMin, rirMax);
   let rec = b || g === 'recomp' ? rest[0] : Math.round((rest[0] + rest[1]) / 2 / 15) * 15;
   if (pe && +pe.pgRest && (t === 'aisl' || t === 'peq')) rec = Math.max(rest[0], +pe.pgRest);
-  return { t, g, kind: b ? 'bombeo' : 'fuerza', rMin, rMax, rirMin, rirMax, rest: rec, restMin: rest[0], restMax: rest[1], dur: R.dur };
+  return { t, g, kind: b ? 'bombeo' : 'fuerza', rMin, rMax, rirMin, rirMax, rest: rec, restMin: rest[0], restMax: rest[1], dur: R.dur, expl: !!(xl && xl.pexpl && t === 'comp') };
 }
 const pgRir = (rx, j, n) => (n <= 1 ? rx.rirMax : Math.round(rx.rirMax - (rx.rirMax - rx.rirMin) * j / (n - 1)));
-const pgRirTxt = rx => (rx.rirMin === rx.rirMax ? String(rx.rirMin) : `${rx.rirMin}-${rx.rirMax}`);
+const pgRirTxt = rx => (rx.t === 'cardio' ? '—' : rx.rirMin === rx.rirMax ? String(rx.rirMin) : `${rx.rirMin}-${rx.rirMax}`);
+const pgRirPart = rx => (rx.t === 'cardio' ? '' : ` · RIR ${pgRirTxt(rx)}`);
 const pgRestTxt = s => (s % 60 ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` : `${s / 60} min`);
 
 /* ---------- Escalones de carga ---------- */
@@ -144,12 +154,53 @@ function pgGymRatio(name, from, to) {
   r = L.reduce((a, o) => a + o.r, 0) / L.length;
   return { r, by: L.map(o => o.n).join(', ') };
 }
+/* ---------- Regulación de la máquina por gimnasio: nota corta y opcional (máquinas, poleas y Smith) ---------- */
+const pgIsMach = name => /^(maq|polea|smith)$/.test(pgFam(name));
+const pgRegOf = (name, gymId) => (((state.settings.exReg || {})[gymId] || {})[exHKey(name)]) || '';
+function pgRegSet(name, gymId, txt) {
+  const all = Object.assign({}, state.settings.exReg || {}), m = Object.assign({}, all[gymId] || {}), k = exHKey(name);
+  txt = String(txt || '').replace(/\s+/g, ' ').trim().slice(0, 80);
+  if (txt) m[k] = txt; else delete m[k];
+  all[gymId] = m; state.settings.exReg = all; savePlans();
+}
+/* En la sesión (teléfono): una píldora más, la primera de la fila (no ocupa alto: la tabla queda donde estaba);
+   se ve al empezar el ejercicio en ese gimnasio y al tocarla se edita ahí mismo */
+function pgRegPill(d, i) {
+  const e = d.exercises[i]; if (!e || !pgIsMach(e.name)) return '';
+  const t = pgRegOf(e.name, d.gymId), g = esc(gymName(d.gymId));
+  return t ? `<button type="button" class="su-p pg-reg" data-pg-reg="edit" data-i="${i}" aria-label="Regulación en ${g}: ${esc(t)} (toca para editar)" title="Regulación en ${g}: ${esc(t)}">${ic('settings', 15)}<span class="pg-reg-t">${esc(t)}</span></button>`
+    : `<button type="button" class="su-p pg-reg add" data-pg-reg="edit" data-i="${i}" aria-label="Anotar la regulación de esta máquina en ${g}">${ic('settings', 15)} Regulación</button>`;
+}
+function pgRegHtml(d, i) {
+  const e = d.exercises[i]; if (!e || !pgIsMach(e.name)) return '';
+  const t = pgRegOf(e.name, d.gymId), g = esc(gymName(d.gymId));
+  if (state.pgRegEd === i) return `<div class="pg-reg-ed" data-i="${i}"><label class="label" for="pg-reg-in">Regulación en ${g}</label><input id="pg-reg-in" maxlength="80" value="${esc(t)}" placeholder="Ej. asiento 4, rodillo 3, respaldo 2" autocomplete="off">
+    <div class="row" style="gap:8px"><button type="button" class="btn small primary" data-pg-reg="save" data-i="${i}">Guardar</button><button type="button" class="btn small" data-pg-reg="cancel">Cancelar</button></div></div>`;
+  return t ? `<div class="pg-reg" data-i="${i}">${ic('settings', 15)}<span class="grow"><b>Regulación en ${g}:</b> ${esc(t)}</span><button type="button" class="pg-reg-b" data-pg-reg="edit" data-i="${i}">Editar</button></div>`
+    : `<button type="button" class="pg-reg add" data-pg-reg="edit" data-i="${i}">${ic('settings', 15)} Anotar la regulación de esta máquina en ${g}</button>`;
+}
+window.addEventListener('click', ev => {
+  const b = ev.target.closest && ev.target.closest('[data-pg-reg]'), d = state.draft; if (!b || !d) return;
+  ev.preventDefault(); ev.stopPropagation();
+  const a = b.dataset.pgReg, i = +b.dataset.i;
+  if (a === 'edit') { state.pgRegEd = i; render(); const n = document.getElementById('pg-reg-in'); if (n) n.focus(); return; }
+  if (a === 'save') { const e = d.exercises[i], n = document.getElementById('pg-reg-in'); if (e && n) { pgRegSet(e.name, d.gymId, n.value); toast(n.value.trim() ? 'Regulación guardada para ' + gymName(d.gymId) + '.' : 'Regulación borrada.'); } }
+  state.pgRegEd = null; render();
+}, true);
+/* Reloj: solo se muestra (si hay nota), sin cambiar nada más */
+const _vWatchSessPG = vWatchSession;
+vWatchSession = function () {
+  const h = _vWatchSessPG.apply(this, arguments), d = state.draft; if (!d) return h;
+  const e = d.exercises[Math.min(d.cur || 0, d.exercises.length - 1)], t = e && pgIsMach(e.name) ? pgRegOf(e.name, d.gymId) : '', k = h.indexOf('<div class="w2-sub');
+  return t && k > 0 ? h.slice(0, k) + `<div class="w2-reg">⚙ ${esc(t)}</div>` + h.slice(k) : h;
+};
+
 /* Ficha: peso máximo en cada gimnasio (vacío = sin máximo) */
 function pgMaxRow(name) {
-  return `<div class="pg-max" data-name="${esc(name)}"><div class="label">Peso máximo por gimnasio</div>
+  return `<div class="pg-max" data-name="${esc(name)}"><div class="label">Peso máximo${pgIsMach(name) ? ' y regulación de la máquina' : ''} por gimnasio</div>
     <div class="muted" style="font-size:12px">Si la máquina no da más (p. ej. la prensa llega a 200 kg): el coach no sube más y progresa con reps, bajada lenta, pausa y una serie más.</div>
-    ${state.gyms.map(g => { const v = pgMaxOf(name, g.id); return `<div class="pg-mr"><span class="grow">${esc(g.name)}</span><span class="bd-in"><input inputmode="decimal" data-pg-mx="${g.id}" value="${v ? String(v).replace('.', ',') : ''}" placeholder="sin máximo" aria-label="Peso máximo en ${esc(g.name)}"><i class="pb-u" aria-hidden="true">${state.settings.unit === 'lb' ? 'lb' : 'kg'}</i></span></div>`; }).join('')}
-    <button type="button" class="btn small" data-pg-mxs="1">Guardar peso máximo</button></div>`;
+    ${state.gyms.map(g => { const v = pgMaxOf(name, g.id); return `<div class="pg-mr"><span class="grow">${esc(g.name)}</span>${pgIsMach(name) ? `<input class="pg-rgi" data-pg-rg="${g.id}" maxlength="80" value="${esc(pgRegOf(name, g.id))}" placeholder="regulación" aria-label="Regulación de la máquina en ${esc(g.name)}">` : ''}<span class="bd-in"><input inputmode="decimal" data-pg-mx="${g.id}" value="${v ? String(v).replace('.', ',') : ''}" placeholder="sin máximo" aria-label="Peso máximo en ${esc(g.name)}"><i class="pb-u" aria-hidden="true">${state.settings.unit === 'lb' ? 'lb' : 'kg'}</i></span></div>`; }).join('')}
+    <button type="button" class="btn small" data-pg-mxs="1">Guardar${pgIsMach(name) ? ' peso máximo y regulación' : ' peso máximo'}</button></div>`;
 }
 window.addEventListener('click', ev => {
   const b = ev.target.closest && ev.target.closest('[data-pg-mxs]'); if (!b) return;
@@ -161,7 +212,9 @@ window.addEventListener('click', ev => {
     if (v > 0 && v < 2000) { m[k] = v; said.push(`${gymName(g)} ${fmtKg(v)}`); } else delete m[k];
     all[g] = m;
   });
-  state.settings.exMax = all; savePlans(); render();
+  state.settings.exMax = all;
+  box.querySelectorAll('[data-pg-rg]').forEach(inp => pgRegSet(name, inp.dataset.pgRg, inp.value));
+  savePlans(); render();
   toast(said.length ? `Peso máximo de ${name}: ${said.join(', ')}.` : `${name}: sin peso máximo.`);
 }, true);
 /* Ficha: mejor marca y última vez en cada gimnasio, por separado */
@@ -208,6 +261,14 @@ function pgCoach(ex, gymId, kind) {
   let n = Math.max(1, +ex.sets || +ex.target || 3), rx = pgRx(name, kind, ex);
   const HA = exHistory(name, gymId, kind, 12), H = HA.filter(h => h.kind === kind);
   let w, mode, why, goal = null, src = 'own', alt = null;
+  if (rx.t === 'cardio') {   /* mismo peso (si lleva); suma un poco de reps, segundos o metros a tu última vez aquí */
+    const L = HA[0], s1 = L ? pgFirst(L) : null, r = s1 ? +s1.r || 0 : 0;
+    w = s1 ? +s1.w || 0 : +ex.weight || 0; goal = r ? r + Math.max(1, Math.round(r * 0.1)) : Math.max(1, +ex.repsMin || rx.rMin);
+    rx = Object.assign({}, rx, { rMin: goal, rMax: goal });
+    mode = s1 ? 'hold' : 'first';
+    why = s1 ? `Cardio: ${w ? 'mismo peso (' + fmtKg(w) + ' kg) y ' : ''}suma un poco: ${goal} (la última vez ${r}; reps, segundos o metros, lo que anotes).` : `Cardio: empieza cómodo y anota reps, segundos o metros; la próxima vez sumamos un poco.`;
+    return { w, mode, why, goal: Array.from({ length: n }, () => goal), src: s1 ? 'own' : 'new', rx, n, alt: null, cap: 0, rest: rx.rest, rirT: Array.from({ length: n }, () => 2), last: L ? { date: L.date, reps: L.sets.map(z => z.r), w } : null };
+  }
   /* En su peso máximo: rangos de bombeo (hasta 30 reps) también en los días pesados */
   const capped = cap > 0 && H.length && (+pgFirst(H[0]).w || 0) >= cap - 0.01;
   if (capped) rx = Object.assign({}, pgRx(name, 'bombeo', ex), { kind: rx.kind, rMax: 30, cap });
@@ -278,7 +339,7 @@ const PG_IC = { up: '⬆', down: '⬇', hold: '→', back: '↺', pain: '⚠', f
 /* coachFor de toda la app (sesión, alternativas, resumen al terminar, coach semanal…) */
 coachFor = function (ex, gymId, kind) {
   const c = pgCoach(ex, gymId, kind), rx = c.rx;
-  const head = c.mode === 'cap' ? `<b>Peso máximo: ${fmtKg(c.w)} kg</b> · ${c.goal[0]} reps (hasta ${rx.rMax}) · RIR ${pgRirTxt(rx)} · descanso ${pgRestTxt(rx.rest)}` : `<b>${c.mode === 'up' ? 'Sube a' : c.mode === 'down' ? 'Baja a' : c.mode === 'back' ? 'Retoma con' : c.mode === 'pain' ? 'Prudencia:' : c.mode === 'first' ? 'Empieza con' : 'Mantén'} ${fmtKg(c.w)} kg</b> · ${rx.rMin}-${rx.rMax} reps · RIR ${pgRirTxt(rx)} · descanso ${pgRestTxt(rx.rest)}`;
+  const head = c.mode === 'cap' ? `<b>Peso máximo: ${fmtKg(c.w)} kg</b> · ${c.goal[0]} reps (hasta ${rx.rMax})${pgRirPart(rx)} · descanso ${pgRestTxt(rx.rest)}` : `<b>${c.mode === 'up' ? 'Sube a' : c.mode === 'down' ? 'Baja a' : c.mode === 'back' ? 'Retoma con' : c.mode === 'pain' ? 'Prudencia:' : c.mode === 'first' ? 'Empieza con' : 'Mantén'} ${fmtKg(c.w)} kg</b> · ${rx.t === 'cardio' ? c.goal[0] + ' (reps, s o m)' : rx.rMin + '-' + rx.rMax + ' reps'}${pgRirPart(rx)} · descanso ${pgRestTxt(rx.rest)}`;
   return { w: c.w, mode: c.mode, head, goal: c.goal, tips: [c.why], last: c.last ? { date: c.last.date, reps: c.last.reps, w: c.last.w } : undefined, rx, pg: c };
 };
 /* Coach de Próxima sesión: mismo motor, con el bloque y la Preparación del día */
@@ -490,7 +551,8 @@ function pgStalls(plan) {
   const g = plan.gymId || 'rokaz', out = [], seen = {};
   plan.days.forEach(d => { const k = d.kind || kindOfName(d.name); d.exercises.forEach(e => {
     const key = exHKey(e.name) + k; if (seen[key]) return; seen[key] = 1;
-    const rx = pgRx(e.name, k, e), H = exHistory(e.name, g, k, 12).filter(h => h.kind === k);
+    const rx = pgRx(e.name, k, e); if (rx.t === 'cardio') return;
+    const H = exHistory(e.name, g, k, 12).filter(h => h.kind === k);
     if (H.length >= 2 && H.slice(0, 2).every(h => { const f = pgFirst(h); return +f.r > 0 && +f.r < rx.rMin; })) out.push(e.name);
   }); });
   return out;
@@ -515,6 +577,11 @@ render = function () {
   const d = state.draft;
   if (d && app.querySelector('#sx')) {   /* sesión: atraso y descansos */
     const sx = app.querySelector('#sx'), at = sx.querySelector('#sx-strip') || sx.querySelector('.sx-top');
+    sx.querySelectorAll('#sx-pager > .sx-page').forEach(pg => {
+      const card = pg.querySelector('.card.ex'), i = +pg.dataset.i, pills = card && card.querySelector('.su-pills'); if (!pills || pills.querySelector('.pg-reg')) return;
+      const h = pgRegPill(d, i); if (!h) return; pills.insertAdjacentHTML('afterbegin', h);
+      if (state.pgRegEd === i) pills.insertAdjacentHTML('afterend', pgRegHtml(d, i));   /* el formulario solo mientras editas */
+    });
     if (at && !sx.querySelector('.pg-late')) {
       const L = pgLate(d);
       const html = (L.late >= 300 && L.tips.length ? `<div class="pg-late">${ic('timer', 16)}<div class="grow"><b>Vas ${pgMin(L.late)} min atrasado</b> (≈ ${pgMin(L.real + (L.est - pgExpected(d)))} de ${pgAvail()} min). Para terminar a tiempo: ${L.tips.map(t => esc(t.t)).join('; ')}.${L.tips.some(t => t.k === 'rest') ? ` <button type="button" class="btn small" data-pg="late-rest">Acortar descansos</button>` : ''}</div></div>` : '')
@@ -534,7 +601,7 @@ render = function () {
       const { p, d: day } = findDay(b.dataset.plan, b.dataset.day), e = day && day.exercises[+b.dataset.k]; if (!e || b.dataset.pg) return;
       b.dataset.pg = 1;
       const k = day.kind || kindOfName(day.name), c = pgCoach(e, p.gymId || 'rokaz', k), rx = c.rx, sm = b.querySelector('small'); if (!sm) return;
-      sm.innerHTML = `<span class="pg-ty">${PG_T[rx.t]}</span> · ${e.sets} × ${c.goal[0] && c.goal[0] !== rx.rMin ? c.goal[0] + ' (' + rx.rMin + '-' + rx.rMax + ')' : rx.rMin + '-' + rx.rMax} · <b>${fmtKg(c.w)} kg</b>${e.bar || barFor(e.name) ? ' + barra' : ''} · RIR ${pgRirTxt(rx)} · ${pgRestTxt(rx.rest)}${e.ss ? ' · superserie' : ''}${c.mode === 'cap' ? ' · peso máximo' : ''} <span class="pg-mi">${PG_IC[c.mode] || ''}</span>`;
+      sm.innerHTML = `<span class="pg-ty">${PG_T[rx.t]}</span> · ${e.sets} × ${c.goal[0] && c.goal[0] !== rx.rMin ? c.goal[0] + ' (' + rx.rMin + '-' + rx.rMax + ')' : rx.rMin + '-' + rx.rMax} · <b>${fmtKg(c.w)} kg</b>${e.bar || barFor(e.name) ? ' + barra' : ''}${pgRirPart(rx)} · ${pgRestTxt(rx.rest)}${e.ss ? ' · superserie' : ''}${c.mode === 'cap' ? ' · peso máximo' : ''} <span class="pg-mi">${PG_IC[c.mode] || ''}</span>`;
     });
     app.querySelectorAll('.rt-head[data-day]').forEach(h => {
       const sm = h.querySelector('small'); if (!sm || sm.querySelector('.pg-dur')) return;
@@ -579,7 +646,7 @@ function pgTypeRow(name) {
   const o = (state.settings.exType || {})[exHKey(name)], auto = (() => { const x = libFind(name); return x ? x.ptype : pgByName(name); })(), cur = o || auto;
   return `<div class="pg-type" data-name="${esc(name)}"><div class="label">Tipo para el coach${o ? '' : ' (automático)'}</div>
     <div class="seg pg-tseg">${Object.keys(PG_T).map(t => `<button type="button" class="${cur === t ? 'on' : ''}" data-pg-t="${t}">${PG_T[t]}</button>`).join('')}</div>
-    <div class="muted" style="font-size:12px">${(() => { const rx = pgRx(name, 'fuerza'), rb = pgRx(name, 'bombeo'); return `Pesado ${rx.rMin}-${rx.rMax} reps, RIR ${pgRirTxt(rx)}, ${pgRestTxt(rx.rest)} · Bombeo ${rb.rMin}-${rb.rMax}, RIR ${pgRirTxt(rb)}, ${pgRestTxt(rb.rest)}`; })()}${o ? ` · <button type="button" class="pg-tauto" data-pg-t="auto">Volver a ${PG_T[auto]}</button>` : ''}</div></div>`;
+    <div class="muted" style="font-size:12px">${(() => { const rx = pgRx(name, 'fuerza'), rb = pgRx(name, 'bombeo'); return rx.t === 'cardio' ? `Sin progresión de peso: el coach suma un poco de reps, segundos o metros. Descanso ${pgRestTxt(rx.rest)}` : `Pesado ${rx.rMin}-${rx.rMax} reps, RIR ${pgRirTxt(rx)}, ${pgRestTxt(rx.rest)} · Bombeo ${rb.rMin}-${rb.rMax}, RIR ${pgRirTxt(rb)}, ${pgRestTxt(rb.rest)}${rx.expl ? ' · explosivo: nunca al fallo' : ''}`; })()}${o ? ` · <button type="button" class="pg-tauto" data-pg-t="auto">Volver a ${PG_T[auto]}</button>` : ''}</div></div>`;
 }
 const _exActionsPG = exActions;
 exActions = function (key) {
@@ -610,6 +677,7 @@ function pgSystemTxt() {
   return [`SISTEMA DE MI COACH (doble progresión autorregulada; recomiéndame con esta misma lógica):`,
     `- Objetivo: ${PG_GOALS[g]}${set ? '' : ' (por defecto)'}. Tiempo disponible por sesión: ${pgAvail()} min.`,
     row('comp'), row('aisl'), row('glu'), row('peq'),
+    `- Cardio / acondicionamiento (escaladores, burpees, trineo, paseo del granjero…): sin progresión de peso; sumar un poco de tiempo, reps o metros. Explosivos (cargadas, thrusters, arranques): 3-6 reps, RIR 2 o más, nunca al fallo.`,
     g === 'fuerza' ? `- Con objetivo Fuerza, los compuestos del día pesado: 3-6 reps, RIR 2-3, descanso 180-300 s.` : '',
     `- Subir: si en la 1.ª serie llego al tope del rango con el RIR más alto, la próxima vez sube al siguiente escalón (+2,5 kg tren superior, +5 kg piernas, o el siguiente disco de la máquina) y vuelvo al mínimo de reps.`,
     `- Fuera del rango: ajusta la carga ~4 % por rep de diferencia. Dos sesiones bajo el mínimo: mantener o bajar; si pasa en varios ejercicios, semana de descarga.`,
