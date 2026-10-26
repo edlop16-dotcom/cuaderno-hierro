@@ -2246,3 +2246,44 @@ body:not(.watch) .lv-next .btn{margin-top:8px;display:inline-flex}
 .w2-ov.lv2{background:rgba(255,106,43,.2);color:#ff8a52}
 .w2-ov.lv3{background:rgba(232,70,110,.25);color:#ff7d9c}
 .wov-row{margin-top:8px}
+
+/* ---------- Coach de progresión (progresion.js) ---------- */
+body:not(.watch) .pg-ty{font-weight:600}
+body:not(.watch) .pg-mi{color:var(--accent)}
+body:not(.watch) .pg-dur.over{color:var(--warn);font-weight:700}
+body:not(.watch) .pg-est{font-size:12.5px;display:flex;align-items:center;gap:6px;margin-top:6px}
+body:not(.watch) .pg-fitb{margin-top:8px}
+body:not(.watch) .pg-fitb .btn{margin-top:6px}
+body:not(.watch) .pg-fits{display:flex;flex-direction:column;gap:8px;flex-shrink:0}
+body:not(.watch) .pg-fit-r{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);font-size:13.5px}
+body:not(.watch) .pg-fit-r .btn{flex-shrink:0}
+body:not(.watch) .pg-vcs{display:flex;flex-wrap:wrap;gap:6px}
+body:not(.watch) .pg-vc{font-size:12.5px;padding:4px 8px;border-radius:8px;border:1px solid var(--line)}
+body:not(.watch) .pg-vc.low{border-color:var(--warn);color:var(--warn)}
+body:not(.watch) .pg-vc.high{border-color:var(--bad);color:var(--bad)}
+body:not(.watch) .pg-vl{margin:6px 0 0;padding-left:18px;font-size:13px;display:flex;flex-direction:column;gap:6px}
+body:not(.watch) .pg-vl .btn{margin-left:6px}
+body:not(.watch) .pg-dl{display:flex;gap:10px;align-items:flex-start}
+body:not(.watch) .pg-why{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+body:not(.watch) .pg-wr{display:flex;gap:8px;align-items:flex-start;font-size:13px;min-width:0}
+body:not(.watch) .pg-wr small{display:block;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body:not(.watch) .pg-wr .grow{min-width:0}
+body:not(.watch) .pg-wi{width:18px;flex-shrink:0;text-align:center}
+body:not(.watch) .pg-wr.up .pg-wi{color:var(--ok)}
+body:not(.watch) .pg-wr.down .pg-wi,body:not(.watch) .pg-wr.pain .pg-wi{color:var(--warn)}
+body:not(.watch) .pg-late{display:flex;gap:8px;align-items:flex-start;margin:8px 12px 0;padding:10px 12px;border-radius:12px;border:1px solid var(--warn);background:var(--surface);font-size:13px;line-height:1.4}
+body:not(.watch) .pg-late.rest{border-color:var(--line)}
+body:not(.watch) .pg-late .btn{margin-top:6px;display:inline-flex}
+body:not(.watch) .pg-type{display:flex;flex-direction:column;gap:6px;flex-shrink:0;margin:8px 0}
+body:not(.watch) .pg-tseg{flex-wrap:wrap}
+body:not(.watch) .pg-tseg button{min-height:40px;font-size:13px}
+body:not(.watch) .pg-tauto{background:none;border:0;color:var(--accent);font:inherit;text-decoration:underline;padding:0;cursor:pointer}
+body:not(.watch) .pg-gyms{display:flex;flex-direction:column;gap:6px;flex-shrink:0;margin:8px 0}
+body:not(.watch) .pg-gr{padding:8px 10px;border:1px solid var(--line);border-radius:10px;font-size:13px}
+body:not(.watch) .pg-gr small{display:block;color:var(--muted)}
+body:not(.watch) .pg-time{font-size:13px;display:flex;gap:6px;align-items:center;flex-shrink:0}
+body:not(.watch) .pg-max{display:flex;flex-direction:column;gap:6px;flex-shrink:0;margin:8px 0}
+body:not(.watch) .pg-mr{display:flex;align-items:center;gap:10px;font-size:13.5px}
+body:not(.watch) .pg-mr .bd-in{max-width:150px}
+body:not(.watch) .pg-mr input{min-height:40px}
+body:not(.watch) .pg-max .btn{align-self:flex-start}

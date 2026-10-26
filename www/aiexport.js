@@ -69,8 +69,11 @@ function aixSessLine(s, o) {
   });
   return head + '\n' + ex.join('\n') + (s.note ? '\nNota de la sesión: ' + s.note : '');
 }
+/* Con el coach de progresión, cada ejercicio lleva los valores del coach (tipo, rango, peso, RIR y descanso) */
 const aixDayTxt = d => `- ${WDL[d.weekday]} · ${d.name} (${KINDS[d.kind || kindOfName(d.name)] || ''}): ` +
-    d.exercises.map(e => `${e.name} ${e.sets}×${reps(e)}${+e.weight ? ' ' + fmtKg(+e.weight) + ' ' + aixU() : ''}${e.rest ? ' desc ' + aixSec(e.rest) : ''}`).join('; ');
+    d.exercises.map(e => { if (typeof pgCoach === 'function') { const p = state.plans.find(x => x.days.indexOf(d) >= 0), c = pgCoach(e, p ? p.gymId || 'rokaz' : activeGym().id, d.kind || kindOfName(d.name)), rx = c.rx;
+      return `${e.name} [${PG_T[rx.t].toLowerCase()}] ${e.sets}×${rx.rMin}-${rx.rMax}${c.w ? ' ' + fmtKg(c.w) + ' ' + aixU() : ''} RIR ${pgRirTxt(rx)} desc ${aixSec(rx.rest)}`; }
+      return `${e.name} ${e.sets}×${reps(e)}${+e.weight ? ' ' + fmtKg(+e.weight) + ' ' + aixU() : ''}${e.rest ? ' desc ' + aixSec(e.rest) : ''}`; }).join('; ');
 function aixPlanTxt() {
   const plan = activePlan(); if (!plan) return 'Sin plan activo.';
   return `${plan.name} (${gymName(plan.gymId)})\n` + plan.days.map(aixDayTxt).join('\n');
@@ -181,7 +184,8 @@ const AIX_KIND_TIP = {
 };
 const aixKindLow = k => (KINDS[k] || KINDS.fuerza).toLowerCase();
 function aixGoalLine(goal) {
-  return goal ? `Mi objetivo: ${goal}.` : 'Aún no te dije mi objetivo: pregúntamelo antes de recomendarme (ganar músculo, fuerza, bajar grasa, salud…) y no lo supongas.';
+  /* Sin objetivo elegido, el coach de Forja trabaja con Hipertrofia (por defecto) y así se lo dice a la IA */
+  return goal ? `Mi objetivo: ${goal}.` : 'Mi objetivo: hipertrofia (el de la app por defecto; no lo elegí en Tus datos). Si te parece que otro me conviene más, pregúntamelo.';
 }
 function aixAskDay(list, d) {
   const v = aixProfile(), s = list[0] || {}, k = sKind(s), kd = aixDayKind(d), live = list.some(x => x.live);

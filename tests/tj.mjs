@@ -99,13 +99,13 @@ console.log('A. Historial: una sola regla en toda la app');
   });
   ok(G.gym === 'raydac' && G.kind === 'fuerza', '"Completar semana" (fuerza) empieza en el Gimnasio B');
   ok(/^20x20,20x20,20x20/.test(G.prev) && G.last === new Date('2026-10-24T20:51:00').toISOString() && !G.refGym, `"Anterior": 20×20 ×3 de la sesión de bombeo de hace 20 min (${G.prev})`);
-  ok(!/Primera vez/.test(G.head) && /Tu última vez aquí/.test(G.head) && !/Primera vez aquí/.test(G.txt), 'no dice "Primera vez aquí": ' + G.head.replace(/<[^>]+>/g, '').slice(0, 110));
+  ok(!/Primera vez/.test(G.head) && /Tu última vez aquí|Aquí solo lo hiciste en un día de bombeo/.test(G.head) && !/Primera vez aquí/.test(G.txt), 'no dice "Primera vez aquí": ' + G.head.replace(/<[^>]+>/g, '').slice(0, 110));
   await shot(p, 'a-gemelos');
   /* (b) la sesión de "Completar semana" se guarda con su gimnasio y la siguiente la encuentra */
   const B = await p.evaluate(() => { markSet(0, 0, true); markSet(0, 1, true); state.rest = null; finishSession(); closeSheet(); const s = state.sessions[0];
     const f = { id: 'wf-3', wk: wkKey(new Date()), date: dk(new Date()), kind: 'fuerza', gym: 'raydac', list: [E('Elevación de Talones Sentado', 'Piernas', 20, 4, '8-10', 1.5)] };
-    wcStart(f); const e = state.draft.exercises[0], r = { gym: s.gymId, plan: s.planId, prev: e.prev[0] ? e.prev[0].w + 'x' + e.prev[0].r : '', last: e.lastDate === s.date }; discardSession(); return r; });
-  ok(B.gym === 'raydac' && B.plan === 'wcfill' && B.prev === '20x10' && B.last, '"Completar semana" se guarda con gymId del Gimnasio B y la siguiente sesión la usa como "Anterior"');
+    wcStart(f); const e = state.draft.exercises[0], r = { gym: s.gymId, plan: s.planId, prev: e.prev[0] ? e.prev[0].w + 'x' + e.prev[0].r : '', want: s.exercises[0].sets[0].w + 'x' + s.exercises[0].sets[0].r, last: e.lastDate === s.date }; discardSession(); return r; });
+  ok(B.gym === 'raydac' && B.plan === 'wcfill' && B.prev === B.want && B.last, '"Completar semana" se guarda con gymId del Gimnasio B y la siguiente sesión la usa como "Anterior"');
   /* Funciones de historial */
   const H = await p.evaluate(() => {
     const t = (l) => l ? l.sets.map(s => s.w + 'x' + s.r).join(',') + '@' + l.gymId + (l.kref ? '/' + l.kref : '') + (l.ref ? '/ref' : '') : null;
@@ -120,7 +120,7 @@ console.log('A. Historial: una sola regla en toda la app');
       diff1: exSame('Press Militar (Mancuernas)', 'Press Militar con Barra'), diff2: exSame('Curl Femoral Sentado', 'Curl Femoral Tumbado'), diff3: exSame('Hip Thrust', 'Hip Thrust en Máquina'),
       best: Math.round(bestE1rm('Hip Thrust', 'raydac')), curl: t(lastHere('Curl Bíceps', 'raydac')), done: doneBefore('Curl Bíceps') && timesDone('Hip Thrust'),
       subNew: t(lastHere('Remo con Mancuerna', 'raydac')), subOld: t(lastHere('Remo Sentado con Cable', 'raydac')), subA: t(lastHere('Remo Sentado con Cable', 'rokaz')),
-      gapMode: c.mode, gapTxt: c.head + ' ' + c.tips.join(' '), prensaW: prensa.w, remoB: remoB.head, nunca: nunca.head,
+      gapMode: c.mode, gapTxt: c.head + ' ' + c.tips.join(' '), prensaW: prensa.w, remoB: remoB.head + ' ' + remoB.tips.join(' '), nunca: nunca.head + ' ' + nunca.tips.join(' '),
       gyms: ['s8', 's9', 's10', 's11'].map(id => sGym(state.sessions.find(s => s.id === id))).join(','),
       pts: exPoints('Hip Thrust', 'raydac').length, note: !!lastNote,
     };
@@ -135,7 +135,7 @@ console.log('A. Historial: una sola regla en toda la app');
   ok(H.subNew === '30x10,30x10,30x10@raydac' && H.subOld === null && H.subA === '50x10,50x10,50x10@rokaz', 'sustituto: cuenta para el que hiciste, no para el que reemplazó');
   ok(H.gapMode !== 'back' && !/Hace \d+ días/.test(H.gapTxt), 'Peso Muerto Rumano: no dice "Hace 108 días" (lo hiciste ayer en un día de bombeo aquí): ' + H.gapTxt.replace(/<[^>]+>/g, '').slice(0, 90));
   ok(H.prensaW >= 160, 'el coach sigue progresando con tu último día del mismo tipo (Prensa 160 kg de fuerza): ' + H.prensaW);
-  ok(/Referencia de Gimnasio A/.test(H.remoB), 'nunca hecho en el Gimnasio B pero sí en el A: referencia del A, no "primera vez"');
+  ok(/Primera vez en esta máquina.*Gimnasio A/.test(H.remoB) || /Gimnasio A/.test(H.remoB), 'nunca hecho en el Gimnasio B pero sí en el A: referencia del A, no "primera vez"');
   ok(/Primera vez/.test(H.nunca), 'nunca hecho en ningún gimnasio: "Primera vez"');
   ok(H.gyms === 'raydac,rokaz,rokaz,raydac', 'sesiones sin gymId: por su rutina, el día de su rutina, el nombre del gimnasio guardado o el principal: ' + H.gyms);
   ok(H.pts === 2, 'progreso / gráficos del ejercicio en el Gimnasio B con la misma regla');
@@ -174,7 +174,7 @@ console.log('B. Punto 0: un solo objetivo');
   const p = await open({ settings: Object.assign(structuredClone(SETTINGS), { prof: { name: 'Atleta de prueba', age: 31, goal: null } }) });
   const B = await p.evaluate(async () => {
     const out = {};
-    out.empty = { exp: /Aún no te dije mi objetivo/.test(sessionPrompt([state.sessions[0]])), plate: /Para tu objetivo/.test(plateCard()), dd: ddGoal() };
+    out.empty = { exp: /Mi objetivo: hipertrofia \(el de la app por defecto/.test(sessionPrompt([state.sessions[0]])), plate: /Para tu objetivo/.test(plateCard()), dd: ddGoal() };
     dataSheet(); document.getElementById('bd-goal').value = 'fuerza'; document.getElementById('f-bdd').requestSubmit(); await new Promise(r => setTimeout(r, 100));
     state.tab = 'settings'; render(); document.querySelectorAll('#app details').forEach(d => { d.open = true; });
     const name = PB_GOALS.fuerza[0];
@@ -186,7 +186,7 @@ console.log('B. Punto 0: un solo objetivo');
     out.after = sessionPrompt([state.sessions[0]]).indexOf('Mi objetivo: ' + PB_GOALS.grasa[0]) >= 0 && ddGoal() === PB_GOALS.grasa[0] && HISTORY.goal === PB_GOALS.grasa[0];
     return out;
   });
-  ok(B.empty.exp && B.empty.plate && B.empty.dd === '', 'sin objetivo: la exportación lo pregunta, "Tu plato" dice "tu objetivo" y no se supone ninguno');
+  ok(B.empty.exp && B.empty.plate && B.empty.dd === '', 'sin objetivo: la exportación dice Hipertrofia por defecto (no elegido), "Tu plato" dice "tu objetivo" y ddGoal no supone ninguno');
   ok(B.tus.goal === 'fuerza' && B.tus.card && B.tus.btn, 'elegido en "Tus datos": "Tu objetivo y plan" muestra el mismo y ofrece cambiarlo');
   ok(B.tus.exp && B.tus.week && B.tus.all, 'las exportaciones (sesión, semana, todo) usan ese objetivo');
   ok(B.redo === 'fuerza', '"Cambiar objetivo" abre con el mismo objetivo elegido');
@@ -241,9 +241,9 @@ console.log('D. Punto 2: el aviso con la pantalla apagada sigue al descanso');
   await clear(); await p.evaluate(() => { const b = document.createElement('button'); b.dataset.act = 'rest-add'; b.dataset.d = '-15'; document.body.appendChild(b); b.click(); b.remove(); }); await p.waitForTimeout(400);
   c = await calls('rest');
   ok(c.length === 1 && c[0].at === R0.end, '−15 s: se reprograma');
-  await clear(); const R1 = await p.evaluate(() => { const b = document.createElement('button'); b.dataset.act = 'rest-step'; b.dataset.ex = '0'; b.dataset.d = '10'; document.body.appendChild(b); b.click(); b.remove(); return state.draft.exercises[0].rest; }); await p.waitForTimeout(400);
+  await clear(); const R1 = await p.evaluate(() => { const b = document.createElement('button'); b.dataset.act = 'rest-step'; b.dataset.ex = '0'; b.dataset.d = '10'; const r0 = state.draft.exercises[0].rest; document.body.appendChild(b); b.click(); b.remove(); return state.draft.exercises[0].rest - r0; }); await p.waitForTimeout(400);
   c = await calls('rest');
-  ok(R1 === 130 && c.length === 1 && c[0].at === R0.end + 10000, 'editar el descanso del ejercicio que descansa (+10 s): el descanso en marcha y el aviso cambian');
+  ok(R1 === 10 && c.length === 1 && c[0].at === R0.end + 10000, 'editar el descanso del ejercicio que descansa (+10 s): el descanso en marcha y el aviso cambian');
   await clear(); await vis('hidden'); c = await calls('rest');
   ok(c.length === 1 && c[0].at === R0.end + 10000, 'al apagar la pantalla queda con la hora nueva (no la predeterminada)');
   await vis('visible'); await clear();

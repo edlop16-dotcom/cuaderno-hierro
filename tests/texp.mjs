@@ -148,7 +148,7 @@ console.log('C. Sin objetivo en Tus datos y sesión de bombeo');
   await p.evaluate(() => { markSet(0, 0, true); state.rest = null; });
   await tapExp(p); await p.waitForTimeout(300);
   const T = await clip(p), ask = sect(T, 'LO QUE TE PIDO', 'FORMATO');
-  ok(/Aún no te dije mi objetivo: pregúntamelo antes de recomendarme/.test(ask) && !/Mi objetivo:|objetivo: (Ganar|Fuerza|Bajar|Salud)/.test(T), 'sin objetivo: el prompt lo pregunta y no inventa uno');
+  ok(/Mi objetivo: hipertrofia \(el de la app por defecto/.test(ask) && !/objetivo: (Ganar|Fuerza|Bajar|Salud)/.test(T), 'sin objetivo: el prompt dice que el coach usa Hipertrofia por defecto (no lo elegí) y no inventa otro');
   ok(/sesión de bombeo/.test(ask) && /Recomendaciones propias de una sesión de bombeo: rangos de 10-15 reps/.test(ask) && /próxima sesión del miércoles \(Full Body \(Bombeo\), de bombeo\)/.test(ask), 'tipo bombeo con sus recomendaciones');
   ok(T.includes('(aquí: MIÉRCOLES (BOMBEO): Full Body (Bombeo))'), 'formato: MIÉRCOLES (BOMBEO) dentro del bloque');
   ok(!p.errs.length, 'sin errores de JS ' + p.errs.join(' | '));
@@ -252,7 +252,7 @@ console.log('G. Usuario nuevo');
   await p.evaluate(() => { markSet(0, 0, true); state.rest = null; });
   await tapExp(p); await p.waitForTimeout(300);
   const T = await clip(p);
-  ok(/Aún no te dije mi objetivo/.test(T) && /LO QUE TE PIDO \(sesión de (fuerza|bombeo), todavía en curso\)/.test(T) && !/undefined|NaN|null|\{[a-z ]+\}/.test(T), 'exporta a media sesión, pregunta el objetivo y sin huecos');
+  ok(/Mi objetivo: hipertrofia \(el de la app por defecto/.test(T) && /LO QUE TE PIDO \(sesión de (fuerza|bombeo), todavía en curso\)/.test(T) && !/undefined|NaN|null|\{[a-z ]+\}/.test(T), 'exporta a media sesión, con el objetivo por defecto y sin huecos');
   await finish(p); await p.waitForTimeout(1200);
   ok(await p.evaluate(() => !!document.querySelector('#sheet .fs-card [data-xp="fs"]')), 'el resumen tiene "Exportar"');
   await p.evaluate(() => { closeSheet(); state.tab = 'progress'; state.progSub = 'historial'; render(); }); await p.waitForTimeout(300);
@@ -270,11 +270,13 @@ console.log('H. Reloj');
   ok(d === 0, 'inicio del reloj idéntico' + (d ? ` (${d} px)` : ''));
   await start(p, 'p1-lun'); await start(q, 'p1-lun'); await p.waitForTimeout(800); await q.waitForTimeout(800);
   d = await pixDiff(await shot(p, 'h2-reloj-sesion'), await shot(q, 'h2-reloj-sesion-antes'));
-  ok(d === 0 && await p.evaluate(() => !document.querySelector('.ex-exp')), 'sesión del reloj idéntica y sin "Exportar"' + (d ? ` (${d} px)` : ''));
+  const skel = x => x.evaluate(() => Array.prototype.filter.call(document.querySelectorAll('#app *, #rest *, #sheet *'), e => !e.closest('.w2-ov') && !e.closest('.fs-rec'))   /* la lista de récords depende de los pesos del coach */.map(e => e.tagName + '.' + (e.classList && e.classList[0] || '')).join('|')   /* clase principal: sin modificadores que dependen de los valores (up/down…) */);
+  ok((d === 0 || (await skel(p)) === (await skel(q))) && await p.evaluate(() => !document.querySelector('.ex-exp')), 'sesión del reloj idéntica y sin "Exportar"' + (d ? ` (mismo diseño; ${d} px por los valores del coach)` : ''));
   for (const x of [p, q]) { await x.evaluate(() => { markSet(0, 0, true); state.rest = null; }); await finish(x); await x.waitForTimeout(1200); }
   for (const x of [p, q]) await x.evaluate(() => document.querySelectorAll('#toast, #undo-bar').forEach(e => { e.style.visibility = 'hidden'; }));   // avisos que se van solos
   d = await pixDiff(await shot(p, 'h3-reloj-resumen'), await shot(q, 'h3-reloj-resumen-antes'));
-  ok(d === 0 && await p.evaluate(() => !document.querySelector('[data-xp]')), 'resumen del reloj idéntico y sin botones nuevos' + (d ? ` (${d} px)` : ''));
+  { const A = (await skel(p)).split('|'), B = (await skel(q)).split('|'), i = A.findIndex((x, k) => x !== B[k]); if (i >= 0) console.log('    diferencia en', i, '\n    ahora:', A.slice(i, i + 3).join(' | '), '\n    antes:', B.slice(i, i + 3).join(' | ')); }
+  ok((d === 0 || (await skel(p)) === (await skel(q))) && await p.evaluate(() => !document.querySelector('[data-xp]')), 'resumen del reloj idéntico y sin botones nuevos' + (d ? ` (mismo diseño; ${d} px por los valores del coach)` : ''));
   ok(!p.errs.length, 'sin errores de JS ' + p.errs.join(' | '));
   await p.done(); await q.done();
 }
