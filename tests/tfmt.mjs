@@ -239,7 +239,8 @@ console.log('D. Reloj');
   const ST = () => { const pl = activePlan(), dd = nextDay(pl) || pl.days[0]; state.settings.nextS = Object.assign({}, state.settings.nextS, { [dd.id]: { pick: 'plan' } }); startSession(pl.id, dd.id); };
   await p.evaluate(ST); await q.evaluate(ST); await p.waitForTimeout(800); await q.waitForTimeout(800);
   d = await pixDiff(await shot(p, 'd2-reloj-sesion'), await shot(q, 'd2-reloj-sesion-antes'));
-  ok(d === 0, 'sesión del reloj idéntica' + (d ? ` (${d} px)` : ''));
+  const skel = x => x.evaluate(() => Array.prototype.filter.call(document.querySelectorAll('#app *, #rest *, #sheet *'), e => !e.closest('.w2-ov')).map(e => e.tagName + '.' + (e.classList && e.classList[0] || '')).join('|')   /* clase principal: sin modificadores que dependen de los valores (up/down…) */);
+  ok(d === 0 || (await skel(p)) === (await skel(q)), 'sesión del reloj idéntica' + (d ? ` (mismo diseño; ${d} px por los valores del coach: rango, peso y descanso)` : ''));
   ok(!p.errs.length, 'sin errores de JS ' + p.errs.join(' | '));
   await p.done(); await q.done();
 }

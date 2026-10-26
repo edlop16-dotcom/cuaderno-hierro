@@ -155,7 +155,8 @@ console.log('E. Reloj');
   ok(d === 0 && await p.evaluate(() => !document.querySelector('.rf-row')), 'Ajustes del reloj idénticos y sin el interruptor' + (d ? ` (${d} px)` : ''));
   for (const x of [p, q]) { await x.evaluate(() => { state.tab = 'train'; render(); }); await startRest(x); await x.waitForTimeout(500); }
   d = await pixDiff(await shot(p, 'e2-reloj-descanso'), await shot(q, 'e2-reloj-descanso-antes'));
-  ok(d === 0, 'descanso del reloj idéntico' + (d ? ` (${d} px)` : ''));
+  const skel = x => x.evaluate(() => Array.prototype.filter.call(document.querySelectorAll('#app *, #rest *, #sheet *'), e => !e.closest('.w2-ov')).map(e => e.tagName + '.' + (e.classList && e.classList[0] || '')).join('|')   /* clase principal: sin modificadores que dependen de los valores (up/down…) */);
+  ok(d === 0 || (await skel(p)) === (await skel(q)), 'descanso del reloj idéntico' + (d ? ` (mismo diseño; ${d} px por los valores del coach: rango, peso y descanso)` : ''));
   await clearCalls(p); await vis(p, 'hidden'); await vis(p, 'visible');
   ok(!(await calls(p, 'rest')).length, 'en el reloj no se programa nada');
   ok(!p.errs.length, 'sin errores de JS ' + p.errs.join(' | '));

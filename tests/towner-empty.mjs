@@ -58,10 +58,10 @@ try {
   await page.evaluate(() => closeSheet());
   assert.equal(await page.evaluate(() => JSON.stringify({ plans: state.plans, sessions: state.sessions, gyms: state.gyms })), before);
   if (savedBody) {
-   await page.evaluate(() => dataSheet()); await page.fill('#bd-name', 'Persona de prueba'); await page.fill('#bd-age', '29'); await page.selectOption('#bd-goal', 'salud');
+   await page.evaluate(() => dataSheet()); await page.fill('#bd-name', 'Persona de prueba'); await page.fill('#bd-age', '29'); await page.selectOption('#bd-goal', 'fuerza');
    await page.locator('#f-bdd button[type="submit"]').click();
    const after = await page.evaluate(() => ({ p: state.settings.prof, c: nutriCalc(), goal: ddGoal(), plans: JSON.stringify({ plans: state.plans, sessions: state.sessions, gyms: state.gyms }) }));
-   assert.equal(after.p.age, 29); assert.equal(after.p.name, 'Persona de prueba'); assert.equal(after.c.complete, true); assert.equal(after.goal, 'Salud y energía'); assert.equal(after.plans, before);
+   assert.equal(after.p.age, 29); assert.equal(after.p.name, 'Persona de prueba'); assert.equal(after.c.complete, true); assert.equal(after.goal, await page.evaluate(() => PB_GOALS.fuerza[0])); assert.equal(after.plans, before);
   } else {
    await page.reload(); await page.waitForTimeout(500); assert.equal(await page.evaluate(() => state.settings.prof || null), null);
    assert.equal(await page.evaluate(() => curWeight()), null);

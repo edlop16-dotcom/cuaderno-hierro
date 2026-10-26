@@ -137,7 +137,8 @@ window.addEventListener('click', ev => {
 const wovOn = () => state.settings.wOver !== false;
 const WOV = { rid: 0, rEnd: 0, rLv: 0, rAt: 0, sLv: 0, sAt: 0, sid: null };
 /* Duración recomendada: series × (45 s + descanso) + 1,5 min por ejercicio + 5 min de calentamiento (como la vista previa) */
-const wovEst = d => d.exercises.reduce((a, e) => a + e.log.length * (45 + (+e.rest || 90)) + 90, 0) + 300;
+/* Con el coach de progresión: la misma duración estimada que muestra la sesión (series, descansos y tipo de ejercicio) */
+const wovEst = d => (typeof pgDraftEst === 'function' ? d.estSec || pgDraftEst(d) : d.exercises.reduce((a, e) => a + e.log.length * (45 + (+e.rest || 90)) + 90, 0) + 300);
 const wovClock = s => { s = Math.max(0, Math.round(s)); return s >= 3600 ? `${Math.floor(s / 3600)} h ${String(Math.floor(s % 3600 / 60)).padStart(2, '0')} min` : clock(s); };
 function wovFire(lv) {
   const c = alertCfg(), n = lv >= 3 ? 4 : lv;
