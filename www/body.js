@@ -248,6 +248,9 @@ document.addEventListener('focusout', ev => {
 /* Objetivo del coach: un solo dato (settings.prof.goal); vacío = Hipertrofia por defecto */
 /* Se arma al abrir Tus datos: PB_GOALS (los 5 de la bienvenida) está en pub.js, que carga después */
 const bdGoals = () => [['', 'Ganar músculo (por defecto)']].concat(Object.keys(PB_GOALS).map(k => [k, PB_GOALS[k][0]]));
+/* Experiencia del coach: el mismo dato de la bienvenida (settings.prof.exp, PB_EXP); sin dato, el coach no supone nada. El reloj no la muestra */
+const bdExpVal = p => (/^[0-3]$/.test(p.exp == null ? '' : String(p.exp)) ? String(+p.exp) : '');
+const bdExpField = p => (isWatch() ? '' : `<label class="field"><span class="label">Experiencia (el coach ajusta sus reglas según lo que elijas)</span><select id="bd-exp"><option value="">Sin indicar</option>${PB_EXP.map((t, i) => `<option value="${i}" ${bdExpVal(p) === String(i) ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select></label>`);
 function dataSheet() {
   const b = body(), p = state.settings.prof || {};
   openSheet(`<div class="row"><h2 class="grow">Tus datos</h2><button class="icon-btn" data-act="sheet-close" aria-label="Cerrar">${ic('x', 18)}</button></div>
@@ -255,6 +258,7 @@ function dataSheet() {
       <label class="field"><span class="label">Nombre</span><input id="bd-name" value="${esc(p.name || '')}" autocomplete="given-name"></label>
       <label class="field"><span class="label">Edad (años)</span><input id="bd-age" inputmode="numeric" value="${p.age || ''}"></label>
       <label class="field"><span class="label">Objetivo (el coach usa reglas distintas según el objetivo)</span><select id="bd-goal">${bdGoals().map(([k, n]) => `<option value="${k}" ${(p.goal || '') === k ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></label>
+      ${bdExpField(p)}
       <label class="field"><span class="label">Tiempo disponible por sesión</span><span class="bd-in"><input id="bd-mins" inputmode="numeric" maxlength="3" value="${+p.mins || ''}" placeholder="75"><i class="pb-u" aria-hidden="true">min</i></span><small class="muted">El coach estima cuánto dura cada día y te propone ajustes si se pasa.</small></label>
       <label class="field"><span class="label">Estatura</span><span class="bd-in"><input id="bd-h" inputmode="decimal" maxlength="5" value="${b.h ? String(b.h).replace('.', ',') : ''}" placeholder="Estatura en cm" aria-describedby="bd-e-h"><i class="pb-u" aria-hidden="true">cm</i></span><small class="bd-err" id="bd-e-h" role="alert" hidden></small></label>
       <div class="field"><span class="label">Sexo (para la fórmula de grasa)</span><div class="seg"><button type="button" class="${b.sex === 'm' ? 'on' : ''}" data-act="bd-sex" data-v="m">Hombre</button><button type="button" class="${b.sex === 'f' ? 'on' : ''}" data-act="bd-sex" data-v="f">Mujer</button></div></div>
@@ -295,6 +299,7 @@ document.addEventListener('submit', ev => {
     if (h) b.h = h;
     state.settings.prof = Object.assign({}, state.settings.prof || {}, { name: $('#bd-name').value.trim(), age: ageText ? age : null, goal: $('#bd-goal').value || null });
     if (h) state.settings.prof.cm = h;
+    const xp = $('#bd-exp'); if (xp) { if (xp.value === '') delete state.settings.prof.exp; else state.settings.prof.exp = +xp.value; }
     const mins = Math.round(num($('#bd-mins').value)); if (mins >= 20 && mins <= 300) state.settings.prof.mins = mins; else if (!$('#bd-mins').value.trim()) delete state.settings.prof.mins;
     if (wr && wr < 30) b.wrist = r1(wr); else if (!$('#bd-wr').value.trim()) delete b.wrist;
     if (an && an < 40) b.ankle = r1(an); else if (!$('#bd-an').value.trim()) delete b.ankle;
