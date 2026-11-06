@@ -215,7 +215,7 @@ function wcProposal(off) {
     if (v < WC_MIN) {
       if (!mine.length) { notes.push(`Tu rutina no tiene un ejercicio principal de ${zoneName(k).toLowerCase()} (${wcR(v)} series por semana). Agrega uno en Rutinas o usa "Crear entreno para completar".`); return; }
       const need0 = Math.ceil(WC_MIN - v); let need = need0;   // como mucho +1 serie por ejercicio y semana: el volumen sube de a poco
-      mine.forEach(it => { if (need > 0 && it.s1 < 5) { it.s1++; need--; it.vr = `${zoneName(k)}: ${wcR(v)} series por semana, menos de ${WC_MIN}`; } });
+      mine.forEach(it => { if (need > 0 && it.s1 < Math.min(5, typeof pgMaxSets === 'function' ? pgMaxSets() : 5)) { it.s1++; need--; it.vr = `${zoneName(k)}: ${wcR(v)} series por semana, menos de ${WC_MIN}`; } });
       if (need > 0) notes.push(`${zoneName(k)} seguirá corto (${wcR(v + need0 - need)} de ${WC_MIN} series): súmale un ejercicio en Rutinas o usa "Crear entreno para completar" el fin de semana.`);
     } else if (v > WC_MAX) {
       let extra = Math.floor(v - WC_MAX);

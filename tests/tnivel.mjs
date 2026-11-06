@@ -30,7 +30,7 @@ let N = 0;
 const X = (name, type, sets, w) => ({ id: 'x' + (++N), name, type, weight: w, sets, repsMin: 10, repsMax: 12, rest: 90 });
 const PLANS = [{ id: 'p1', name: 'Rutina de prueba', gymId: 'rokaz', days: [
   { id: 'd1', name: 'Cuerpo completo (Pesado)', weekday: 1, kind: 'fuerza', exercises: [X('Prensa 45°', 'Piernas', 5, 100), X('Press Banca Plano (Barra)', 'Empuje', 4, 40), X('Curl Bíceps', 'Tracción', 3, 10), X('Extensión de Pierna', 'Piernas', 3, 30)] }] }];
-const GYMS = [{ id: 'rokaz', name: 'Gimnasio A' }];
+const GYMS = [{ id: 'rokaz', name: 'Gimnasio A' }, { id: 'raydac', name: 'Gimnasio B' }];
 const S = (w, reps, rir) => reps.map((r, k) => ({ w, r, rir: Array.isArray(rir) ? rir[k] : rir }));
 const SS = (id, date, ex) => ({ id, date: new Date(date).toISOString(), planId: 'p1', planName: '', dayId: 'd1', dayName: 'x', gymId: 'rokaz', gymName: 'Gimnasio A', kind: 'fuerza', durationSec: 3600, exercises: ex.map(([name, sets]) => ({ name, type: 'Piernas', sets })) });
 const daysAgo = n => new Date(new Date(NOW).getTime() - n * 864e5).toISOString().slice(0, 16);
@@ -194,6 +194,136 @@ console.log('G. Dueño sin perfil y reloj');
   const V = await v.evaluate(() => { state.settings.nextS = { d1: { pick: 'plan' } }; startSession('p1', 'd1'); render(); const d = state.draft; return { w: isWatch(), n: d.exercises.map(e => e.log.length).join(','), ov: !!document.getElementById('w2-ov') }; });
   ok(V.w && V.n === '3,3,3,3' && V.ov, `reloj, principiante: la pantalla es la misma y recibe las series del coach (${V.n})`);
   noErr(v); await v.done();
+}
+
+console.log('H. Peso corporal y bandas: reps, técnica, variante y lastre');
+{
+  const SG = (id, a, ex, gymId) => Object.assign(SS(id, daysAgo(a), ex), gymId ? { gymId, gymName: 'Gimnasio B' } : {});
+  const R3 = (r, rir = 2, w = 0) => S(w, [r, r, r], rir);
+  const one = (name, sets, a = 2) => [SG('b1', a, [[name, sets]])];
+  const two = (name, sets) => [SG('b2', 2, [[name, sets]]), SG('b1', 5, [[name, sets]])];
+  const B = SET({ exp: 2 });
+  let p = await open({ settings: B, sessions: [] });
+  const bad = await p.evaluate(() => PG_BW_LADDER.reduce((a, b) => a.concat(b), []).filter(n => !libFind(n) || libFind(n).name !== n));
+  ok(!bad.length, `todas las variantes existen en el catálogo ${bad.join(', ')}`);
+  /* Todo el catálogo de peso corporal y bandas: sin kilos inventados ni textos raros */
+  const all = await p.evaluate(() => {
+    const L = LIB.filter(x => pgIsBw(x.name) && pgTypeOf(x.name) !== 'cardio'), out = { n: L.length, bad: [] };
+    const mk = (name, r, w) => [{ id: 'q', date: new Date(Date.now() - 2 * 864e5).toISOString(), gymId: 'rokaz', kind: 'fuerza', dayId: 'd1', dayName: 'x', exercises: [{ name, type: 'Empuje', sets: [{ w, r, rir: 2 }, { w, r, rir: 2 }, { w, r, rir: 2 }] }] }];
+    L.forEach(x => { const rx = pgRx(x.name, 'fuerza');
+      [null, 1, rx.rMin, rx.rMax, rx.rMax + 5].forEach(r => { state.sessions = r == null ? [] : mk(x.name, r, 0);
+        const c = pgCoach({ name: x.name, sets: 3, type: typeOf(x.name), weight: 0 }, 'rokaz', 'fuerza'), h = coachFor({ name: x.name, sets: 3, type: typeOf(x.name), weight: 0 }, 'rokaz', 'fuerza');
+        const txt = c.why + h.head;
+        if (c.w !== 0 || !(c.goal[0] > 0) || /undefined|NaN|null| 0 kg/.test(txt) || (c.mode === 'up') || (/\bkg\b/.test(c.why) && !c.bw.lastre)) out.bad.push(x.name + ' r=' + r + ': ' + c.why); }); });
+    state.sessions = []; return out; });
+  ok(all.n > 80 && !all.bad.length, `los ${all.n} ejercicios del catálogo: nunca suben kilos ni dicen "0 kg" ${all.bad.slice(0, 3).join(' | ')}`);
+  noErr(p); await p.done();
+
+  p = await open({ settings: B, sessions: one('Flexiones', R3(12)) });
+  let c = await CO(p, 'Flexiones');
+  ok(c.mode === 'hold' && c.w === 0 && c.goal === 13 && c.rx.rMin === 10 && c.rx.rMax === 20, `por reps: 12 → busca ${c.goal} (rango del catálogo ${c.rx.rMin}-${c.rx.rMax}) · ${c.why}`);
+  const h = await p.evaluate(() => coachFor({ name: 'Flexiones', sets: 3, type: 'Empuje', weight: 0 }, 'rokaz', 'fuerza').head);
+  ok(/Peso corporal/.test(h) && !/kg/.test(h), `el encabezado no habla de kilos: ${h.replace(/<[^>]+>/g, '')}`);
+  noErr(p); await p.done();
+  p = await open({ settings: B, sessions: one('Flexiones', R3(20)) });
+  c = await CO(p, 'Flexiones');
+  ok(c.w === 0 && c.goal === 20 && /bajada lenta/.test(c.why) && /pausa/.test(c.why), `tope: bajada lenta o pausa · ${c.why}`); noErr(p); await p.done();
+  p = await open({ settings: B, sessions: two('Flexiones', R3(20)) });
+  c = await p.evaluate(() => { const c = pgCoach({ name: 'Flexiones', sets: 3, type: 'Empuje', weight: 0 }, 'rokaz', 'fuerza'); return { w: c.w, alt: c.alt, why: c.why, mode: c.mode }; });
+  ok(c.w === 0 && c.alt === 'Flexiones Agarre Abierto' && c.mode === 'hold', `tope con técnica: variante más difícil · ${c.why}`); noErr(p); await p.done();
+  p = await open({ settings: B, sessions: [SG('b3', 2, [['Flexiones', R3(16)]]), SG('b2', 5, [['Flexiones', R3(20)]])] });
+  c = await CO(p, 'Flexiones');
+  ok(c.goal === 17 && /Vuelve al tope/.test(c.why) && /bajada lenta/.test(c.why), `con la bajada lenta bajó a 16: sigue con la técnica hasta volver al tope · ${c.why}`); noErr(p); await p.done();
+  p = await open({ settings: B, sessions: one('Flexiones', R3(4)) });
+  c = await CO(p, 'Flexiones');
+  ok(c.mode === 'hold' && c.w === 0 && c.goal === 5, `bajo el rango: sigue sumando reps, no "baja a 0 kg" · ${c.why}`); noErr(p); await p.done();
+  p = await open({ settings: B, sessions: one('Flexiones', R3(12), 20) });
+  c = await CO(p, 'Flexiones');
+  ok(c.mode === 'back' && c.w === 0 && c.goal === 10, `20 días sin hacerlo: retoma con menos reps · ${c.why}`); noErr(p); await p.done();
+
+  p = await open({ settings: B, sessions: one('Dominadas', R3(10)) });
+  c = await p.evaluate(() => { const c = pgCoach({ name: 'Dominadas', sets: 3, type: 'Tracción', weight: 0 }, 'rokaz', 'fuerza'); return { w: c.w, l: c.bw.lastre, why: c.why, alt: c.alt }; });
+  ok(c.w === 0 && c.l === 2.5 && /lastre/.test(c.why) && !c.alt, `dominadas en el tope: sugiere lastre y no te lo impone · ${c.why}`); noErr(p); await p.done();
+  p = await open({ settings: B, sessions: one('Fondos en Paralelas', R3(12)) });
+  c = await p.evaluate(() => { const c = pgCoach({ name: 'Fondos en Paralelas', sets: 3, type: 'Empuje', weight: 0 }, 'rokaz', 'fuerza'); return { l: c.bw.lastre, why: c.why }; });
+  ok(c.l === 2.5 && /lastre/.test(c.why), `fondos en el tope: sugiere lastre · ${c.why}`); noErr(p); await p.done();
+  p = await open({ settings: B, sessions: one('Dominadas', R3(10, 3, 5)) });
+  c = await CO(p, 'Dominadas');
+  ok(c.mode === 'up' && c.w === 7.5, `con lastre ya anotado: progresa con kilos como cualquier peso (5 → ${c.w} kg)`); noErr(p); await p.done();
+  p = await open({ settings: B, sessions: one('Dominadas con Banda', R3(15)) });
+  c = await p.evaluate(() => { const c = pgCoach({ name: 'Dominadas con Banda', sets: 3, type: 'Tracción', weight: 0 }, 'rokaz', 'fuerza'); return { l: c.bw.lastre, why: c.why }; });
+  ok(!c.l && !/lastre/.test(c.why), `dominadas asistidas con banda: no pide lastre · ${c.why}`); noErr(p); await p.done();
+
+  p = await open({ settings: B, sessions: two('Remo con Banda', R3(12, 2, 10)) });
+  c = await p.evaluate(() => { const c = pgCoach({ name: 'Remo con Banda', sets: 3, type: 'Tracción', weight: 0 }, 'rokaz', 'fuerza'); return { w: c.w, alt: c.alt, why: c.why }; });
+  ok(c.w === 10 && c.alt === 'Remo Invertido', `banda: nunca sube kilos (conserva lo anotado) y pasa a la variante · ${c.why}`); noErr(p); await p.done();
+  p = await open({ settings: B, sessions: two('Curl con Banda', R3(15)) });
+  c = await CO(p, 'Curl con Banda');
+  ok(/banda más fuerte/.test(c.why), `banda sin variante en el catálogo: una banda más fuerte · ${c.why}`); noErr(p); await p.done();
+  p = await open({ settings: B, sessions: one('Plancha', R3(40)) });
+  c = await CO(p, 'Plancha');
+  ok(c.goal === 45 && c.rx.rMax === 60 && c.rx.sec, `plancha: por segundos, de 5 en 5 (40 → ${c.goal} s) · ${c.why}`); noErr(p); await p.done();
+  p = await open({ settings: B, sessions: one('Plancha', R3(60)) });
+  c = await CO(p, 'Plancha');
+  ok(/Plancha con Toque de Hombros/.test(c.why), `plancha en el tope: sin "bajada lenta", directo a la variante · ${c.why}`); noErr(p); await p.done();
+  p = await open({ settings: B, sessions: [SG('g1', 2, [['Flexiones', R3(14)]], 'raydac')] });
+  c = await CO(p, 'Flexiones');
+  ok(c.goal === 15 && c.w === 0, `peso corporal en otro gimnasio: sirve de referencia (no es una máquina) · ${c.why}`); noErr(p); await p.done();
+  const dl = Object.assign({}, B, { pgDl: '2026-10-19' });
+  p = await open({ settings: dl, sessions: one('Flexiones', R3(12)) });
+  c = await CO(p, 'Flexiones');
+  ok(c.mode === 'down' && c.w === 0 && !/kg/.test(c.why) && c.rir.every(x => x === 3), `descarga aceptada, sin hablar de kilos · ${c.why}`); noErr(p); await p.done();
+  p = await open({ settings: B, sessions: two('Flexiones', Object.assign(R3(5))) });
+  ok(await p.evaluate(() => { state.plans[0].days[0].exercises.push(Object.assign(exFromLib(libFind('Flexiones')), { sets: 3 })); return !pgStalls(state.plans[0]).includes('Flexiones'); }), 'ir sumando reps bajo el mínimo no cuenta como estancamiento'); noErr(p); await p.done();
+
+  /* Equipo y lesiones */
+  p = await open({ settings: SET({ exp: 2, equip: 'body' }), sessions: two('Flexiones Diamante', R3(12)) });
+  c = await p.evaluate(() => { const c = pgCoach({ name: 'Flexiones Diamante', sets: 3, type: 'Empuje', weight: 0 }, 'rokaz', 'fuerza'); return { alt: c.alt, why: c.why }; });
+  ok(!c.alt && /no hay variante/.test(c.why), `solo peso corporal: no sugiere TRX · ${c.why}`); noErr(p); await p.done();
+  p = await open({ settings: SET({ exp: 2, inj: ['knee'] }), sessions: two('Sentadilla con peso corporal', R3(20)) });
+  c = await p.evaluate(() => { const c = pgCoach({ name: 'Sentadilla con peso corporal', sets: 3, type: 'Piernas', weight: 0 }, 'rokaz', 'fuerza'); return { alt: c.alt, why: c.why }; });
+  ok(!c.alt, `lesión de rodilla: no sugiere una sentadilla más difícil · ${c.why}`); noErr(p); await p.done();
+
+  /* Principiante con peso corporal */
+  p = await open({ settings: SET({ exp: 0 }), sessions: one('Flexiones', S(0, [20, 20, 18], 2)) });
+  c = await CO(p, 'Flexiones');
+  ok(c.goal === 20 && /todas las series/.test(c.why) && !/bajada/.test(c.why) && c.rir.every(x => x >= 2), `principiante: avanza de paso solo si completó todas las series (20, 20, 18) · ${c.why}`); noErr(p); await p.done();
+  p = await open({ settings: SET({ exp: 0 }), sessions: one('Flexiones', S(0, [20, 20, 20], 2)) });
+  c = await CO(p, 'Flexiones');
+  ok(/bajada lenta/.test(c.why), `principiante: series completas y RIR 2 → técnica · ${c.why}`); noErr(p); await p.done();
+
+  /* Cardio sin cambios, con carga sin cambios, sesión y reloj */
+  p = await open({ settings: B, sessions: one('Burpees', R3(10)) });
+  c = await CO(p, 'Burpees');
+  ok(c.goal === 11, `Burpees sigue siendo Cardio (10 → ${c.goal})`); noErr(p); await p.done();
+  p = await open({ settings: B, sessions: one('Dominadas Lastradas', R3(10, 3, 10)) });
+  c = await CO(p, 'Dominadas Lastradas');
+  ok(c.mode === 'up' && c.w > 10 && !c.rx.bw, `Dominadas Lastradas: con kilos, como siempre (10 → ${c.w} kg)`); noErr(p); await p.done();
+
+  const withBw = () => { const d = state.plans[0].days[0]; d.exercises = ['Flexiones', 'Dominadas', 'Remo con Banda'].map(n => Object.assign(exFromLib(libFind(n)), { sets: 3, weight: 0 })); savePlans(); };
+  p = await open({ settings: B, sessions: [SG('b1', 2, [['Flexiones', R3(12)], ['Dominadas', R3(10)]])] });
+  const se = await p.evaluate(`(${withBw})(); state.tab = 'plans'; state.rtOpen = { d1: true }; render();
+    const plan = document.querySelector('.rt-exm small').textContent;
+    state.settings.nextS = { d1: { pick: 'coach' } }; state.tab = 'train'; render();
+    const whyTxt = (document.querySelector('.pg-why') || {}).textContent || '';
+    state.settings.nextS = { d1: { pick: 'plan' } }; startSession('p1', 'd1'); render();
+    const d = state.draft, o = { plan, whyTxt, r: d.exercises.map(e => e.repsMin + '-' + e.repsMax).join(' '), w: d.exercises.map(e => +e.log[0].w || 0).join(','), sx: !!document.querySelector('#sx') }; discardSession(); o;`);
+  ok(/peso corporal/.test(se.plan) && !/ kg/.test(se.plan), `Mi plan: ${se.plan.trim().slice(0, 70)}`);
+  ok(!/0 kg/.test(se.whyTxt), 'la opción Coach no dice "0 kg"');
+  ok(se.sx && se.r === '10-20 5-10 8-12' && se.w === '0,0,0', `la sesión abre con los rangos del catálogo (${se.r}) y sin kilos`);
+  noErr(p); await p.done();
+  const w = await open({ watch: true, settings: B, sessions: [SG('b1', 2, [['Flexiones', R3(12)]])] });
+  const W = await w.evaluate(`(${withBw})(); state.settings.nextS = { d1: { pick: 'plan' } }; startSession('p1', 'd1'); render(); ({ w: isWatch(), n: state.draft.exercises.length, ov: !!document.getElementById('w2-ov') });`);
+  ok(W.w && W.n === 3 && W.ov, 'reloj: la sesión con peso corporal abre igual');
+  noErr(w); await w.done();
+}
+
+console.log('I. Propuesta semanal con principiante');
+{
+  const p = await open({ settings: SET({ exp: 0 }), sessions: TOP });
+  const r = await p.evaluate(() => { state.plans[0].days[0].exercises.forEach(e => { e.sets = 3; }); const P = wcProposal(0); return P && P.items ? Math.max.apply(null, P.items.map(i => i.s1)) : -1; });
+  ok(r > 0 && r <= 3, `la propuesta semanal no sube a más de 3 series (${r})`);
+  noErr(p); await p.done();
 }
 
 await browser.close();
