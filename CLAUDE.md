@@ -300,7 +300,7 @@ Un solo motor (`pgCoach`) para toda la app: reemplaza `coachFor` (sesión, alter
 Sobre el coach semanal, sin duplicarlo: la misma propuesta (`wcProposal`) y el mismo Aplicar / Deshacer (`wcApply`, `wcUndo`). Lo que cambia en la rutina sigue siendo permanente hasta "Deshacer".
 - **Notificación** (`tkSchedule`, ids 9100-9101, canal recordatorios, envuelve `scheduleAll`): el día del resumen (`wcoach.sun`) a las 19:00 (`wcoach.hour`; `wcoach.notif` = false la apaga; Ajustes → Coach semanal, `.tk-set`), las 2 semanas siguientes. No sale si el Coach semanal está apagado, sin permiso, sin rutina, sin ninguna sesión o si ese resumen ya se vio (ver, aplicar o descartar reprograma). Al tocarla (`tkOpen`) abre el resumen y lo marca visto; durante una sesión no interrumpe. Solo JS: sin cambios nativos.
 - **Distribución muscular** (`tkDist`, `tkDistHtml`): tabla músculos × días con las series del plan propuesto (principiante: máximo 3 por ejercicio; descarga: la mitad) y el total con los colores de la meta 10-20, antes del botón de aplicar; aviso si un músculo con 6+ series cae todo en un día. También en Compartir y Copiar (`wcSumText`).
-- Títulos: "Tu plan de la semana del…" y "Aplicar a mi semana". Nada de esto sale en el reloj.
+- Títulos: "Tu plan de la semana del…" y "Aplicar a mi rutina", con el aviso de que se puede deshacer antes y después de aplicar. Nada de esto sale en el reloj.
 - Pruebas: tests/tk.mjs (Capacitor simulado).
 
 ## Tanda J (tandaj.js + cambios en varios archivos, 24-oct-2026, rama ajustes-j, compilado en v1.0.56)

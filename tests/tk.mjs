@@ -2,7 +2,7 @@ import { OWNER_SETTINGS } from './owner-fixture.mjs';
 // Prueba de "Tu plan de la semana" (Tanda K, rama tanda-k), con datos inventados.
 // Uso (desde PowerShell): $env:PW_DIR = "<carpeta con node_modules/playwright>"; node tests/tk.mjs <copia transpilada>
 // Notificación con Capacitor simulado (día, hora, ya visto, permiso, apagada, al tocarla), distribución muscular,
-// Aplicar a mi semana y Deshacer, usuario nuevo, dueño sin perfil y reloj.
+// Aplicar a mi rutina y Deshacer, usuario nuevo, dueño sin perfil y reloj.
 import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
@@ -118,9 +118,10 @@ console.log('B. Distribución muscular y aplicar');
   ok(D.before, 'la distribución está antes del botón de aplicar');
   ok(/Distribución muscular \(series por semana\)/.test(D.text) && /Lun · Pecho y espalda/.test(D.text), 'Compartir y Copiar la incluyen');
   if (D.btn) {
-    ok(/Aplicar a mi semana/.test(D.btn), `botón: ${D.btn.trim()}`);
-    const A = await p.evaluate(() => { const before = JSON.stringify(state.plans); const P = wcProposal(wcSumOff()); document.querySelector('[data-wc="apply"]').click(); const after = JSON.stringify(state.plans), done = !!document.querySelector('#sheet .wc-done'); document.querySelector('[data-wc="undo"]').click(); return { ch: before !== after, done, back: JSON.stringify(state.plans) === before, n: P.items.length }; });
-    ok(A.ch && A.done, 'Aplicar escribe el plan en la rutina');
+    ok(/Aplicar a mi rutina/.test(D.btn) && !/mi semana/.test(D.txt), `botón: ${D.btn.trim()}`);
+    ok(/Después puedes deshacerlo/.test(D.txt), 'antes de aplicar avisa que se puede deshacer');
+    const A = await p.evaluate(() => { const before = JSON.stringify(state.plans); const P = wcProposal(wcSumOff()); document.querySelector('[data-wc="apply"]').click(); const after = JSON.stringify(state.plans), done = /hasta que lo deshagas/.test((document.querySelector('#sheet .wc-done') || {}).textContent || '') && !!document.querySelector('#sheet .wc-done [data-wc="undo"]'); document.querySelector('[data-wc="undo"]').click(); return { ch: before !== after, done, back: JSON.stringify(state.plans) === before, n: P.items.length }; });
+    ok(A.ch && A.done, 'Aplicar escribe el plan en la rutina y ofrece Deshacer');
     ok(A.back, 'Deshacer deja la rutina exactamente como estaba');
   } else ok(false, 'con estos datos debía haber cambios que aplicar');
   noErr(p); await p.done();

@@ -5,7 +5,7 @@
    1. Notificación el día del resumen (`settings.wcoach.sun`) a la hora elegida (`settings.wcoach.hour`, 19:00 por
       defecto; `settings.wcoach.notif` = false la apaga). No sale si ese resumen ya se vio. Al tocarla abre el plan.
    2. Distribución muscular: series por músculo y por día del plan propuesto, y aviso si un músculo cae todo en un día.
-   3. "Aplicar a mi semana": el Aplicar de siempre, con el nombre nuevo.
+   3. "Aplicar a mi rutina": el Aplicar de siempre, con el nombre nuevo y el aviso de que se puede deshacer.
    Nada de esto sale en el reloj.
    ========================================================================== */
 const TK_ID = 9100, TK_N = 2, TK_HOUR = 19, TK_HOURS = [7, 8, 9, 12, 17, 18, 19, 20, 21];
@@ -77,9 +77,9 @@ wcSumHtml = function () {
   let h = _wcSumHtmlTK.apply(this, arguments);
   if (isWatch()) return h;
   const off = wcSumOff(), P0 = wcProposal(off), P = P0 && (wcApplied(P0) || P0);
-  h = h.replace('Propuesta para la semana del', 'Tu plan de la semana del').replace(`${ic('check', 16)} Aplicar</button>`, `${ic('check', 16)} Aplicar a mi semana</button>`).replace('hasta que toques Aplicar.', 'hasta que toques Aplicar a mi semana.');
+  h = h.replace('Propuesta para la semana del', 'Tu plan de la semana del').replace(`${ic('check', 16)} Aplicar</button>`, `${ic('check', 16)} Aplicar a mi rutina</button>`).replace('hasta que toques Aplicar.', 'hasta que toques Aplicar a mi rutina. Después puedes deshacerlo.').replace(/(<div class="wc-done">[\s\S]*?")\. (<button)/, '$1. El cambio queda en tu rutina hasta que lo deshagas. $2');
   if (!P) return h;
-  /* Antes de decidir: encima de "Aplicar a mi semana" (o de "Aplicada" / "ya está bien") */
+  /* Antes de decidir: encima de "Aplicar a mi rutina" (o de "Aplicada" / "ya está bien") */
   let k = h.search(/<div class="wc-done">|<div class="muted wc-sub">\d+ cambios? en |<div class="muted wc-sub">Tu rutina ya está bien/);
   if (k < 0) k = h.lastIndexOf('<div class="dd-acts');
   return k < 0 ? h + tkDistHtml(P) : h.slice(0, k) + tkDistHtml(P) + h.slice(k);
