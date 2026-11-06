@@ -130,7 +130,7 @@ window.addEventListener('click', ev => {
   const b = ev.target.closest && ev.target.closest('[data-lv]'), d = state.draft; if (!b || !d) return;
   ev.preventDefault(); ev.stopPropagation();
   if (b.dataset.lv === 'go') { const j = +b.dataset.j; if (!d.exercises[j]) return; d.cur = j; saveDraft(); render(); setTimeout(() => pagerGo(j, true), 50); }
-  else if (b.dataset.lv === 'add') { addToDraft([b.dataset.n], +b.dataset.i); render(); setTimeout(() => pagerGo(d.cur, true), 50); toast(`Agregado: ${b.dataset.n} (solo hoy)`); }
+  else if (b.dataset.lv === 'add') { addToDraft([b.dataset.n], +b.dataset.i); render(); setTimeout(() => pagerGo(d.cur, true), 50); toast(`Agregado: ${b.dataset.n}${typeof mjLast !== 'undefined' && mjLast ? ' (también en tu rutina)' : ' (solo hoy)'}`); }
 }, true);
 
 /* ---------- 6. Reloj: te pasaste del descanso o de la duración ---------- */
