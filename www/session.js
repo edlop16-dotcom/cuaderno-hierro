@@ -76,11 +76,25 @@ const _startSx = startSession;
 startSession = function (pid, did) { state.sessMin = false; state.sxAnim = true; _startSx(pid, did); };
 
 /* Mantener la posición (ejercicio y scroll) entre redibujos */
+/* Al completar una serie la pantalla no se desliza sola: espera a que elijas el RIR de esa serie (teléfono).
+   Si ya lo tenía, o no hay paginador (reloj), se mueve como siempre. Si te mueves a mano, ya no hay nada pendiente */
+let sxWait = null;
+function sxMoveAfterRir(i, j, go, ms) {
+  const d = state.draft, s = d && d.exercises[i] && d.exercises[i].log[j];
+  if (!s || s.rir != null || isWatch() || !document.getElementById('sx-pager')) { setTimeout(go, ms); return; }
+  sxWait = { d, i, j, go };
+  if (d.cur !== i) setCur(i);
+}
+function sxRirDone(i, j) {
+  const w = sxWait; if (!w || w.i !== i || w.j !== j) return;
+  sxWait = null; if (w.d === state.draft) setTimeout(w.go, 250);
+}
 function pagerGo(i, smooth) {
   const n = document.getElementById('sx-pager'); if (!n) return;
   n.scrollTo({ left: i * n.clientWidth, behavior: smooth ? 'smooth' : 'auto' });
 }
 function setCur(i) {
+  if (sxWait && i !== sxWait.i) sxWait = null;
   const d = state.draft; if (!d || i === d.cur) return;
   d.cur = i; saveDraft();
   document.querySelectorAll('.sx-th').forEach((b, j) => b.classList.toggle('on', j === i));
@@ -116,7 +130,8 @@ markSet = function (i, j, v, k) {
   const d = state.draft, before = d && d.exercises[i] ? exComplete(d.exercises[i]) : true;
   _markSetSx(i, j, v, k);
   const e = state.draft && state.draft.exercises[i];
-  if (e && !before && exComplete(e) && i < state.draft.exercises.length - 1 && document.getElementById('sx-pager')) setTimeout(() => pagerGo(i + 1, true), 650);
+  if (sxWait && sxWait.i === i && sxWait.j === j && e && !(e.log[j] || {}).done) sxWait = null;   /* la desmarcaste */
+  if (e && !before && exComplete(e) && i < state.draft.exercises.length - 1 && document.getElementById('sx-pager')) sxMoveAfterRir(i, j, () => pagerGo(i + 1, true), 650);
 };
 
 document.addEventListener('click', ev => {

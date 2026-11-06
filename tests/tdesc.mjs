@@ -127,7 +127,7 @@ console.log('B. Ajustes → Fin del descanso');
 console.log('C. Usuario nuevo');
 {
   const p = await open(DIR, { native: ST });
-  const R = await p.evaluate(() => { const pl = activePlan(), d = nextDay(pl) || pl.days[0]; state.settings.nextS = { [d.id]: { pick: 'plan' } }; startSession(pl.id, d.id); markSet(0, 0, true); return !!state.rest; });
+  const R = await p.evaluate(() => { const pl = activePlan(), d = nextDay(pl) || pl.days[0]; state.settings.nextS = { [d.id]: { pick: 'plan' } }; startSession(pl.id, d.id); state.draft.exercises[0].log.forEach(s => { if (s.w === '') s.w = 40; }); markSet(0, 0, true); return !!state.rest; });
   await clearCalls(p); await vis(p, 'hidden'); await vis(p, 'visible');
   ok(R && (await calls(p, 'rest')).length === 1, 'también está activado por defecto');
   await openSettings(p); await p.waitForTimeout(300);

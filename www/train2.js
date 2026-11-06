@@ -5,7 +5,7 @@
       (solo a las que tenían el mismo valor o estaban vacías).
    3. En la fila de ejercicios de arriba se ve el avance (anillo) y los terminados (✓ verde).
    4. "¿Máquina ocupada?": hacer ahora otro ejercicio de la rutina, cambiarlo por uno parecido
-      o agregar otro ejercicio de la lista (solo para hoy).
+      o agregar otro ejercicio de la lista (queda también en la rutina, ver mejoras.js).
    5. El coach ya no dice "sube" cuando la Preparación del día dice que hoy no se sube.
    6. Calentamiento explicado: series ligeras, cuántos kilos y qué discos poner en cada lado.
    7. Si el descanso termina y el pulso sigue alto, avisa y espera (máx. 75 s) a que baje.
@@ -93,7 +93,7 @@ function busySheet(i) {
       <span class="grow" style="min-width:0"><b>${esc(c.n)}</b><small class="muted">${c.last ? 'Ya lo hiciste' : c.done ? 'Lo hiciste en otro gimnasio' : 'Nuevo para ti'}</small></span>
       <span class="sw-w"><b class="num">${c.cv.how === 'body' ? 'Corporal' : '~' + fmtKg(c.cv.w) + ' kg'}</b></span></button>`).join('')}</div>` : '<div class="muted">No encontré otro parecido.</div>'}
     <button class="btn block" data-act="swap" data-ex="${i}">Ver más parecidos</button>
-    <div class="label">${pend.length ? '3' : '2'} · Agrega otro ejercicio (solo hoy)</div>
+    <div class="label">${pend.length ? '3' : '2'} · Agrega otro ejercicio (queda en tu rutina)</div>
     <button class="btn block" data-act="add-ex" data-ex="${i}">${ic('plus', 16)} Elegir de la lista</button>`);
 }
 
@@ -136,7 +136,7 @@ window.addEventListener('click', ev => {
   addToDraft(P.sel.slice(), P.at);
   state.pk = null; closeSheet(); render();
   if (typeof pagerGo === 'function' && document.getElementById('sx-pager')) setTimeout(() => pagerGo(state.draft.cur, true), 60);
-  toast(`${n} ${n === 1 ? 'ejercicio agregado' : 'ejercicios agregados'} a tu entrenamiento de hoy`);
+  toast(`${n} ${n === 1 ? 'ejercicio agregado' : 'ejercicios agregados'} a tu entrenamiento${typeof mjLast !== 'undefined' && mjLast ? ' y a tu rutina' : ' de hoy'}`);
 }, true);
 
 function decorateBusy() {
@@ -149,7 +149,7 @@ function decorateBusy() {
     if (sw) { sw.dataset.act = 'busy'; sw.setAttribute('aria-label', 'Máquina ocupada o cambiar ejercicio'); sw.innerHTML = `${ic('refresh-cw', 15)}<span class="sw-lbl">Ocupada</span>`; }
     const row = c.querySelector('[data-act="add-set"]'); const r = row && row.parentElement;
     if (r) r.insertAdjacentHTML('beforeend', `<button class="btn small" data-act="add-ex" data-ex="${i}">${ic('plus', 14)} Ejercicio</button>`);
-    if (e.added && !c.querySelector('.add-tag')) { const h = c.querySelector('h3'); if (h) h.insertAdjacentHTML('beforeend', ' <span class="sw-tag add-tag">agregado hoy</span>'); }
+    if (e.added && !c.querySelector('.add-tag')) { const h = c.querySelector('h3'); if (h) h.insertAdjacentHTML('beforeend', ' <span class="sw-tag add-tag">agregado</span>'); }
   });
 }
 

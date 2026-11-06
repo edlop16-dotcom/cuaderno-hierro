@@ -72,8 +72,14 @@ markSet = function (i, j, v, k) {
     if (hold.want != null) startRest(hold.want);
   }
   if (to == null) return;
+  const pager = !!document.getElementById('sx-pager');
+  if (pager && main.rir == null && !isWatch()) {   /* como siempre, pero después de elegir el RIR */
+    saveDraft(); render();
+    sxMoveAfterRir(i, j, () => { if (state.draft !== d) return; d.cur = to; saveDraft(); render(); pagerGo(to, true); }, 700);
+    return;
+  }
   d.cur = to; saveDraft(); render();
-  if (document.getElementById('sx-pager')) setTimeout(() => { if (state.draft === d) pagerGo(to, true); }, 700);
+  if (pager) setTimeout(() => { if (state.draft === d) pagerGo(to, true); }, 700);
 };
 
 /* Agregar en la sesión: nunca en medio de una pareja (va después del grupo) */

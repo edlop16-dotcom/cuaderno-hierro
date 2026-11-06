@@ -249,7 +249,7 @@ console.log('G. Usuario nuevo');
   ok(await p.evaluate(() => !document.querySelector('.wx-card')), 'sin sesiones: Hoy no ofrece la semana');
   const id = await p.evaluate(() => { const pl = activePlan(); return (nextDay(pl) || pl.days[0]).id; });
   await start(p, id); await p.waitForTimeout(800);
-  await p.evaluate(() => { markSet(0, 0, true); state.rest = null; });
+  await p.evaluate(() => { state.draft.exercises[0].log.forEach(s => { if (s.w === '') s.w = 40; }); markSet(0, 0, true); state.rest = null; });
   await tapExp(p); await p.waitForTimeout(300);
   const T = await clip(p);
   ok(/Mi objetivo: ganar músculo \(el de la app por defecto/.test(T) && /LO QUE TE PIDO \(sesión de (fuerza|bombeo), todavía en curso\)/.test(T) && !/undefined|NaN|null|\{[a-z ]+\}/.test(T), 'exporta a media sesión, con el objetivo por defecto y sin huecos');
