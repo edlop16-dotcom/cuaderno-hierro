@@ -146,7 +146,7 @@ function coachCard(plan, day) {
   const ic = { up: '⬆', down: '⬇', hold: '→', back: '↺', pain: '⚠', first: '•' };
   const st = streakInfo();
   const extra = [];
-  if (st.weeks >= 7 && st.weeks % 8 === 7) extra.push('Llevas ' + st.weeks + ' semanas seguidas cumpliendo. La próxima semana considera una <b>descarga</b>: mismos ejercicios, la mitad de series.');
+  if (st.weeks >= 7 && st.weeks % 8 === 7 && !(typeof pgNoDl === 'function' && pgNoDl())) extra.push('Llevas ' + st.weeks + ' semanas seguidas cumpliendo. La próxima semana considera una <b>descarga</b>: mismos ejercicios, la mitad de series.');
   const t = today(); if (!t.crea && SUPS.some(x => x.k === 'crea')) extra.push('Aún no marcas la creatina de hoy.');
   return `<div class="card coach-card"><div class="row" style="justify-content:space-between"><h3>🧠 Coach · ${esc(day.name)}</h3><span class="chip">${ups ? ups + ' para subir' : 'Consolidar'}</span></div>
     <div class="muted" style="font-size:12.5px">Sobrecarga progresiva: cuando completas el tope de reps en todas las series, subes peso; si no, sumas reps con el mismo peso.</div>
