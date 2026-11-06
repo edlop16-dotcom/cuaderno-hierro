@@ -188,6 +188,8 @@ function pgGoalReps(e, j) { const g = e && e.coach && e.coach.goal; const v = g 
 const pgFull = (h, rx) => !!(h && h.sets.length && h.sets.every(s => +s.r >= rx.rMax));
 /* Principiante: completó el rango = todas las series en el tope, sin ir al fallo (si anotó el RIR) */
 const pgNovDone = (h, rx) => { const f = h && h.sets.filter(s => +s.r > 0)[0]; return pgFull(h, rx) && (!f || f.rir == null || +f.rir >= rx.rirMin); };
+/* Sesión completa para la regla de Salud y energía: el principiante además no fue al fallo */
+const pgSaludDone = (h, rx) => (rx.nov ? pgNovDone(h, rx) : pgFull(h, rx));
 /* Perder grasa: aviso de proteína (la meta de Perfil → Nutrición, si está) */
 function pgProtTip() { let g = 0; try { g = typeof protGoal === 'function' ? protGoal() : 0; } catch (e) {} return `Perder grasa: llega a tu proteína del día${g ? ' (' + g + ' g)' : ' (unos 2 g por kg de peso)'} para no perder músculo con la dieta.`; }
 const pgFirst = h => (h.sets.filter(s => +s.r > 0)[0] || h.sets[0] || { w: 0, r: 0 });
@@ -362,9 +364,12 @@ function pgBwCoach(ex, gymId, kind, rx, n, HA, L) {
   else {
     const s1 = pgFirst(L), r1 = +s1.r || 0, note = normName(L.note || ''), rt = `${r1} ${u}`;
     /* En qué paso vas: cada sesión en el tope avanza uno; quedar bajo el mínimo vuelve a empezar */
-    (HA.length ? HA : [L]).slice().reverse().forEach(h => { const f = pgFirst(h), r = +f.r || 0; if (!band && +f.w > 0) return; if (r > 0 && r < rx.rMin) st = 0; else if (rx.nov ? pgNovDone(h, rx) : r >= rx.rMax) st = Math.min(2, st + 1); });
+    /* Salud y energía: cada paso pide 2 sesiones completas seguidas (`run`) */
+    let run = 0;
+    (HA.length ? HA : [L]).slice().reverse().forEach(h => { const f = pgFirst(h), r = +f.r || 0; if (!band && +f.w > 0) return; if (r > 0 && r < rx.rMin) { st = 0; run = 0; } else if (rx.g === 'salud' ? pgSaludDone(h, rx) : rx.nov ? pgNovDone(h, rx) : r >= rx.rMax) { run++; if (rx.g !== 'salud' || run % 2 === 0) st = Math.min(2, st + 1); } else run = 0; });
     if (PAIN.test(note)) { mode = 'pain'; goal = Math.max(1, r1 - 2 * add); why = `Tu nota menciona dolor: baja a ${goal} ${u} y cuida la técnica.`; }
     else if (DOWN.test(note)) { mode = 'down'; goal = Math.max(1, r1 - 2 * add); why = `Tu nota pedía bajar: ${goal} ${u}.`; }
+    else if (rx.g === 'salud' && r1 >= rx.rMax && run % 2 === 1) { goal = rx.rMax; why = `Salud y energía: das el siguiente paso tras 2 sesiones completas en el tope (${rx.rMax} ${u} en todas las series); llevas 1.`; }
     else if (!st && r1 >= rx.rMax) { goal = rx.rMax; why = `Completa ${rx.rMax} ${u} en todas las series (${L.sets.map(z => z.r).join(', ')}) y das el siguiente paso.`; }
     else if (!st) { goal = Math.min(rx.rMax, r1 + add); why = `Suma ${u === 's' ? 'tiempo' : 'reps'}: la última vez ${rt}; hoy busca ${goal} (${rx.rMin}-${rx.rMax}). Al llegar a ${rx.rMax}, el siguiente paso.`; }
     else if (r1 < rx.rMax) { goal = Math.min(rx.rMax, r1 + add); why = `Vuelve al tope: la última vez ${rt}; hoy busca ${goal}${rx.sec || pgLastreOk(name) ? '' : ' con bajada lenta o pausa'}. Al llegar a ${rx.rMax}, el siguiente paso.`; }
@@ -442,11 +447,11 @@ function pgCoach(ex, gymId, kind) {
       why = `Peso máximo (${fmtKg(cap)} kg): no subo más. Toca ${PG_CAP_M[st.m]}${st.m === 0 ? `: busca ${goal} reps` : st.m === 3 ? ` (${n} series de ${goal})` : ` con ${goal} reps`}.${st.m ? ' Cambié de método porque te estancaste con el anterior.' : ''}`;
     }
     else if (DOWN.test(note)) { w = pgRound(name, top * 0.9, true); mode = 'down'; why = `Tu nota pedía bajar: ${fmtKg(w)} kg.`; }
-    else if (!rx.nov && rx.g === 'salud' && r1 >= rx.rMax && !(pgFull(L, rx) && pgFull(H[1], rx))) {   /* Salud: sube solo tras 2 sesiones completas en el tope */
-      goal = rx.rMax; why = `Salud y energía: subes solo tras 2 sesiones completas en el tope (${rx.rMax} reps en todas las series); ${pgFull(L, rx) ? 'llevas 1' : 'aún no'}. Mantén ${fmtKg(top)} kg.`;
+    else if (rx.g === 'salud' && r1 >= rx.rMax && !(pgSaludDone(L, rx) && pgSaludDone(H[1], rx) && +pgFirst(H[1]).w === top)) {   /* Salud: sube solo tras 2 sesiones completas seguidas en el tope, con ese mismo peso (también el principiante) */
+      goal = rx.rMax; why = `Salud y energía: subes solo tras 2 sesiones completas en el tope (${rx.rMax} reps en todas las series${rx.nov ? ', sin ir al fallo' : ''}); ${pgSaludDone(L, rx) ? 'llevas 1' : 'aún no'}. Mantén ${fmtKg(top)} kg.`;
     }
     /* 3+ reps por encima del rango: el peso es bajo aunque el RIR sea menor que el objetivo */
-    /* Principiante: sube cada sesión que complete el rango (todas las series en el tope, sin ir al fallo) */
+    /* Principiante: sube cada sesión que complete el rango (todas las series en el tope, sin ir al fallo); con Salud y energía, tras las 2 de arriba */
     else if (r1 >= rx.rMax && (rx.nov ? pgNovDone(L, rx) : rir1 == null || rir1 >= rx.rirMax || rx.g === 'salud' || r1 - rx.rMax >= 3)) {
       const extra = r1 - rx.rMax, lb = state.settings.unit === 'lb', soft = rx.g === 'mov' || rx.g === 'salud';
       const step = rx.g === 'mov' ? Math.min(pgStep(name, top), lb ? 5 : 2.5) : pgStep(name, top);   /* Movilidad: máximo 2,5 kg por subida */
@@ -868,7 +873,7 @@ stallCard = function () { return pgNoDl() ? '' : _stallCardPG.apply(this, argume
 /* ---------- 9. Exportaciones: el sistema del coach para la IA ---------- */
 function pgExpTxt() {
   const e = pgExp();
-  if (e === 0 || e === 1) return `- Experiencia: ${PB_EXP[e].toLowerCase()}. Reglas de principiante (mandan sobre lo demás): RIR mínimo ${PG_NOV_RIR} y nunca al fallo; subir cada sesión que complete el rango en todas las series; máximo ${PG_NOV_SETS} series por ejercicio; sin descarga las primeras ${PG_NOV_WEEKS} semanas.`;
+  if (e === 0 || e === 1) return `- Experiencia: ${PB_EXP[e].toLowerCase()}. Reglas de principiante: RIR mínimo ${PG_NOV_RIR} y nunca al fallo; subir ${pgGoal() === 'salud' ? 'solo tras 2 sesiones seguidas que completen el rango en todas las series (objetivo Salud y energía)' : 'cada sesión que complete el rango en todas las series'}; máximo ${PG_NOV_SETS} series por ejercicio; sin descarga las primeras ${PG_NOV_WEEKS} semanas.`;
   return e === 3 ? '- Experiencia: más de 2 años. Además de lo de abajo: descarga sugerida cada 6-8 semanas si hay estancamiento.' : '';
 }
 function pgSystemTxt() {
