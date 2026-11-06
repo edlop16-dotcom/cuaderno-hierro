@@ -16,6 +16,10 @@
       ajustes si se pasa (superseries, descansos, mover una serie, quitar un ejercicio con aviso), atraso en vivo,
       descansos reales, y duración y descanso reales frente a los recomendados en el resumen y la exportación.
    9. Las exportaciones explican este sistema a la IA.
+   10. Experiencia de la bienvenida (`prof.exp`): principiante (nunca o menos de 6 meses), intermedio (el sistema de
+       siempre) y avanzado (el de siempre + descarga sugerida cada 6-8 semanas si hay estancamiento). Sin dato: el de siempre.
+   11. Peso corporal y bandas (`pgBwCoach`): reps hasta el tope del rango del catálogo → bajada lenta o pausa → variante más
+       difícil del catálogo (`PG_BW_LADDER`); dominadas y fondos, al llegar al tope, lastre. Con lastre: el motor de siempre.
    ========================================================================== */
 
 /* ---------- Tipos y prescripción ---------- */
@@ -45,6 +49,21 @@ const PG_GOAL_RULE = {
   mov: '12-20 reps, RIR 3, nunca al fallo; subidas de 2,5 kg como máximo, sin cargas altas; primero máquinas y ejercicios de equilibrio',
 };
 const pgAvail = () => { const m = +((state.settings.prof || {}).mins); return m >= 20 && m <= 300 ? m : 75; };
+/* Experiencia (la de la bienvenida, PB_EXP): 0 nunca, 1 menos de 6 meses, 2 de 6 meses a 2 años, 3 más de 2 años.
+   null = no la dijo (dueño sin bienvenida): el sistema de siempre, sin suponer nada */
+const pgExp = () => { const v = (state.settings.prof || {}).exp, n = v == null || v === '' ? -1 : +v; return n === 0 || n === 1 || n === 2 || n === 3 ? n : null; };
+const pgNov = () => { const e = pgExp(); return e === 0 || e === 1; };
+const PG_NOV_RIR = 2, PG_NOV_SETS = 3, PG_NOV_WEEKS = 8, PG_DL_WEEKS = 6;
+const pgMaxSets = () => (pgNov() ? PG_NOV_SETS : Infinity);
+/* Series que cuentan de un ejercicio de la rutina (lo guardado no se reescribe) */
+const pgSets = (e, def) => Math.min(+e.sets || (def == null ? 3 : def), pgMaxSets());
+/* Semanas desde tu primera sesión real; sin sesiones, 0 */
+function pgTrainWeeks(at) {
+  let first = 0; state.sessions.forEach(s => { const t = s.approx ? 0 : +new Date(s.date); if (t && (!first || t < first)) first = t; });
+  return first ? ((at ? +new Date(at) : Date.now()) - first) / (7 * 864e5) : 0;
+}
+/* Principiante: sin descarga las primeras 8 semanas */
+const pgNoDl = at => pgNov() && pgTrainWeeks(at) < PG_NOV_WEEKS;
 
 /* Clasificación por movimiento (patrón del catálogo) y músculo principal, no por el nombre exacto */
 const PG_PAT = {
@@ -101,6 +120,17 @@ function pgTypeOf(name) {
 }
 const pgMain = name => { const sh = zoneShares(name); for (const k in sh) if (sh[k] === 1) return k; return null; };
 const pgFam = name => { const x = libFind(name); return x ? equipOf(x) : ''; };
+/* Peso corporal o banda: progresa por reps, no por kilos. Los que ya son con carga (lastrados, "con peso") no */
+function pgIsBw(name) {
+  const x = libFind(name); if (!x) return typeof PB_BW !== 'undefined' && PB_BW.test(normName(exClean(name)));
+  if (/lastrad|con peso$/.test(normName(x.name))) return false;
+  const f = pgFam(name); return !!x.bw || f === 'cuerpo' || f === 'banda';
+}
+/* Rango del catálogo para ese ejercicio ("10-20", "30-60 s", "10-20 por lado"): el tope depende del ejercicio, no del tipo */
+function pgBwRange(name) {
+  const x = libFind(name), m = x && /^(\d+)\s*-\s*(\d+)(\s*s\b)?/.exec(String(x.reps || ''));
+  return m ? { a: +m[1], b: +m[2], sec: !!m[3] } : null;
+}
 /* pe: ejercicio de la rutina (opcional), por si acortaste su descanso con "Ajustar a mi tiempo" */
 function pgRx(name, kind, pe) {
   const t = pgTypeOf(name), g = pgGoal(), b = kind === 'bombeo', R = PG_RX[t];
@@ -108,14 +138,17 @@ function pgRx(name, kind, pe) {
   if (g === 'fuerza' && t === 'comp' && !b) { [rMin, rMax, rirMin, rirMax] = PG_FUERZA; rest = PG_FUERZA_REST.slice(); }
   if (t !== 'cardio' && g === 'salud') [rMin, rMax, rirMin, rirMax] = [10, 15, 2, 3];   /* nunca al fallo */
   if (t !== 'cardio' && g === 'mov') [rMin, rMax, rirMin, rirMax] = [12, 20, 3, 3];      /* nunca al fallo */
+  const bw = t !== 'cardio' && pgIsBw(name), br = bw ? pgBwRange(name) : null;
+  if (br) { rMin = br.a; rMax = br.b; }
   const xl = libFind(name); if (t === 'comp' && xl && xl.pexpl) [rMin, rMax, rirMin, rirMax] = PG_EXPL;
-  const fam = pgFam(name), mach = fam === 'maq' || fam === 'polea';
+  const fam = pgFam(name), mach = fam === 'maq' || fam === 'polea', nov = t !== 'cardio' && pgNov();
   if (t === 'comp') { rirMin = Math.max(1, rirMin); rest[0] = Math.max(90, rest[0]); }       /* nunca al fallo en compuestos; 90 s mínimo */
   else if (rirMin === 0 && t === 'glu' && !mach) rirMin = 1;                                  /* RIR 0 solo en máquinas y aislamiento */
+  if (nov) rirMin = Math.max(PG_NOV_RIR, rirMin);                                              /* principiante: nunca al fallo */
   rirMax = Math.max(rirMin, rirMax);
   let rec = b || g === 'grasa' ? rest[0] : Math.round((rest[0] + rest[1]) / 2 / 15) * 15;
   if (pe && +pe.pgRest && (t === 'aisl' || t === 'peq')) rec = Math.max(rest[0], +pe.pgRest);
-  return { t, g, kind: b ? 'bombeo' : 'fuerza', rMin, rMax, rirMin, rirMax, rest: rec, restMin: rest[0], restMax: rest[1], dur: R.dur, expl: !!(xl && xl.pexpl && t === 'comp') };
+  return { t, g, kind: b ? 'bombeo' : 'fuerza', rMin, rMax, rirMin, rirMax, rest: rec, restMin: rest[0], restMax: rest[1], dur: R.dur, expl: !!(xl && xl.pexpl && t === 'comp'), nov, bw, sec: !!(br && br.sec) };
 }
 const pgRir = (rx, j, n) => (n <= 1 ? rx.rirMax : Math.round(rx.rirMax - (rx.rirMax - rx.rirMin) * j / (n - 1)));
 const pgRirTxt = rx => (rx.t === 'cardio' ? '—' : rx.rirMin === rx.rirMax ? String(rx.rirMin) : `${rx.rirMin}-${rx.rirMax}`);
@@ -153,6 +186,10 @@ function pgGoalReps(e, j) { const g = e && e.coach && e.coach.goal; const v = g 
 /* ---------- Motor ---------- */
 /* Sesión completa en el tope: todas sus series llegan al máximo del rango (Salud y energía) */
 const pgFull = (h, rx) => !!(h && h.sets.length && h.sets.every(s => +s.r >= rx.rMax));
+/* Principiante: completó el rango = todas las series en el tope, sin ir al fallo (si anotó el RIR) */
+const pgNovDone = (h, rx) => { const f = h && h.sets.filter(s => +s.r > 0)[0]; return pgFull(h, rx) && (!f || f.rir == null || +f.rir >= rx.rirMin); };
+/* Sesión completa para la regla de Salud y energía: el principiante además no fue al fallo */
+const pgSaludDone = (h, rx) => (rx.nov ? pgNovDone(h, rx) : pgFull(h, rx));
 /* Perder grasa: aviso de proteína (la meta de Perfil → Nutrición, si está) */
 function pgProtTip() { let g = 0; try { g = typeof protGoal === 'function' ? protGoal() : 0; } catch (e) {} return `Perder grasa: llega a tu proteína del día${g ? ' (' + g + ' g)' : ' (unos 2 g por kg de peso)'} para no perder músculo con la dieta.`; }
 const pgFirst = h => (h.sets.filter(s => +s.r > 0)[0] || h.sets[0] || { w: 0, r: 0 });
@@ -290,9 +327,69 @@ function pgPrefer(L) {
   const sc = n => { const x = libFind(n), f = pgFam(n); return x && x.pat === 'balance' ? 0 : f === 'maq' || f === 'polea' ? 1 : 2; };
   return L.map((n, i) => ({ n, i })).sort((a, b) => sc(a.n) - sc(b.n) || a.i - b.i).map(o => o.n);
 }
+/* ---------- Peso corporal y bandas: reps → técnica → variante más difícil (dominadas y fondos: lastre) ---------- */
+/* Variantes del catálogo, de más fácil a más difícil */
+const PG_BW_LADDER = [
+  ['Flexiones de Rodillas', 'Flexiones Inclinadas', 'Flexiones', 'Flexiones Agarre Abierto', 'Flexiones con Pies Elevados', 'Flexiones Diamante', 'Flexiones en Suspensión (TRX)'],
+  ['Flexiones en Pica', 'Flexiones en Pino contra la Pared'],
+  ['Press de Pecho con Banda', 'Flexiones con Banda'],
+  ['Sentarse y Pararse de la Silla', 'Sentadilla con peso corporal', 'Sentadilla Cosaca', 'Sentadilla a una Pierna Asistida', 'Sentadilla Pistol'],
+  ['Subida al Cajón', 'Subida al Cajón Lateral', 'Sentadilla a una Pierna Asistida'],
+  ['Dominadas Escapulares', 'Dominadas con Banda', 'Dominadas Supinas', 'Dominadas Agarre Neutro', 'Dominadas', 'Dominadas Agarre Ancho'],
+  ['Remo con Banda', 'Remo Invertido', 'Remo en Suspensión (TRX)'],
+  ['Fondos en Banco', 'Fondos para Tríceps', 'Fondos en Paralelas'],
+  ['Puente de Glúteo', 'Puente de Glúteo a una Pierna', 'Hip Thrust a una Pierna'],
+  ['Deslizamientos de Femoral', 'Curl Femoral con Fitball', 'Curl Nórdico Asistido con Banda', 'Curl Nórdico'],
+  ['Plancha', 'Plancha con Toque de Hombros'],
+  ['Bicho Muerto', 'Hollow'],
+  ['Crunch Abdominal', 'Abdominal Completo', 'Abdominal en V'],
+  ['Crunch Inverso', 'Elevación de Piernas Tumbado', 'Elevación de Rodillas Colgado', 'Elevación de Piernas Colgado'],
+];
+/* La siguiente variante que puedas hacer: hay el equipo en ese gimnasio, encaja con tu equipo y no choca con tus lesiones */
+function pgBwHarder(name, gymId) {
+  const okF = typeof ALT_EQUIP_OK !== 'undefined' ? ALT_EQUIP_OK[(state.settings.prof || {}).equip] : null;
+  for (const L of PG_BW_LADDER) {
+    const i = L.findIndex(n => exSame(n, name)); if (i < 0) continue;
+    const n = L.slice(i + 1).find(v => { const x = libFind(v); return x && exAvail(v, gymId) && !altInjured(x) && (!okF || okF.indexOf(equipOf(x)) >= 0); });
+    if (n) return n;
+  }
+  return null;
+}
+const pgLastreOk = name => /^(dominadas|fondos)/.test(normName(exClean(name))) && !/banda|escapular/.test(normName(exClean(name)));
+function pgBwCoach(ex, gymId, kind, rx, n, HA, L) {
+  const name = ex.name, band = pgFam(name) === 'banda', u = rx.sec ? 's' : 'reps', add = rx.sec ? 5 : 1, lb = state.settings.unit === 'lb';
+  const w = L ? +pgFirst(L).w || 0 : +ex.weight || 0, label = band ? 'banda' : 'peso corporal', dl = pgDlNow();
+  let mode = 'hold', why, goal, alt = null, lastre = 0, st = 0;
+  if (!L) { mode = 'first'; goal = rx.rMin; why = `Primera vez: con ${label}, busca ${rx.rMin}-${rx.rMax} ${u} con buena técnica; con esta sesión el coach aprende tu nivel.`; }
+  else {
+    const s1 = pgFirst(L), r1 = +s1.r || 0, note = normName(L.note || ''), rt = `${r1} ${u}`;
+    /* En qué paso vas: cada sesión en el tope avanza uno; quedar bajo el mínimo vuelve a empezar */
+    /* Salud y energía: cada paso pide 2 sesiones completas seguidas (`run`) */
+    let run = 0;
+    (HA.length ? HA : [L]).slice().reverse().forEach(h => { const f = pgFirst(h), r = +f.r || 0; if (!band && +f.w > 0) return; if (r > 0 && r < rx.rMin) { st = 0; run = 0; } else if (rx.g === 'salud' ? pgSaludDone(h, rx) : rx.nov ? pgNovDone(h, rx) : r >= rx.rMax) { run++; if (rx.g !== 'salud' || run % 2 === 0) st = Math.min(2, st + 1); } else run = 0; });
+    if (PAIN.test(note)) { mode = 'pain'; goal = Math.max(1, r1 - 2 * add); why = `Tu nota menciona dolor: baja a ${goal} ${u} y cuida la técnica.`; }
+    else if (DOWN.test(note)) { mode = 'down'; goal = Math.max(1, r1 - 2 * add); why = `Tu nota pedía bajar: ${goal} ${u}.`; }
+    else if (rx.g === 'salud' && r1 >= rx.rMax && run % 2 === 1) { goal = rx.rMax; why = `Salud y energía: das el siguiente paso tras 2 sesiones completas en el tope (${rx.rMax} ${u} en todas las series); llevas 1.`; }
+    else if (!st && r1 >= rx.rMax) { goal = rx.rMax; why = `Completa ${rx.rMax} ${u} en todas las series (${L.sets.map(z => z.r).join(', ')}) y das el siguiente paso.`; }
+    else if (!st) { goal = Math.min(rx.rMax, r1 + add); why = `Suma ${u === 's' ? 'tiempo' : 'reps'}: la última vez ${rt}; hoy busca ${goal} (${rx.rMin}-${rx.rMax}). Al llegar a ${rx.rMax}, el siguiente paso.`; }
+    else if (r1 < rx.rMax) { goal = Math.min(rx.rMax, r1 + add); why = `Vuelve al tope: la última vez ${rt}; hoy busca ${goal}${rx.sec || pgLastreOk(name) ? '' : ' con bajada lenta o pausa'}. Al llegar a ${rx.rMax}, el siguiente paso.`; }
+    else if (pgLastreOk(name)) { lastre = lb ? 5 : 2.5; goal = rx.rMax; why = `Llegaste al tope (${rt}): suma lastre, ${fmtKg(lastre)} ${lb ? 'lb' : 'kg'} con cinturón, mochila o mancuerna, y vuelve a ${rx.rMin} reps. Si hoy no tienes lastre, repite ${rx.rMax}.`; }
+    else if (st === 1 && !rx.sec) { goal = rx.rMax; why = `Llegaste al tope (${rt}): mantén ${goal} reps con bajada lenta de 3-4 s o pausa de 1-2 s abajo.`; }
+    else {
+      alt = pgBwHarder(name, gymId); goal = rx.sec ? rx.rMax : Math.min(30, Math.max(rx.rMax, r1));
+      why = alt ? `Ya dominas ${exClean(name)} (${rt}): pasa a ${alt}, más difícil, y empieza por lo bajo de su rango.`
+        : band ? `Ya dominas esta banda (${rt}): usa una banda más fuerte y vuelve a ${rx.rMin} reps.`
+        : `Llegaste al tope (${rt}) y no hay variante más difícil aquí: sigue con bajada lenta o pausa y suma ${u === 's' ? 'tiempo' : 'reps'}.`;
+    }
+    const gap = daysSince(L.date);
+    if (gap >= 14 && mode !== 'pain' && mode !== 'down') { mode = 'back'; alt = null; lastre = 0; goal = Math.max(1, r1 - 2 * add); why = `Hace ${gap} días que no lo haces: retoma con ${goal} ${u}, sin forzar.`; }
+  }
+  if (dl) { mode = 'down'; alt = null; lastre = 0; why = 'Semana de descarga: la mitad de series y RIR 3.'; }
+  return { w, mode, why, goal: Array.from({ length: n }, () => goal), src: !L ? 'new' : HA.length ? 'own' : 'gym', rx, n, alt, cap: 0, rest: rx.rest, rirT: Array.from({ length: n }, (_, j) => (dl ? 3 : pgRir(rx, j, n))), last: L ? { date: L.date, reps: L.sets.map(z => z.r), w } : null, bw: { band, label, lastre, step: st } };
+}
 function pgCoach(ex, gymId, kind) {
   const name = ex.name, bar = barFor(name), cap = pgMaxOf(name, gymId);
-  let n = Math.max(1, +ex.sets || +ex.target || 3), rx = pgRx(name, kind, ex);
+  let n = Math.min(pgMaxSets(), Math.max(1, +ex.sets || +ex.target || 3)), rx = pgRx(name, kind, ex);
   const HA = exHistory(name, gymId, kind, 12), H = HA.filter(h => h.kind === kind);
   let w, mode, why, goal = null, src = 'own', alt = null;
   if (rx.t === 'cardio') {   /* mismo peso (si lleva); suma un poco de reps, segundos o metros a tu última vez aquí */
@@ -302,6 +399,11 @@ function pgCoach(ex, gymId, kind) {
     mode = s1 ? 'hold' : 'first';
     why = s1 ? `Cardio: ${w ? 'mismo peso (' + fmtKg(w) + ' kg) y ' : ''}suma un poco: ${goal} (la última vez ${r}; reps, segundos o metros, lo que anotes).` : `Cardio: empieza cómodo y anota reps, segundos o metros; la próxima vez sumamos un poco.`;
     return { w, mode, why, goal: Array.from({ length: n }, () => goal), src: s1 ? 'own' : 'new', rx, n, alt: null, cap: 0, rest: rx.rest, rirT: Array.from({ length: n }, () => 2), last: L ? { date: L.date, reps: L.sets.map(z => z.r), w } : null };
+  }
+  /* Peso corporal y bandas: por reps. Con lastre (ya anotaste kilos) sigue el motor de siempre */
+  if (rx.bw) {
+    const L = HA[0] || pgOtherGym(name, gymId, kind), lw = L ? +pgFirst(L).w || 0 : +ex.weight || 0;
+    if (pgFam(name) === 'banda' || !lw) return pgBwCoach(ex, gymId, kind, rx, n, HA, L);
   }
   /* En su peso máximo: rangos de bombeo (hasta 30 reps) también en los días pesados */
   const capped = cap > 0 && H.length && (+pgFirst(H[0]).w || 0) >= cap - 0.01;
@@ -339,16 +441,18 @@ function pgCoach(ex, gymId, kind) {
     if (PAIN.test(note)) { w = pgRound(name, top * 0.85, true); mode = 'pain'; why = `Tu nota menciona dolor: baja a ${fmtKg(w)} kg y cuida la técnica.`; }
     else if (capped && !DOWN.test(note)) {
       const st = pgCapState(H, cap); w = cap; mode = 'cap';
+      if (rx.nov) st.m = Math.min(st.m, 2);   /* principiante: nunca más de 3 series */
       if (st.m === 3) n += 1;
       goal = st.m === 0 ? Math.min(30, Math.max(rx.rMin, r1 + 1)) : Math.min(30, Math.max(rx.rMin, r1));
       why = `Peso máximo (${fmtKg(cap)} kg): no subo más. Toca ${PG_CAP_M[st.m]}${st.m === 0 ? `: busca ${goal} reps` : st.m === 3 ? ` (${n} series de ${goal})` : ` con ${goal} reps`}.${st.m ? ' Cambié de método porque te estancaste con el anterior.' : ''}`;
     }
     else if (DOWN.test(note)) { w = pgRound(name, top * 0.9, true); mode = 'down'; why = `Tu nota pedía bajar: ${fmtKg(w)} kg.`; }
-    else if (rx.g === 'salud' && r1 >= rx.rMax && !(pgFull(L, rx) && pgFull(H[1], rx))) {   /* Salud: sube solo tras 2 sesiones completas en el tope */
-      goal = rx.rMax; why = `Salud y energía: subes solo tras 2 sesiones completas en el tope (${rx.rMax} reps en todas las series); ${pgFull(L, rx) ? 'llevas 1' : 'aún no'}. Mantén ${fmtKg(top)} kg.`;
+    else if (rx.g === 'salud' && r1 >= rx.rMax && !(pgSaludDone(L, rx) && pgSaludDone(H[1], rx) && +pgFirst(H[1]).w === top)) {   /* Salud: sube solo tras 2 sesiones completas seguidas en el tope, con ese mismo peso (también el principiante) */
+      goal = rx.rMax; why = `Salud y energía: subes solo tras 2 sesiones completas en el tope (${rx.rMax} reps en todas las series${rx.nov ? ', sin ir al fallo' : ''}); ${pgSaludDone(L, rx) ? 'llevas 1' : 'aún no'}. Mantén ${fmtKg(top)} kg.`;
     }
     /* 3+ reps por encima del rango: el peso es bajo aunque el RIR sea menor que el objetivo */
-    else if (r1 >= rx.rMax && (rir1 == null || rir1 >= rx.rirMax || rx.g === 'salud' || r1 - rx.rMax >= 3)) {
+    /* Principiante: sube cada sesión que complete el rango (todas las series en el tope, sin ir al fallo); con Salud y energía, tras las 2 de arriba */
+    else if (r1 >= rx.rMax && (rx.nov ? pgNovDone(L, rx) : rir1 == null || rir1 >= rx.rirMax || rx.g === 'salud' || r1 - rx.rMax >= 3)) {
       const extra = r1 - rx.rMax, lb = state.settings.unit === 'lb', soft = rx.g === 'mov' || rx.g === 'salud';
       const step = rx.g === 'mov' ? Math.min(pgStep(name, top), lb ? 5 : 2.5) : pgStep(name, top);   /* Movilidad: máximo 2,5 kg por subida */
       const e1 = pgE1(name, s1), lim = rx.g === 'mov' ? step : pgUpMax(name, top);
@@ -359,9 +463,12 @@ function pgCoach(ex, gymId, kind) {
       if (w > top + lim) { w = Math.max(top + step, pgRound(name, top + lim, true)); by = by ? by + '+tope' : 'tope'; }
       if (by) goal = pgRepsFor(name, e1, w, rx);   /* reps coherentes con el peso nuevo */
       mode = 'up';
-      why = `Sube: 1.ª serie ${pgSetTxt(s1)} (${extra >= 3 ? `muy por encima de ${rx.rMin}-${rx.rMax}; 1RM estimado ≈ ${fmtKg(Math.round(e1))} kg` : `tope ${rx.rMax}${rir1 == null ? '' : ', RIR ' + rx.rirMax}`}) → ${fmtKg(w)} kg${/tope/.test(by) ? ` (tope de subida: +${fmtKg(w - top)} kg por sesión)` : ''} y ${goal === rx.rMin ? 'vuelve a ' + rx.rMin + ' reps' : 'busca ' + goal + ' reps'}.${rir1 == null ? ' (Sin RIR anotado: decidí por las reps.)' : ''}${extra >= 3 && !H.slice(1).some(h => { const f = pgFirst(h); return +f.r > 0 && +f.r <= rx.rMax + 2; }) ? RANGE_TIP : ''}`;
+      why = `Sube: 1.ª serie ${pgSetTxt(s1)} (${extra >= 3 ? `muy por encima de ${rx.rMin}-${rx.rMax}; 1RM estimado ≈ ${fmtKg(Math.round(e1))} kg` : rx.nov ? `completaste ${rx.rMin}-${rx.rMax} en todas las series` : `tope ${rx.rMax}${rir1 == null ? '' : ', RIR ' + rx.rirMax}`}) → ${fmtKg(w)} kg${/tope/.test(by) ? ` (tope de subida: +${fmtKg(w - top)} kg por sesión)` : ''} y ${goal === rx.rMin ? 'vuelve a ' + rx.rMin + ' reps' : 'busca ' + goal + ' reps'}.${rir1 == null ? ' (Sin RIR anotado: decidí por las reps.)' : ''}${extra >= 3 && !H.slice(1).some(h => { const f = pgFirst(h); return +f.r > 0 && +f.r <= rx.rMax + 2; }) ? RANGE_TIP : ''}`;
     } else if (r1 >= rx.rMax) {
-      why = `Mantén: llegaste al tope (${pgSetTxt(s1)}) con menos reserva que el RIR ${rx.rirMax}; repite ${fmtKg(top)} kg.`; goal = rx.rMax;
+      why = !rx.nov ? `Mantén: llegaste al tope (${pgSetTxt(s1)}) con menos reserva que el RIR ${rx.rirMax}; repite ${fmtKg(top)} kg.`
+        : pgFull(L, rx) ? `Mantén ${fmtKg(top)} kg: completaste el rango, pero muy cerca del fallo (RIR ${rir1}). Repite dejando ${rx.rirMin} reps de sobra.`
+        : `Mantén ${fmtKg(top)} kg: subes cuando completes ${rx.rMax} reps en todas las series (${L.sets.map(z => z.r).join(', ')}).`;
+      goal = rx.rMax;
     } else if (r1 > 0 && r1 < rx.rMin) {
       const diff = rx.rMin - r1;
       if (rx.g === 'grasa' && (diff >= 2 || (H[1] && below(H[1])))) { goal = rx.rMin; why = `Perder grasa: mantén ${fmtKg(top)} kg aunque hoy rindas menos (${pgSetTxt(s1)}) por la dieta; mantener ya es ganar.`; }
@@ -389,7 +496,7 @@ const PG_IC = { up: '⬆', down: '⬇', hold: '→', back: '↺', pain: '⚠', f
 /* coachFor de toda la app (sesión, alternativas, resumen al terminar, coach semanal…) */
 coachFor = function (ex, gymId, kind) {
   const c = pgCoach(ex, gymId, kind), rx = c.rx;
-  const head = c.mode === 'cap' ? `<b>Peso máximo: ${fmtKg(c.w)} kg</b> · ${c.goal[0]} reps (hasta ${rx.rMax})${pgRirPart(rx)} · descanso ${pgRestTxt(rx.rest)}` : `<b>${c.mode === 'up' ? 'Sube a' : c.mode === 'down' ? 'Baja a' : c.mode === 'back' ? 'Retoma con' : c.mode === 'pain' ? 'Prudencia:' : c.mode === 'first' ? 'Empieza con' : 'Mantén'} ${fmtKg(c.w)} kg</b> · ${rx.t === 'cardio' ? c.goal[0] + ' (reps, s o m)' : rx.rMin + '-' + rx.rMax + ' reps'}${pgRirPart(rx)} · descanso ${pgRestTxt(rx.rest)}`;
+  const head = c.bw ? `<b>${c.bw.band ? 'Banda' : 'Peso corporal'}</b> · ${c.goal[0]} ${rx.sec ? 's' : 'reps'} (${rx.rMin}-${rx.rMax})${pgRirPart(rx)} · descanso ${pgRestTxt(rx.rest)}` : c.mode === 'cap' ? `<b>Peso máximo: ${fmtKg(c.w)} kg</b> · ${c.goal[0]} reps (hasta ${rx.rMax})${pgRirPart(rx)} · descanso ${pgRestTxt(rx.rest)}` : `<b>${c.mode === 'up' ? 'Sube a' : c.mode === 'down' ? 'Baja a' : c.mode === 'back' ? 'Retoma con' : c.mode === 'pain' ? 'Prudencia:' : c.mode === 'first' ? 'Empieza con' : 'Mantén'} ${fmtKg(c.w)} kg</b> · ${rx.t === 'cardio' ? c.goal[0] + ' (reps, s o m)' : rx.rMin + '-' + rx.rMax + ' reps'}${pgRirPart(rx)} · descanso ${pgRestTxt(rx.rest)}`;
   const tips = [c.why]; if (rx.g === 'grasa') tips.push(pgProtTip());
   return { w: c.w, mode: c.mode, head, goal: c.goal, tips, last: c.last ? { date: c.last.date, reps: c.last.reps, w: c.last.w } : undefined, rx, pg: c };
 };
@@ -397,16 +504,16 @@ coachFor = function (ex, gymId, kind) {
 nsCoachEx = function (ex, gymId, kind, ctx) {
   const c = pgCoach(ex, gymId, kind), rx = c.rx; let n = c.n, w = c.w, why = c.why, up = c.mode === 'up', rirs = c.rirT.slice(), goal = c.goal.slice();
   const M = ctx && ctx.meso;
-  if (M && M.deload && !pgDlNow()) { n = Math.max(1, Math.ceil(n / 2)); w = pgRound(ex.name, (up ? w - pgStep(ex.name, w) : w) * 0.9, true); up = false; why = `Semana de descarga del bloque: ${n} ${n === 1 ? 'serie' : 'series'} con ${fmtKg(w)} kg y RIR 3.`; rirs = rirs.map(() => 3); }
+  if (M && M.deload && !pgDlNow()) { n = Math.max(1, Math.ceil(n / 2)); w = pgRound(ex.name, (up ? w - pgStep(ex.name, w) : w) * 0.9, true); up = false; why = `Semana de descarga del bloque: ${n} ${n === 1 ? 'serie' : 'series'}${c.bw ? '' : ` con ${fmtKg(w)} kg`} y RIR 3.`; rirs = rirs.map(() => 3); }
   else if (M && M.plus) { n += 1; why += ' Semana final del bloque: +1 serie.'; }
   if (pgDlNow()) n = Math.max(1, Math.ceil(n / 2));
-  if (ctx && ctx.ready === 'low') { n = Math.max(1, n - 1); w = pgRound(ex.name, w * 0.9, true); up = false; why += ' Hoy llegas cansado: 1 serie menos y −10 %.'; }
+  if (ctx && ctx.ready === 'low') { n = Math.max(1, n - 1); w = pgRound(ex.name, w * 0.9, true); up = false; why += c.bw ? ' Hoy llegas cansado: 1 serie menos.' : ' Hoy llegas cansado: 1 serie menos y −10 %.'; }
   else if (ctx && ctx.ready === 'mid' && up) { w = Math.max(0, w - pgStep(ex.name, w)); up = false; why += ' Hoy sin forzar: la subida queda para la próxima.'; }
   const sets = Array.from({ length: n }, (_, j) => ({ w, rMin: goal[Math.min(j, goal.length - 1)] || rx.rMin, rMax: rx.rMax, rir: rirs[Math.min(j, rirs.length - 1)] != null ? rirs[Math.min(j, rirs.length - 1)] : pgRir(rx, j, n), rest: rx.rest }));
-  return { exId: ex.id, name: ex.name, sets, why: why.trim(), mode: up ? 'up' : c.mode === 'up' ? 'hold' : c.mode };
+  return { exId: ex.id, name: ex.name, sets, why: why.trim(), mode: up ? 'up' : c.mode === 'up' ? 'hold' : c.mode, bw: c.bw ? c.bw.label : '' };
 };
 const _nsKeyPG = nsKey;
-nsKey = function () { return _nsKeyPG.apply(this, arguments) + '|pg' + pgGoal() + (state.settings.pgDl || '') + JSON.stringify(state.settings.exType || {}).length + '|' + JSON.stringify(state.settings.exMax || {}); };
+nsKey = function () { return _nsKeyPG.apply(this, arguments) + '|pg' + pgGoal() + '|x' + pgExp() + (state.settings.pgDl || '') + JSON.stringify(state.settings.exType || {}).length + '|' + JSON.stringify(state.settings.exMax || {}); };
 
 /* ---------- Duración ---------- */
 const PG_WARM = 360, PG_CHANGE = 60;
@@ -414,7 +521,7 @@ const PG_WARM = 360, PG_CHANGE = 60;
 const pgExSec = (name, sets, rest, ss) => sets * (PG_RX[pgTypeOf(name)].dur + (ss ? 0 : rest)) + PG_CHANGE;
 function pgDayEst(d) {
   const k = d.kind || kindOfName(d.name);
-  return PG_WARM + d.exercises.reduce((a, e) => a + pgExSec(e.name, +e.sets || 3, pgRx(e.name, k, e).rest, !!e.ss), 0);
+  return PG_WARM + d.exercises.reduce((a, e) => a + pgExSec(e.name, pgSets(e), pgRx(e.name, k, e).rest, !!e.ss), 0);
 }
 function pgDraftEst(d) { return PG_WARM + d.exercises.reduce((a, e) => a + pgExSec(e.name, e.log.length, +e.rest || pgRx(e.name, d.kind).rest, false), 0); }
 const pgMin = s => Math.round(s / 60);
@@ -428,6 +535,7 @@ startSession = function (planId, dayId) {
   const found = findDay(planId, dayId), day = found.d;
   d.exercises.forEach(e => {
     if (e.ns === 'ia') return;   /* la importada de tu IA trae sus propios valores */
+    if (e.log.length > pgMaxSets()) { e.log = e.log.filter((s, j) => j < PG_NOV_SETS || s.done); e.target = e.log.length; }   /* principiante: máximo 3 series */
     const pe = day && day.exercises.find(x => x.id === e.exId), c = pgCoach(Object.assign({}, pe || { type: e.type }, { name: e.name, sets: e.log.length }), d.gymId, d.kind), rx = c.rx;
     e.ptype = rx.t;
     /* En su peso máximo con "una serie más": la serie extra */
@@ -510,7 +618,7 @@ aixSessLine = function (s) {
 /* ---------- Volumen del plan por músculo (10-20 series) ---------- */
 function pgPlanVol(plan) {
   const v = {}; MM_MAIN.forEach(k => { v[k] = 0; });
-  (plan ? plan.days : []).forEach(d => d.exercises.forEach(e => { const sh = zoneShares(e.name), n = +e.sets || 0; for (const k in sh) if (v[k] != null) v[k] += sh[k] * n; }));
+  (plan ? plan.days : []).forEach(d => d.exercises.forEach(e => { const sh = zoneShares(e.name), n = pgSets(e, 0); for (const k in sh) if (v[k] != null) v[k] += sh[k] * n; }));
   return v;
 }
 function pgVolAdvice(plan) {
@@ -519,7 +627,7 @@ function pgVolAdvice(plan) {
   const adds = low.map(k => {
     const need = Math.ceil(WC_MIN - v[k]), own = [];
     plan.days.forEach(d => d.exercises.forEach(e => { if (pgMain(e.name) === k) own.push({ d, e }); }));
-    if (own.length && need <= 2 * own.length) return { k, need, more: own[0], v: v[k] };
+    if (own.length && need <= 2 * own.length && need <= pgMaxSets() - (+own[0].e.sets || 0)) return { k, need, more: own[0], v: v[k] };
     const name = pgPrefer(typeof wcCands === 'function' ? wcCands(k) : []).find(n => !inPlan(n));
     return { k, need, add: name || null, v: v[k] };
   });
@@ -530,7 +638,7 @@ function pgVolCard(plan) {
   if (!plan || !plan.days.length) return '';
   const A = pgVolAdvice(plan), v = A.v;
   const chip = k => `<span class="pg-vc ${v[k] < WC_MIN ? 'low' : v[k] > WC_MAX ? 'high' : 'ok'}">${zoneName(k)} <b class="num">${wcR(v[k])}</b></span>`;
-  const lines = A.adds.map(a => `<li>${zoneName(a.k)}: ${wcR(a.v)}/${WC_MIN} → ${a.more ? `suma ${a.need} ${a.need === 1 ? 'serie' : 'series'} a ${esc(a.more.e.name)} <button type="button" class="btn small" data-pg="vol-more" data-plan="${plan.id}" data-day="${a.more.d.id}" data-ex="${a.more.e.id}" data-n="${Math.min(a.need, 2)}">+${Math.min(a.need, 2)} ${Math.min(a.need, 2) === 1 ? 'serie' : 'series'}</button>` : a.add ? `agrega ${esc(a.add)} (${Math.min(4, Math.max(2, a.need))} series) <button type="button" class="btn small" data-pg="vol-add" data-plan="${plan.id}" data-k="${a.k}" data-name="${esc(a.add)}" data-n="${Math.min(4, Math.max(2, a.need))}">Agregar</button>` : 'agrega un ejercicio para ese músculo'}</li>`)
+  const lines = A.adds.map(a => `<li>${zoneName(a.k)}: ${wcR(a.v)}/${WC_MIN} → ${a.more ? `suma ${a.need} ${a.need === 1 ? 'serie' : 'series'} a ${esc(a.more.e.name)} <button type="button" class="btn small" data-pg="vol-more" data-plan="${plan.id}" data-day="${a.more.d.id}" data-ex="${a.more.e.id}" data-n="${Math.min(a.need, 2)}">+${Math.min(a.need, 2)} ${Math.min(a.need, 2) === 1 ? 'serie' : 'series'}</button>` : a.add ? `agrega ${esc(a.add)} (${Math.min(4, pgMaxSets(), Math.max(2, a.need))} series) <button type="button" class="btn small" data-pg="vol-add" data-plan="${plan.id}" data-k="${a.k}" data-name="${esc(a.add)}" data-n="${Math.min(4, pgMaxSets(), Math.max(2, a.need))}">Agregar</button>` : 'agrega un ejercicio para ese músculo'}</li>`)
     .concat(A.cuts.map(c => `<li>${zoneName(c.k)}: ${wcR(c.v)} (más de ${WC_MAX}) → ${c.big ? `quita ${c.over} ${c.over === 1 ? 'serie' : 'series'} de ${esc(c.big.e.name)} <button type="button" class="btn small" data-pg="vol-cut" data-plan="${plan.id}" data-day="${c.big.d.id}" data-ex="${c.big.e.id}">−1 serie</button>` : ''}</li>`));
   return `<div class="card pg-vol"><h3>${ic('person-standing', 17)} Series por músculo en tu plan</h3>
     <div class="muted" style="font-size:12.5px">Meta: ${WC_MIN}-${WC_MAX} series por semana (principal = 1, los que ayudan = ½).</div>
@@ -559,6 +667,7 @@ function pgFit(plan, day) {
       const m = pgMain(e.name), T = others.find(o => o.t + 180 < avail && o.d.exercises.some(x => pgMain(x.name) === m));
       if (!T) continue;
       const to = T.d.exercises.find(x => pgMain(x.name) === m && pgTypeOf(x.name) === pgTypeOf(e.name)) || T.d.exercises.find(x => pgMain(x.name) === m), sv = PG_RX[pgTypeOf(e.name)].dur + pgRx(e.name, k, e).rest;
+      if (+to.sets >= pgMaxSets()) continue;
       props.push({ k: 'move', e: e.id, to: T.d.id, toEx: to.id, save: sv, t: `1 serie de ${e.name} → ${to.name} (${WD[T.d.weekday]} · ${T.d.name})` }); est -= sv; T.t += sv;
     }
   }
@@ -604,21 +713,44 @@ function pgStalls(plan) {
     const key = exHKey(e.name) + k; if (seen[key]) return; seen[key] = 1;
     const rx = pgRx(e.name, k, e); if (rx.t === 'cardio') return;
     const H = exHistory(e.name, g, k, 12).filter(h => h.kind === k);
+    if (rx.bw && H[0] && !(+pgFirst(H[0]).w > 0)) return;   /* peso corporal: quedar bajo el mínimo es ir sumando reps, no fatiga */
     if (H.length >= 2 && H.slice(0, 2).every(h => { const f = pgFirst(h); return +f.r > 0 && +f.r < rx.rMin; })) out.push(e.name);
   }); });
   return out;
 }
+/* Semanas desde tu última descarga aceptada (si no hubo, desde tu primera sesión) */
+function pgDlWeeks() {
+  const t = state.settings.pgDl ? +new Date(state.settings.pgDl + 'T12:00:00') : 0;
+  return t ? (Date.now() - t) / (7 * 864e5) : pgTrainWeeks();
+}
+/* Avanzado (más de 2 años): cada 6-8 semanas sin descarga, los ejercicios que llevan 3 sesiones sin mejorar su 1RM
+   estimado. Con los Bloques activos no hace falta: ya traen su descarga cada 4-6 semanas */
+function pgPlateau(plan) {
+  if (pgExp() !== 3 || !plan || pgGoal() === 'grasa') return [];
+  const I = mesoInfo(); if ((I && !I.pre) || pgDlWeeks() < PG_DL_WEEKS) return [];
+  const g = plan.gymId || 'rokaz', out = [], seen = {}, best = (name, h) => Math.max.apply(null, h.sets.map(s => pgE1(name, s)));
+  plan.days.forEach(d => { const k = d.kind || kindOfName(d.name); d.exercises.forEach(e => {
+    const key = exHKey(e.name) + k; if (seen[key]) return; seen[key] = 1;
+    if (pgRx(e.name, k, e).t === 'cardio') return;
+    const H = exHistory(e.name, g, k, 12).filter(h => h.kind === k && h.sets.length);
+    if (H.length < 4 || !(+pgFirst(H[0]).w > 0)) return;
+    if (Math.max(best(e.name, H[0]), best(e.name, H[1]), best(e.name, H[2])) <= best(e.name, H[3]) * 1.005) out.push(e.name);
+  }); });
+  return out;
+}
 function pgDlCard() {
-  const plan = activePlan(), L = pgStalls(plan), key = wkKey(new Date()) + ':' + L.join(',');
+  if (pgNoDl()) return '';
+  const plan = activePlan(), S = pgStalls(plan), L = S.length >= 2 ? S : pgPlateau(plan), key = wkKey(new Date()) + ':' + L.join(',');
   if (L.length < 2 || pgDlNow() || state.settings.pgDlOff === key) return '';
-  return `<div class="card pg-dl">${ic('battery', 18)}<div class="grow"><b>Semana de descarga recomendada</b><div class="muted" style="font-size:12.5px">${L.length} ejercicios no llegaron al mínimo de su rango dos sesiones seguidas: ${esc(L.slice(0, 4).join(', '))}${L.length > 4 ? '…' : ''}. Esta semana: la mitad de series, −10 % de peso y RIR 3.</div>
+  const lead = S.length >= 2 ? `${L.length} ejercicios no llegaron al mínimo de su rango dos sesiones seguidas` : `Llevas ${Math.floor(pgDlWeeks())} semanas sin descarga y ${L.length} ejercicios llevan 3 sesiones sin mejorar`;
+  return `<div class="card pg-dl">${ic('battery', 18)}<div class="grow"><b>Semana de descarga recomendada</b><div class="muted" style="font-size:12.5px">${lead}: ${esc(L.slice(0, 4).join(', '))}${L.length > 4 ? '…' : ''}. Esta semana: la mitad de series, −10 % de peso y RIR 3.</div>
     <div class="row" style="gap:8px;margin-top:8px"><button type="button" class="btn small primary" data-pg="dl-on">Hacer descarga esta semana</button><button type="button" class="btn small" data-pg="dl-off" data-k="${esc(key)}">Ahora no</button></div></div></div>`;
 }
 
 /* ---------- Pantallas (teléfono): Mi plan, Hoy, opción Coach y la sesión ---------- */
 function pgCoachWhy(planId, dayId) {
   const C = nsCoachEntry(planId, dayId); if (!C) return '';
-  return `<div class="pg-why">${C.ex.map(x => { const s = x.sets[0] || {}; return `<div class="pg-wr ${x.mode || ''}"><span class="pg-wi">${PG_IC[x.mode] || '→'}</span><span class="grow"><b>${esc(x.name)}</b> · ${fmtKg(s.w || 0)} kg × ${s.rMin === s.rMax ? s.rMax : s.rMin + '-' + s.rMax}<small>${esc(x.why || '')}</small></span></div>`; }).join('')}</div>`;
+  return `<div class="pg-why">${C.ex.map(x => { const s = x.sets[0] || {}; return `<div class="pg-wr ${x.mode || ''}"><span class="pg-wi">${PG_IC[x.mode] || '→'}</span><span class="grow"><b>${esc(x.name)}</b> · ${x.bw || fmtKg(s.w || 0) + ' kg'} × ${s.rMin === s.rMax ? s.rMax : s.rMin + '-' + s.rMax}<small>${esc(x.why || '')}</small></span></div>`; }).join('')}</div>`;
 }
 const _renderPG = render;
 render = function () {
@@ -652,7 +784,7 @@ render = function () {
       const { p, d: day } = findDay(b.dataset.plan, b.dataset.day), e = day && day.exercises[+b.dataset.k]; if (!e || b.dataset.pg) return;
       b.dataset.pg = 1;
       const k = day.kind || kindOfName(day.name), c = pgCoach(e, p.gymId || 'rokaz', k), rx = c.rx, sm = b.querySelector('small'); if (!sm) return;
-      sm.innerHTML = `<span class="pg-ty">${PG_T[rx.t]}</span> · ${e.sets} × ${c.goal[0] && c.goal[0] !== rx.rMin ? c.goal[0] + ' (' + rx.rMin + '-' + rx.rMax + ')' : rx.rMin + '-' + rx.rMax} · <b>${fmtKg(c.w)} kg</b>${e.bar || barFor(e.name) ? ' + barra' : ''}${pgRirPart(rx)} · ${pgRestTxt(rx.rest)}${e.ss ? ' · superserie' : ''}${c.mode === 'cap' ? ' · peso máximo' : ''} <span class="pg-mi">${PG_IC[c.mode] || ''}</span>`;
+      sm.innerHTML = `<span class="pg-ty">${PG_T[rx.t]}</span> · ${pgSets(e)} × ${c.goal[0] && c.goal[0] !== rx.rMin ? c.goal[0] + ' (' + rx.rMin + '-' + rx.rMax + ')' : rx.rMin + '-' + rx.rMax} · <b>${c.bw ? c.bw.label : fmtKg(c.w) + ' kg'}</b>${!c.bw && (e.bar || barFor(e.name)) ? ' + barra' : ''}${pgRirPart(rx)} · ${pgRestTxt(rx.rest)}${e.ss ? ' · superserie' : ''}${c.mode === 'cap' ? ' · peso máximo' : ''} <span class="pg-mi">${PG_IC[c.mode] || ''}</span>`;
     });
     app.querySelectorAll('.rt-head[data-day]').forEach(h => {
       const sm = h.querySelector('small'); if (!sm || sm.querySelector('.pg-dur')) return;
@@ -682,7 +814,7 @@ window.addEventListener('click', ev => {
   if (a === 'dl-off') { state.settings.pgDlOff = b.dataset.k; savePlans(); return render(); }
   if (a === 'late-rest') { const d = state.draft; if (!d) return; let n = 0; d.exercises.forEach(e => { if (pgSsOk(e.name) && e.log.some(s => !s.done)) { const m = pgRx(e.name, d.kind).restMin; if (+e.rest > m) { e.rest = m; n++; } } }); saveDraft(); render(); return toast(n ? `Descansos al mínimo en ${n} ${n === 1 ? 'ejercicio' : 'ejercicios'} (solo hoy).` : 'Ya están al mínimo.'); }
   const { p, d } = findDay(b.dataset.plan, b.dataset.day || ''), e = d && d.exercises.find(x => x.id === b.dataset.ex);
-  if (a === 'vol-more' && e) { e.sets = +e.sets + (+b.dataset.n || 1); savePlans(); render(); return toast(`${e.name}: ${e.sets} series.`); }
+  if (a === 'vol-more' && e) { e.sets = Math.min(pgMaxSets(), +e.sets + (+b.dataset.n || 1)); savePlans(); render(); return toast(`${e.name}: ${e.sets} series.`); }
   if (a === 'vol-cut' && e) { e.sets = Math.max(1, +e.sets - 1); savePlans(); render(); return toast(`${e.name}: ${e.sets} series.`); }
   if (a === 'vol-add') {
     const plan = state.plans.find(x => x.id === b.dataset.plan), x = libFind(b.dataset.name); if (!plan || !x) return;
@@ -722,12 +854,35 @@ window.addEventListener('click', ev => {
   toast(b.dataset.pgT === 'auto' ? 'Tipo automático.' : `${name}: ${PG_T[b.dataset.pgT]} para el coach.`);
 }, true);
 
+/* ---------- Principiante: los Bloques y los avisos viejos también respetan su nivel ---------- */
+/* Sin descarga automática las primeras 8 semanas (una pedida a mano se respeta), sin la serie extra y sin RIR bajo 2 */
+const _mesoInfoPG = mesoInfo;
+mesoInfo = function (at) {
+  const I = _mesoInfoPG.apply(this, arguments); if (!I || I.pre || !pgNov()) return I;
+  const o = Object.assign({}, I, { plus: 0, rir: Math.max(PG_NOV_RIR, I.rir) });
+  if (o.deload && !o.early && pgNoDl(at)) o.deload = false;
+  return o;
+};
+const _rirTargetPG = rirTarget;
+rirTarget = function () { const v = _rirTargetPG.apply(this, arguments); return pgNov() ? Math.max(PG_NOV_RIR, v) : v; };
+const _fatigueSignsPG = fatigueSigns;
+fatigueSigns = function () { return pgNoDl() ? [] : _fatigueSignsPG.apply(this, arguments); };
+const _stallCardPG = stallCard;
+stallCard = function () { return pgNoDl() ? '' : _stallCardPG.apply(this, arguments); };
+
 /* ---------- 9. Exportaciones: el sistema del coach para la IA ---------- */
+function pgExpTxt() {
+  const e = pgExp();
+  if (e === 0 || e === 1) return `- Experiencia: ${PB_EXP[e].toLowerCase()}. Reglas de principiante: RIR mínimo ${PG_NOV_RIR} y nunca al fallo; subir ${pgGoal() === 'salud' ? 'solo tras 2 sesiones seguidas que completen el rango en todas las series (objetivo Salud y energía)' : 'cada sesión que complete el rango en todas las series'}; máximo ${PG_NOV_SETS} series por ejercicio; sin descarga las primeras ${PG_NOV_WEEKS} semanas.`;
+  return e === 3 ? '- Experiencia: más de 2 años. Además de lo de abajo: descarga sugerida cada 6-8 semanas si hay estancamiento.' : '';
+}
 function pgSystemTxt() {
   const g = pgGoal(), set = goalSet && goalSet(), row = t => { const f = PG_RX[t].f, b = PG_RX[t].b; return `- ${PG_T[t]}: pesado ${f[0]}-${f[1]} reps (RIR ${f[2]}-${f[3]}), bombeo ${b[0]}-${b[1]} (RIR ${b[2]}-${b[3]}), descanso ${PG_RX[t].rest[0]}-${PG_RX[t].rest[1]} s`; };
   return [`SISTEMA DE MI COACH (doble progresión autorregulada; recomiéndame con esta misma lógica):`,
     `- Objetivo: ${PG_GOALS[g]}${set ? '' : ' (por defecto: no lo elegí)'}: ${PG_GOAL_RULE[g]}. Tiempo disponible por sesión: ${pgAvail()} min.`,
+    pgExpTxt(),
     row('comp'), row('aisl'), row('glu'), row('peq'),
+    `- Peso corporal y bandas: subir reps hasta el tope del rango; luego bajada lenta de 3-4 s o pausa de 1-2 s; luego una variante más difícil. Dominadas y fondos: al llegar al tope, agregar lastre (con lastre progresan como cualquier peso).`,
     `- Cardio / acondicionamiento (escaladores, burpees, trineo, paseo del granjero…): sin progresión de peso; sumar un poco de tiempo, reps o metros. Explosivos (cargadas, thrusters, arranques): 3-6 reps, RIR 2 o más, nunca al fallo.`,
 
     `- Subir: si en la 1.ª serie llego al tope del rango con el RIR más alto, la próxima vez sube al siguiente escalón (+2,5 kg tren superior, +5 kg piernas, o el siguiente disco de la máquina) y vuelvo al mínimo de reps.`,

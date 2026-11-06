@@ -27,6 +27,8 @@ const ok = (c, msg) => { if (c) console.log('  ok  ', msg); else { fail++; conso
 const browser = await chromium.launch({ channel: process.env.PW_CHANNEL === 'chromium' ? undefined : 'msedge', headless: process.env.PW_CHANNEL === 'chromium', args: ['--headless=new'] });
 /* I1: la tarjeta "Exportar semana" de Hoy (lunes) es nueva; ya vista, la pantalla se compara igual que antes */
 const OWNER = Object.assign({}, OWNER_SETTINGS, { wxSeen: '2026-10-12' });
+/* Se ocultan en las dos versiones: la anterior puede tenerlos ya */
+const HIDE_NEW = '.hab-omb,.pg-est,.pg-dl,.pg-why{display:none!important}';
 
 /* Se inyecta antes que todo: cuenta las escrituras de #app y guarda cada estado distinto que llega a un cuadro */
 const SPY = () => {
@@ -100,7 +102,7 @@ console.log('A. Dueño: apertura de todos los días');
   ok(p.B.frames.filter(f => !f.hidden).every(f => f.hoy && f.nav === F.nav), 'después no cambia de diseño ni de barra');
   ok(await p.evaluate(() => getComputedStyle(document.body).backgroundColor) === 'rgb(21, 23, 26)', 'al mostrarse, el fondo es el de siempre (#15171a)');
   ok(await p.evaluate(() => scrollY) === 0, 'abre arriba del todo (antes podía quedar bajado 14 px)');
-  await p.addStyleTag({ content: '.hab-omb,.pg-est,.pg-dl,.pg-why{display:none!important}' });   /* y la duración estimada y los avisos del coach de progresión */   // "Omitir hoy" en Hábitos de hoy es nuevo: fuera de la comparación con la versión anterior
+  await p.addStyleTag({ content: HIDE_NEW });   /* y la duración estimada y los avisos del coach de progresión */   // "Omitir hoy" en Hábitos de hoy es nuevo: fuera de la comparación con la versión anterior
   const now = await shot(p, 'a-duenio');
   console.log('G. Redibujo tardío con los mismos datos (como los avisos nativos al abrir)');
   await p.evaluate(() => { safeRender(); render(); }); await p.waitForTimeout(300);
@@ -108,6 +110,7 @@ console.log('A. Dueño: apertura de todos los días');
   ok(!p.errs.length, 'sin errores de JS ' + p.errs.join(' | '));
   if (OLD) {
     const q = await open(OLD, { seed: OWNER }); report(q.B, 'antes'); counts.duenioAntes = q.B.renders;
+    await q.addStyleTag({ content: HIDE_NEW });
     const d = await pixDiff(now, await shot(q, 'a-duenio-antes', 1));
     ok(d === 0, 'pantalla final idéntica a la versión anterior' + (d ? ` (${d} píxeles distintos)` : ''));
     await q.done();

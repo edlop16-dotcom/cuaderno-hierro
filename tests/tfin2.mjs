@@ -28,7 +28,7 @@ const browser = await chromium.launch({ channel: process.env.PW_CHANNEL === 'chr
 /* Notificaciones locales simuladas (cualquier método resuelve; schedule se anota en window.__ln) */
 const NATIVE_LN = () => {
   window.__ln = [];
-  const LN = new Proxy({}, { get: (t, k) => k === 'then' ? undefined : (o => { if (k === 'schedule') window.__ln.push(o); return Promise.resolve({ display: 'granted', notifications: [] }); }) });
+  const LN = new Proxy({}, { get: (t, k) => k === 'then' ? undefined : (o => { if (k === 'schedule' && !((o.notifications || []).length && o.notifications.every(n => n.id >= 9100 && n.id < 9110))) window.__ln.push(o); return Promise.resolve({ display: 'granted', notifications: [] }); }) });
   window.Capacitor = { isNativePlatform: () => true, Plugins: { LocalNotifications: LN } };
 };
 async function open({ w, native } = {}) {

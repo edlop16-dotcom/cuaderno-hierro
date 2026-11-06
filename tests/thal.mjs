@@ -122,7 +122,8 @@ console.log('D. Reloj (en la app): sin cambios');
     const q = await open(OLD, { owner: true, watch: true, native: ST });
     ok((await shot(q, 'd-reloj-antes')).equals(now), 'inicio del reloj idéntico a la versión anterior');
     await q.evaluate(() => { state.tab = 'settings'; render(); }); await q.waitForTimeout(300);
-    const a = await p.evaluate(() => { const r = document.querySelector('#app .wov-row'); if (r) r.remove(); return document.getElementById('app').innerHTML; }), b = await q.evaluate(() => document.getElementById('app').innerHTML);   /* sin "Avisar si me paso del tiempo" (Tanda J) */
+    const sinWov = () => { const r = document.querySelector('#app .wov-row'); if (r) r.remove(); return document.getElementById('app').innerHTML; };   /* sin "Avisar si me paso del tiempo" (Tanda J) en las dos versiones: la anterior puede tenerlo ya */
+    const a = await p.evaluate(sinWov), b = await q.evaluate(sinWov);
     ok(a === b, 'Ajustes del reloj idénticos a la versión anterior');
     await q.done();
   }

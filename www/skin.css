@@ -2295,3 +2295,12 @@ body:not(.watch) .pg-reg-ed input{min-height:44px;padding:8px 10px;border-radius
 body:not(.watch) .pg-reg-b{background:none;border:0;color:var(--accent);font:inherit;font-weight:600;min-height:44px;padding:0 4px;cursor:pointer}
 body:not(.watch) .pg-rgi{flex:1;min-width:0;min-height:40px;padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--text);font:inherit;font-size:13px}
 .w2-reg{font-size:12px;color:#a9acb2;text-align:center;margin:0 0 4px}
+body:not(.watch) .tk-wrap{overflow-x:auto;margin:6px 0;flex-shrink:0}
+body:not(.watch) .tk-dist{width:100%;border-collapse:collapse;font-size:12.5px}
+body:not(.watch) .tk-dist th,body:not(.watch) .tk-dist td{padding:5px 4px;text-align:center;border-bottom:1px solid var(--line);font-weight:500}
+body:not(.watch) .tk-dist thead th{color:var(--muted,#a9acb2);font-size:11.5px}
+body:not(.watch) .tk-dist tbody th{text-align:left;white-space:nowrap}
+body:not(.watch) .tk-t{font-weight:700}
+body:not(.watch) .tk-t.low{color:var(--warn)}
+body:not(.watch) .tk-t.high{color:var(--bad)}
+body:not(.watch) .tk-set{margin-top:8px}

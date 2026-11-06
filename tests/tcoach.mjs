@@ -46,7 +46,7 @@ const SESSIONS = [
 ];
 const GYMS = [{ id: 'rokaz', name: 'Gimnasio A' }, { id: 'raydac', name: 'Gimnasio B' }];
 const SETTINGS = Object.assign(structuredClone(OWNER_SETTINGS), { activePlanId: 'planB', activeGymId: 'raydac', planByGym: { rokaz: 'planA', raydac: 'planB' }, newsSeen: 'n6' });
-SETTINGS.prof = Object.assign({}, SETTINGS.prof, { goal: 'musculo', mins: 75 });
+SETTINGS.prof = Object.assign({}, SETTINGS.prof, { goal: 'musculo', mins: 75, exp: 2 });   /* intermedio: el sistema de siempre (los niveles se prueban en tnivel.mjs) */
 
 async function open({ watch, settings, plans, sessions } = {}) {
   const srv = await serve(DIR);
