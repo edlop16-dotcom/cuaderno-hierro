@@ -146,6 +146,7 @@ console.log('B. Usuario nuevo');
   const p = await open(DIR, {});
   await p.evaluate(START); await p.waitForTimeout(800);
   ok(await p.locator(cur + '.su-pills').count() === 1 && await p.locator(cur + '.sets').count() === 1, 'misma pantalla para un usuario nuevo');
+  await p.evaluate(() => { state.draft.exercises[0].log.forEach(s => { if (s.w === '') s.w = 40; }); render(); });   /* sin datos aquí el peso va vacío: se escribe antes de marcar */
   await tapCur(p, '.sets .check[data-set="0"]:not(.drop-c)');
   ok(await p.evaluate(() => state.draft.exercises[0].log[0].done), 'marca la serie');
   await shot(p, 'b1-nuevo');

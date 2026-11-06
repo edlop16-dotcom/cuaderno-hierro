@@ -144,7 +144,7 @@ console.log('A. Historial: una sola regla en toda la app');
     const r = { ht: g('Hip Thrust').prev.map(s => s.w + 'x' + s.r).join(','), pr: g('Prensa 45°').prev.map(s => s.w + 'x' + s.r).join(','), prW: g('Prensa 45°').coach.w, remo: g('Remo Sentado con Cable').refGym, txt: document.getElementById('sx').textContent };
     discardSession(); return r; });
   ok(N.ht === '40x15,40x15,40x15' && N.pr === '120x15,120x15,120x15', `rutina normal: "Anterior" = tu última vez aquí sin importar el tipo (Hip Thrust ${N.ht}, Prensa ${N.pr})`);
-  ok(N.prW >= 160 && N.remo === 'Gimnasio A', 'y el peso sugerido de fuerza sale de tu última sesión de fuerza; Remo usa la referencia del Gimnasio A');
+  ok(N.prW >= 160 && N.remo == null, 'y el peso sugerido de fuerza sale de tu última sesión de fuerza; Remo no trae referencia del Gimnasio A');
   /* Récords, progreso y exportaciones */
   const R = await p.evaluate(() => { state.tab = 'progress'; state.progSub = 'ejercicios'; state.gf = 'all'; render();
     const rows = Array.prototype.map.call(document.querySelectorAll('#app table.rec td:first-child b'), b => b.textContent);
