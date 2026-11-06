@@ -34,6 +34,7 @@ document.addEventListener('click', ev => {
   const box = b.closest('.rirpick');
   box.querySelectorAll('.rp').forEach(x => { const on = +x.dataset.v === s.rir; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); x.classList.remove('plan'); });
   try { HAP && HAP.impact({ style: 'LIGHT' }); } catch (e) {}
+  if (s.rir != null && typeof sxRirDone === 'function') sxRirDone(+b.dataset.ex, +b.dataset.set);
 }, true);
 
 /* Guardar el RIR con cada serie de la sesión */
