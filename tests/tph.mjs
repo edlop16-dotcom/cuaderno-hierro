@@ -142,7 +142,8 @@ console.log('C. Reloj 410×500');
   ok(w[0] && w[1] === w0, 'el reloj no suma fotos');
   ok((await shot(p, 'c-reloj')).equals(await shot(q, 'c-reloj-antes')), 'inicio del reloj idéntico a la versión anterior');
   await p.evaluate(() => { state.tab = 'settings'; render(); }); await q.evaluate(() => { state.tab = 'settings'; render(); }); await p.waitForTimeout(300);
-  ok(await p.evaluate(() => { const r = document.querySelector('#app .wov-row'); if (r) r.remove(); return document.getElementById('app').innerHTML; }) === await q.evaluate(() => document.getElementById('app').innerHTML), 'Ajustes del reloj idénticos (con su renglón de crédito de siempre; sin el interruptor de la Tanda J)');
+  const sinWov = () => { const r = document.querySelector('#app .wov-row'); if (r) r.remove(); return document.getElementById('app').innerHTML; };   /* en las dos versiones: la anterior puede tenerlo ya */
+  ok(await p.evaluate(sinWov) === await q.evaluate(sinWov), 'Ajustes del reloj idénticos (con su renglón de crédito de siempre; sin el interruptor de la Tanda J)');
   ok(!p.errs.length, 'sin errores de JS ' + p.errs.join(' | '));
   await p.done(); await q.done();
 }
