@@ -1,14 +1,25 @@
 /* ==========================================================================
    Mejoras del entrenamiento (rama mejoras-entrenamiento). Solo el teléfono, salvo el orden real al guardar.
    1. Al abrir un ejercicio: peso y reps del coach en los campos y tu última vez como referencia, siempre del mismo
-      ejercicio y del mismo gimnasio. Sin datos de ese gimnasio, los campos quedan vacíos y no sale ninguna referencia
-      de otro. Si el ejercicio lleva peso, hay que escribirlo antes de marcar la serie (si no, se guardaría 0 kg).
+      ejercicio y del mismo gimnasio. Con historial solo en otro gimnasio, los campos quedan vacíos y no sale ninguna
+      referencia de él. Sin historial en ningún gimnasio, el peso escrito en tu rutina o el primer peso calculado con la
+      bienvenida. Si el peso queda vacío, hay que escribirlo antes de marcar la serie (si no, se guardaría 0 kg).
    2. Un ejercicio agregado a mano queda también en la rutina, en ese lugar, en cuanto lo agregas.
    3. La sesión se guarda en el orden real: por la hora de la primera serie completada de cada ejercicio.
    (El punto 4, esperar el RIR para deslizar, está en session.js y superset.js.)
    ========================================================================== */
 
 /* ---------- 1. Últimas series del mismo ejercicio y gimnasio ---------- */
+/* Sin historial en ningún gimnasio: el peso escrito en tu rutina o el primer peso calculado con la bienvenida.
+   Sin experiencia, sexo o peso corporal reales no hay cálculo: nunca se inventa (null = casilla vacía) */
+function mjFirstW(d, e) {
+  if (lastPerf(e.name, d.gymId, d.kind) || baseRec(e.name)) return null;
+  const f = findDay(d.planId, d.dayId), pe = f && f.d ? f.d.exercises.find(x => x.id === e.exId) : null;
+  if (pe && +pe.weight) return +pe.weight;
+  const p = pbProf() || {}; if (p.exp == null || !(p.sex || body().sex)) return null;
+  const s = startLoad(Object.assign({}, pe || { type: e.type, repsMin: e.repsMin, repsMax: e.repsMax, bar: e.bar }, { name: e.name }));
+  return s && !s.est && (s.w > 0 || s.onlyBar) ? s.w : null;
+}
 function mjFill(d, e) {
   e.mjF = 1;
   const here = lastHere(e.name, d.gymId), g = e.coach && Array.isArray(e.coach.goal) ? e.coach.goal : null;
@@ -17,10 +28,13 @@ function mjFill(d, e) {
     e.prev = []; e.prevN = 0; e.refGym = null; e.lastDate = null;
     /* Lo que trae tu IA y los reemplazos (conversión desde lo que hacías aquí) son una recomendación, no datos de otro gimnasio */
     if (e.ns === 'ia' || e.swappedFrom) { e.log.forEach((s, j) => { if (!s.done && s.r == null && goalOf(j)) s.r = goalOf(j); }); return; }
+    /* El peso que ya trae la sesión respeta la Preparación del día y la descarga; si no trae, va el calculado */
+    const W = mjNeedsW(e.name) ? mjFirstW(d, e) : null;
+    if (W != null) { e.log.forEach(s => { if (!s.done && !(+s.w > 0)) s.w = W; }); return; }
     e.log.forEach(s => { if (s.done) return; s.w = ''; s.r = null; (s.drops || []).forEach(x => { if (!x.done) x.w = ''; }); });
-    const c = e.coach, rx = c && c.rx;
-    if (e.sugg) e.sugg = Object.assign({}, e.sugg, { w: 0, up: false, msg: 'Primera vez en este gimnasio: elige tu peso y anótalo.' });
-    if (c && c.pg && /^(gym|base)$/.test(c.pg.src)) e.coach = Object.assign({}, c, { w: 0, head: `<b>Primera vez en este gimnasio</b>${rx ? ` · ${rx.rMin}-${rx.rMax} reps` : ''}`, tips: ['Elige tu peso y anótalo; con esta sesión el coach aprende tu nivel aquí.'] });
+    const c = e.coach, rx = c && c.rx, none = !(c && c.pg && /^(gym|base)$/.test(c.pg.src)) && !lastPerf(e.name, d.gymId, d.kind), first = none ? 'Primera vez con este ejercicio' : 'Primera vez en este gimnasio';
+    if (e.sugg) e.sugg = Object.assign({}, e.sugg, { w: 0, up: false, msg: `${first}: elige tu peso y anótalo.` });
+    if (c && c.pg && /^(gym|base|new)$/.test(c.pg.src)) e.coach = Object.assign({}, c, { w: 0, head: `<b>${first}</b>${rx ? ` · ${rx.rMin}-${rx.rMax} reps` : ''}`, tips: [`Elige tu peso y anótalo; con esta sesión el coach aprende tu nivel${none ? '' : ' aquí'}.`] });
     return;
   }
   e.log.forEach((s, j) => {

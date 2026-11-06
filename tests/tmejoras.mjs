@@ -67,7 +67,7 @@ console.log('1. Últimas series del mismo ejercicio y gimnasio');
   ok(bn.w.every(v => v === '') && bn.r.every(v => v == null), `solo hecho en el otro gimnasio: campos vacíos (Press Banca: "${bn.w.join('","')}")`);
   ok(!bn.prev.length && !bn.ref && !bn.date, 'y sin ninguna referencia de otro gimnasio');
   ok(!/Gimnasio A|60/.test(bn.head + bn.msg), `el texto del coach tampoco lo menciona: ${bn.head.replace(/<[^>]+>/g, '').slice(0, 80)}`);
-  ok(xt.w.every(v => v === '') && !xt.prev.length, 'nunca hecho en ningún gimnasio: campos vacíos');
+  ok(xt.w.every(v => v === 30) && !xt.prev.length, 'nunca hecho en ningún gimnasio: trae el peso escrito en tu rutina (30 kg)');
   const page = await p.evaluate(() => { const c = document.querySelectorAll('#sx-pager > .sx-page')[1]; const i = c.querySelector('input[data-f="w"]'); return { txt: c.textContent, v: i.value, ph: !!i }; });
   ok(page.ph && page.v === '' && !/Referencia de|Gimnasio A/.test(page.txt), 'en pantalla: casilla vacía y sin referencia');
   const ed = await p.evaluate(() => { const i = document.getElementById('w-0-0'); i.value = '95'; i.dispatchEvent(new Event('input', { bubbles: true })); const r = document.getElementById('r-0-0'); r.value = '7'; r.dispatchEvent(new Event('input', { bubbles: true })); const s = state.draft.exercises[0].log[0]; return [s.w, s.r]; });
@@ -93,6 +93,46 @@ console.log('1. Últimas series del mismo ejercicio y gimnasio');
   ok(old === '33:null,33:null', 'una sesión ya empezada antes de esta versión no se toca'); noErr(o); await o.done();
 }
 
+console.log('1b. Primer peso: sin historial en ningún gimnasio o con historial en otro');
+{
+  const P0 = () => ({ id: 'pB', name: 'Rutina B', gymId: 'raydac', days: [{ id: 'dB', name: 'Cuerpo completo (Pesado)', weekday: 0, kind: 'fuerza', exercises: [X('Extensión de Pierna', 'Piernas', 2, 0), X('Press Banca Plano (Barra)', 'Empuje', 2, 0), X('Flexiones', 'Empuje', 2, 0)] }] });
+  const PROF = { name: 'Prueba', goal: 'musculo', exp: 1, days: 3, mins: 60, equip: 'gym', age: 30, sex: 'm', cm: 175, kg: 80 };
+  const mk = prof => { const s = SET({ owner: 0, onb: 1, activeGymId: 'raydac' }); if (prof) s.prof = prof; else delete s.prof; return s; };
+  const hist = [SS('a1', '2026-10-20T19:00', 'rokaz', [['Press Banca Plano (Barra)', S(60, [8, 8])]])];
+  const p = await open({ settings: mk(PROF), sessions: hist, plans: [P0(), planA()] }); await start(p);
+  const a = await ex(p, 0), b = await ex(p, 1), f = await ex(p, 2);
+  const want = await p.evaluate(() => startLoad(state.plans[0].days[0].exercises[0]).w);
+  ok(want > 0 && a.w.every(v => v === want) && !a.prev.length, `sin historial en ningún gimnasio: las casillas traen el primer peso de la bienvenida (${a.w.join(',')} kg)`);
+  ok(new RegExp(String(want)).test(a.head + a.msg), `y el coach dice ese mismo peso: ${(a.head + ' ' + a.msg).replace(/<[^>]+>/g, '').slice(0, 90)}`);
+  ok(await p.evaluate(() => document.getElementById('w-0-0').value !== ''), 'se ve en la casilla de la pantalla');
+  ok(await p.evaluate(() => { markSet(0, 0); return state.draft.exercises[0].log[0].done; }), 'se marca sin pedir el peso');
+  ok(b.w.every(v => v === '') && !b.prev.length && !/Gimnasio A|60/.test(b.head + b.msg), 'con historial en otro gimnasio: casillas vacías y sin referencia, como antes');
+  ok(await p.evaluate(() => { markSet(1, 0); return !state.draft.exercises[1].log[0].done; }), 'y pide escribir el peso antes de marcar');
+  ok(f.w.every(v => v === ''), 'peso corporal: sin kilos en la casilla');
+  const add = await p.evaluate(() => { addToDraft(['Curl Femoral Tumbado'], 2); const e = state.draft.exercises[3]; render(); return { w: state.draft.exercises[3].log[0].w, sl: startLoad({ name: e.name, type: e.type, repsMin: e.repsMin, repsMax: e.repsMax, bar: e.bar }) }; });
+  ok(add.sl && add.w === add.sl.w, `agregado a mano sin historial: también trae el primer peso (${add.w} kg)`);
+  noErr(p); await p.done();
+  const q = await open({ settings: mk(null), sessions: hist, plans: [P0(), planA()] }); await start(q);
+  const n = await ex(q, 0);
+  ok(n.w.every(v => v === '') && !/\d+ kg/.test((n.head + n.msg).replace(/<[^>]+>/g, '')), `sin datos de la bienvenida: no se inventa un peso (${(n.head + ' ' + n.msg).replace(/<[^>]+>/g, '').slice(0, 80)})`);
+  ok(await q.evaluate(() => { addToDraft(['Curl Femoral Tumbado'], 2); render(); return state.draft.exercises[3].log[0].w === ''; }), 'agregado a mano sin datos de la bienvenida: tampoco se inventa');
+  noErr(q); await q.done();
+  const r = await open({ settings: mk(Object.assign({}, PROF, { exp: null })), sessions: [], plans: [P0(), planA()] }); await start(r);
+  ok((await ex(r, 0)).w.every(v => v === ''), 'perfil sin experiencia: tampoco se calcula');
+  noErr(r); await r.done();
+  const bar = await open({ settings: mk(Object.assign({}, PROF, { exp: 0, sex: 'f', age: 66, kg: 48 })), sessions: [], plans: [P0(), planA()] }); await start(bar);
+  const B = await bar.evaluate(() => { const e = state.plans[0].days[0].exercises[1], s = startLoad(e); return { s, w: state.draft.exercises[1].log[0].w }; });
+  ok(B.s.onlyBar && B.w === 0, 'solo la barra: la casilla queda en 0 kg de discos, no vacía');
+  ok(await bar.evaluate(() => { markSet(1, 0); return state.draft.exercises[1].log[0].done; }), 'y se puede marcar');
+  noErr(bar); await bar.done();
+  const lo = await open({ settings: Object.assign(mk(PROF), { ready: { d: '2026-10-25', sleep: -1, energy: -1 } }), sessions: [], plans: [P0(), planA()] }); await start(lo);
+  ok((await ex(lo, 0)).w.every(v => +v > 0), 'con la Preparación del día también trae peso');
+  noErr(lo); await lo.done();
+  const w = await open({ watch: true, settings: mk(PROF), sessions: [], plans: [P0(), planA()] }); await start(w);
+  ok(await w.evaluate(() => !state.draft.mj), 'reloj: no cambia');
+  noErr(w); await w.done();
+}
+
 console.log('2. Ejercicios agregados a mano');
 {
   const p = await open(); await start(p);
@@ -106,7 +146,7 @@ console.log('2. Ejercicios agregados a mano');
   ok(C.join() === 'Flexiones,Elevación Lateral con Mancuernas,Sentadilla Hack', `al final y en el orden elegido: ${C.join(' · ')}`);
   ok(await p.evaluate(b => JSON.stringify(state.plans.find(x => x.id === 'pA')) + JSON.stringify(state.plans.find(x => x.id === 'pB').days[1]) === b, before), 'las otras rutinas y días quedan igual');
   const empty = await ex(p, 1);
-  ok(empty.w.every(v => v === ''), 'el agregado también sigue la regla: sin datos aquí, campos vacíos');
+  ok(empty.w.every(v => +v > 0), 'el agregado sigue la misma regla: sin historial en ningún gimnasio, trae el primer peso de la bienvenida');
   /* Cerrar la app a mitad de sesión */
   await p.reload(); await p.waitForTimeout(1800);
   const R = await p.evaluate(() => ({ n: state.plans[1].days[0].exercises.filter(x => x.name === 'Curl Bíceps').length, d: state.draft && state.draft.exercises.map(e => e.name).join(), pos: state.plans[1].days[0].exercises[1].name }));
@@ -240,7 +280,7 @@ console.log('5. Usuario nuevo y dueño sin perfil');
   const s = SET({ owner: 0 }); s.onb = 1;
   const q = await open({ settings: s, sessions: [], plans: [planB()] }); await start(q);
   const n = await ex(q, 0);
-  ok(n.w.every(v => v === '') && !n.prev.length, 'primera sesión de un usuario nuevo: campos vacíos');
+  ok(n.w.every(v => v === 80) && !n.prev.length, 'primera sesión: trae el peso de su rutina');
   ok(await q.evaluate(() => { state.draft.exercises[0].log.forEach(x => { x.w = 40; }); markSet(0, 0); markSet(0, 1); return state.draft.exercises[0].log.every(x => x.done && x.r > 0); }), 'escribe su peso, marca y las reps salen del objetivo');
   noErr(q); await q.done();
   const o = SET(); delete o.prof;
