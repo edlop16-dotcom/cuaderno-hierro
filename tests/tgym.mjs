@@ -371,7 +371,9 @@ console.log('6. Análisis de la sesión');
   const talon = A.t.find(r => /Talones/.test(r.n)); ok(talon.w > 30 && /irregulares/.test(talon.note), 'reps irregulares: sube y lo explica');
   ok(A.t.length === 7 && A.t.every(r => /^\d(, \d)*$/.test(r.rir)), 'tabla con los 7 ejercicios y RIR por serie');
   await p.evaluate(k => { state.tab = 'train'; daySheet(k); }, await p.evaluate(() => dk(state.sessions[0].date))); await p.waitForTimeout(200);
-  ok(await p.evaluate(() => !!document.querySelector('#sheet details.ag-an .ag-tb')), 'también en cualquier sesión guardada (detalle del día)');
+  /* Desde ajustes-gym-3 el análisis del detalle del día se abre con su botón (ya no con el plegable del sistema) */
+  await p.evaluate(() => { const b = document.querySelector('#sheet [data-g3="an"]'); if (b) b.click(); });
+  ok(await p.evaluate(() => !!document.querySelector('#sheet .g3-box:not([hidden]) .ag-tb')), 'también en cualquier sesión guardada (detalle del día)');
   const h = await p.evaluate(() => { state.sessions[0].estSec = 4500; return fsHtml(state.sessions[0], {}); });
   ok(/pg-time/.test(h) && /data-xp="fs"/.test(h) && /dd-acts ex-fs/.test(h) && /data-act="fs-close"/.test(h), 'el resumen conserva la duración, Exportar y Listo');
   ok(/Lo que salió bien/.test(h) && !/fs-nx/.test(h) && (h.match(/Para tu próxima sesión/g) || []).length === 1, 'al terminar: reemplaza la lista de antes, sin repetirla');

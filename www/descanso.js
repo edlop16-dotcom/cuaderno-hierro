@@ -30,7 +30,7 @@ function rfWant() {
 function rfArm() {
   const at = rfWant(); if (!at) return;
   const c = typeof alertCfg === 'function' ? alertCfg() : {};
-  rfAt = at; RF.rest({ at, title: 'Descanso terminado', body: rfNext(), snd: c.sound !== 'silencio', vib: +c.vib !== 0 }).catch(() => {});
+  rfAt = at; RF.rest({ at, title: 'Descanso terminado', body: rfNext(), snd: c.sound !== 'silencio', vib: +c.vib !== 0, auto: typeof g3On === 'function' && g3On() }).catch(() => {});
 }
 function rfCancel() { rfAt = 0; if (RF) RF.restCancel().catch(() => {}); }
 /* En segundo plano el reloj de la app sigue corriendo: faltando poco, o ya terminado, no se le quita el aviso a la pantalla completa */

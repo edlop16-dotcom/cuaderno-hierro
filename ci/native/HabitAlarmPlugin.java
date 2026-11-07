@@ -15,7 +15,10 @@ import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
+import com.getcapacitor.annotation.ActivityCallback;
 import com.getcapacitor.annotation.CapacitorPlugin;
+
+import androidx.activity.result.ActivityResult;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -126,6 +129,7 @@ public class HabitAlarmPlugin extends Plugin {
             o.put("body", call.getString("body", ""));
             o.put("snd", call.getBoolean("snd", true));
             o.put("vib", call.getBoolean("vib", true));
+            o.put("auto", call.getBoolean("auto", false));   /* Pantalla automática: la pantalla del descanso se cierra sola a los 10 s */
             HabitAlarms.channel(getContext());
             HabitAlarms.arm(getContext(), o);
             call.resolve();
@@ -152,6 +156,42 @@ public class HabitAlarmPlugin extends Plugin {
             r.put("locked", km != null && km.isKeyguardLocked());
             call.resolve(r);
         });
+    }
+
+    /** Pantalla automática (ajustes-gym-3): brillo al mínimo mientras la app pone la pantalla negra. Android no deja apagar
+     *  la pantalla sin permisos de administrador; esto es solo el brillo de esta ventana y se quita con `on: false`. */
+    @PluginMethod
+    public void dim(final PluginCall call) {
+        final boolean on = call.getBoolean("on", false);
+        final android.app.Activity a = getActivity();
+        if (a == null) { call.resolve(); return; }
+        a.runOnUiThread(() -> {
+            try {
+                android.view.WindowManager.LayoutParams lp = a.getWindow().getAttributes();
+                lp.screenBrightness = on ? 0.01f : android.view.WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE;
+                a.getWindow().setAttributes(lp);
+            } catch (Throwable t) { }
+            call.resolve();
+        });
+    }
+
+    /** Pide el patrón, PIN o huella del celular con la pantalla de Android (sin permisos nuevos). Sin bloqueo configurado: ok. */
+    @PluginMethod
+    public void confirmUnlock(PluginCall call) {
+        android.app.KeyguardManager km = (android.app.KeyguardManager) getContext().getSystemService(Context.KEYGUARD_SERVICE);
+        boolean secure = km != null && (Build.VERSION.SDK_INT >= 23 ? km.isDeviceSecure() : km.isKeyguardSecure());
+        Intent i = secure ? km.createConfirmDeviceCredentialIntent("Forja", "Confirma que eres tú para salir de la sesión") : null;
+        if (i == null) { JSObject r = new JSObject(); r.put("ok", true); r.put("secure", false); call.resolve(r); return; }
+        startActivityForResult(call, i, "confirmResult");
+    }
+
+    @ActivityCallback
+    private void confirmResult(PluginCall call, ActivityResult result) {
+        if (call == null) return;
+        JSObject r = new JSObject();
+        r.put("ok", result != null && result.getResultCode() == android.app.Activity.RESULT_OK);
+        r.put("secure", true);
+        call.resolve(r);
     }
 
     @PluginMethod

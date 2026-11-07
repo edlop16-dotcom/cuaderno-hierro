@@ -149,9 +149,10 @@ const ANTES = SES('antes', 7, 'bombeo', SAMPLE.map(x => [x[0], x[2].map(() => [x
   await p.waitForTimeout(700);
   const S = await p.evaluate(() => ({ fs: !!document.querySelector('#sheet .fs-card'), cel: !!document.querySelector('.celebrate'), txt: document.querySelector('#sheet').innerText }));
   ok(S.fs && !S.cel, 'al tocar Terminar sale el resumen en ese momento (la racha espera)');
-  ok(/en el orden en que los hiciste/i.test(S.txt) && /La última vez/.test(S.txt) && /Lo que salió bien/i.test(S.txt) && /Lo que conviene ajustar/i.test(S.txt) && /Para tu próxima sesión/i.test(S.txt), 'con tus ejercicios en orden real, la última vez de cada uno, lo que salió bien, lo que ajustar y la tabla');
+  /* Desde ajustes-gym-3 la lista es el cuadro "Hoy vs anterior" */
+  ok(/Hoy vs anterior/i.test(S.txt) && /Primera vez aquí|frente a/.test(S.txt) && /Lo que salió bien/i.test(S.txt) && /Lo que conviene ajustar/i.test(S.txt) && /Para tu próxima sesión/i.test(S.txt), 'con tus ejercicios en orden real, la última vez de cada uno, lo que salió bien, lo que ajustar y la tabla');
   console.log('\n      RESUMEN AL TERMINAR\n' + S.txt.split('\n').filter(Boolean).map(l => '      ' + l).join('\n'));
-  const real = await p.evaluate(() => state.sessions[0].exercises.map(e => e.name)), shownOrder = await p.evaluate(() => [...document.querySelectorAll('#sheet .g2-ex b')].map(b => b.textContent));
+  const real = await p.evaluate(() => state.sessions[0].exercises.map(e => e.name)), shownOrder = await p.evaluate(() => [...document.querySelectorAll('#sheet .g3-cmp tbody tr td:first-child')].map(td => td.textContent.replace(/ SS \w+$/, '').trim()));
   ok(JSON.stringify(real) === JSON.stringify(shownOrder), 'el orden del resumen es el real');
   await act(p, '[data-act="fs-close"]'); await p.waitForTimeout(700);
   ok(await p.evaluate(() => !!document.querySelector('.celebrate')), 'al cerrarlo, sale la racha');

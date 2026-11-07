@@ -216,6 +216,12 @@ public class HabitAlarms {
         pill.setColor(0xFFFAFAFA); pill.setCornerRadius(dp(c, 40));
         go.setBackground(pill); go.setTextColor(0xFFFF5A1F);
         go.setPadding(dp(c, 22), dp(c, 20), dp(c, 22), dp(c, 20));
+        /* Pantalla automática: a los 10 s vuelve sola a la sesión (encima del bloqueo) o, sin sesión en pantalla, se cierra */
+        if (item.optBoolean("auto", false)) root.postDelayed(() -> {
+            if (sessShow) { try { c.startActivity(appIntent(c)); } catch (Exception ignored) { } }
+            NotificationManager nm = (NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE); if (nm != null) nm.cancel(REST_ID);
+            close.run();
+        }, 10000);
         go.setOnClickListener(v -> {
             final Runnable open = () -> { try { c.startActivity(appIntent(c)); } catch (Exception ignored) { } close.run(); };
             android.app.KeyguardManager km = (android.app.KeyguardManager) c.getSystemService(Context.KEYGUARD_SERVICE);
