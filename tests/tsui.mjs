@@ -76,7 +76,7 @@ console.log('A. Dueño: sesión de su rutina');
     const th = document.querySelector('.sx-th'), ck = card.querySelector('.check');
     return { sw: !!document.querySelector('#sx .sx-top .su-sw'), fin: !!document.querySelector('#sx .sx-fin'), add: !!document.querySelector('#sx-strip .sx-th-add'),
       th: [th.offsetWidth, getComputedStyle(th).borderRadius], name: card.querySelector('h3').textContent, pills: [...card.querySelectorAll('.su-pills .su-p')].map(b => b.textContent.replace(/\s+/g, ' ').trim()),
-      order: { pills: idx('.su-pills'), coach: idx('.su-co, .su-coach'), sets: idx('.sets'), ctl: idx('.st-ctl'), note: idx('.field'), cbox: idx('.coach, .sugg') },
+      order: { pills: idx('.su-pills'), coach: idx('.g2-rec, .su-co, .su-coach'), sets: idx('.sets'), ctl: idx('.st-ctl'), note: idx('.field'), cbox: idx('.g2-rec, .coach, .sugg') },
       heads: [...card.querySelectorAll('.sets > .h')].map(h => h.textContent), ck: [ck.offsetWidth, getComputedStyle(ck).borderRadius], addTxt: (card.querySelector('.st-ctl .st-b.add') || {}).textContent };
   }, cur);
   ok(L.sw && L.fin, 'barra de arriba con tiempo, cronómetro y Terminar');
@@ -170,17 +170,26 @@ for (const [w, h] of [[360, 740], [360, 640], [390, 844]]) {
   const p = await open(DIR, { seed: OWNER, w, h });
   await p.evaluate(START); await p.waitForTimeout(800);
   const c = await p.evaluate(c => {
-    const card = document.querySelector(c + '.card.ex'), box = card.querySelector('.su-co'), kids = [...card.children], b = box.getBoundingClientRect(), ck = card.querySelector('.sets .check').getBoundingClientRect();
-    const lh = parseFloat(getComputedStyle(box).lineHeight) || 18;
-    return { after: kids.indexOf(box) === kids.indexOf(card.querySelector('.su-pills')) + 1, h: Math.round(b.height), top: Math.round(b.top), ck: Math.round(ck.bottom), vh: innerHeight, icon: !!box.querySelector('.coach-ic svg, .coach-ic'),
-      head: box.querySelector('.coach-h').textContent.trim(), more: (box.querySelector('.su-more') || {}).textContent || '', lines: Math.round((b.height - 18) / lh), sw: document.documentElement.scrollWidth };
+    /* Desde ajustes-gym-2 arriba va "Recomendación para hoy" (.g2-rec: peso × reps y RIR por serie y el porqué), en lugar del recuadro del coach */
+    const card = document.querySelector(c + '.card.ex'), rec = card.querySelector('.g2-rec'), box = rec || card.querySelector('.su-co'), kids = [...card.children], b = box.getBoundingClientRect(), ck = card.querySelector('.sets .check').getBoundingClientRect();
+    const lh = parseFloat(getComputedStyle(box).lineHeight) || 18, rw = rec && rec.querySelector('.g2-rw');
+    return { rec: !!rec, after: kids.indexOf(box) === kids.indexOf(card.querySelector('.su-pills')) + 1, h: Math.round(b.height), top: Math.round(b.top), ck: Math.round(ck.bottom), vh: innerHeight, icon: !!box.querySelector(rec ? '.g2-rh svg' : '.coach-ic svg, .coach-ic'),
+      head: (rec ? rec.querySelector('.g2-rss') : box.querySelector('.coach-h')).textContent.trim(), more: rec ? (rw && rw.scrollHeight > rw.clientHeight + 2 ? 'Ver más' : '') : (box.querySelector('.su-more') || {}).textContent || '', lines: Math.round((b.height - 18) / lh), sw: document.documentElement.scrollWidth };
   }, cur);
   console.log(`     coach: «${c.head}» · ${c.h} px · 1.ª serie termina en ${c.ck} de ${c.vh}`);
   ok(c.after && c.icon, 'el recuadro del coach va justo bajo las píldoras, antes de la tabla');
   ok(c.h <= 90, `compacto: ${c.h} px (máx. 90, unas 3 líneas)`);
   ok(c.ck <= c.vh, '1.ª serie (con su ✓) visible sin deslizar');
   ok(c.sw <= w, 'sin desbordes');
-  if (c.more) {
+  if (c.more && c.rec) {
+    await p.locator(cur + '.g2-rec').first().click(); await p.waitForTimeout(200);
+    const o = await p.evaluate(c => { const box = document.querySelector(c + '.g2-rec'); return { open: box.classList.contains('g2-open'), h: Math.round(box.getBoundingClientRect().height) }; }, cur);
+    ok(o.open && o.h > c.h, `tocarla abre el porqué ahí mismo (${c.h} → ${o.h} px)`);
+    await p.evaluate(() => render()); await p.waitForTimeout(200);
+    ok(await p.evaluate(c => document.querySelector(c + '.g2-rec').classList.contains('g2-open'), cur), 'sigue abierta después de redibujar');
+    await p.locator(cur + '.g2-rec').first().click(); await p.waitForTimeout(200);
+    ok(await p.evaluate(c => !document.querySelector(c + '.g2-rec').classList.contains('g2-open'), cur), 'otro toque la cierra');
+  } else if (c.more) {
     await p.locator(cur + '.su-co').first().click(); await p.waitForTimeout(200);
     const o = await p.evaluate(c => { const box = document.querySelector(c + '.su-co'); return { open: box.classList.contains('su-open'), h: Math.round(box.getBoundingClientRect().height), more: box.querySelector('.su-more').textContent, lis: [...box.querySelectorAll('li')].filter(l => l.offsetHeight).length }; }, cur);
     ok(o.open && o.h > c.h && o.more === 'Ver menos', `"Ver más" lo abre ahí mismo (${c.h} → ${o.h} px)`);

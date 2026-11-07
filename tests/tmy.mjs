@@ -100,7 +100,7 @@ console.log('A. Dueño');
   await p.evaluate(n => { state.pk.sel = [n]; }, NAME); await tap(p, '#sheet [data-act="pk-add"]');
   const w0 = await p.evaluate(() => weekSets(0).sets.pant);
   await p.evaluate(n => { const pl = activePlan(), d = pl.days[0]; state.settings.nextS = {}; startSession(pl.id, d.id); const i = state.draft.exercises.findIndex(e => e.name === n); state.draft.exercises[i].log.forEach((s, j) => { s.w = 80; s.r = 15; markSet(i, j, true); }); state.durOK = true; finishSession(); state.durOK = false; }, NAME);
-  await p.waitForTimeout(500); await p.evaluate(() => document.querySelectorAll('.celebrate').forEach(x => x.remove())); await p.waitForTimeout(1500); await p.evaluate(() => closeSheet());
+  await p.waitForTimeout(500); await p.evaluate(() => document.querySelectorAll('.celebrate').forEach(x => x.remove())); await p.waitForTimeout(1500); await p.evaluate(() => closeSheet()); await p.waitForTimeout(700); await p.evaluate(() => document.querySelectorAll('.celebrate').forEach(x => x.remove()));   /* desde ajustes-gym-2 la racha sale después del resumen */
   const w1 = await p.evaluate(() => weekSets(0).sets.pant);
   ok(w1 - w0 >= 3, `el coach semanal cuenta pantorrillas (+${w1 - w0} series)`);
   ok(await p.evaluate(n => bestE1rm(n, activeGym().id) > 0, NAME), 'tiene récord como cualquier ejercicio');

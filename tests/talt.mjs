@@ -84,10 +84,13 @@ console.log('A. Dueño en Gimnasio de prueba: Remo Sentado con Cable');
   const txt = await p.evaluate(() => document.getElementById('sheet').innerText);
   ok(/Mismo movimiento/.test(txt) && /conversión prudente/.test(txt), 'la hoja agrupa por movimiento (Tanda J: todas las alternativas) y explica el peso');
   await shot(p, 'a2-cambiar');
-  const pick = L.list[0].n;
+  const pick = L.list[0].n, plansBefore = await p.evaluate(() => JSON.stringify(state.plans));
   await tap(p, `#sheet [data-act="swap-do"][data-name="${pick}"]`);
   const sw = await p.evaluate(i => { const e = state.draft.exercises[i]; return { n: e.name, from: e.swappedFrom, w: e.log[0].w }; }, i);
   ok(sw.n === pick && sw.from === 'Remo Sentado con Cable', `cambiado en plena sesión por ${sw.n} con ${sw.w} kg`);
+  /* Desde ajustes-gym-2 el reemplazo queda también en la rutina: se comprueba y se deja la rutina como estaba para seguir */
+  ok(await p.evaluate(b => JSON.stringify(state.plans) !== b && state.plans.some(P => P.days.some(d => d.exercises.some(e => e.name === state.draft.exercises.find(x => x.swappedFrom).name))), plansBefore), 'el reemplazo queda también en tu rutina');
+  await p.evaluate(b => { state.plans = JSON.parse(b); savePlans(); }, plansBefore);
   /* Marcar que no hay la máquina */
   await p.evaluate(() => { discardSession(); });
   const i2 = await p.evaluate(startPlan, r); await p.waitForTimeout(300);

@@ -143,7 +143,7 @@ console.log('A. Dueño: ida y vuelta');
   /* Entrenar ahora con la importada: peso, RIR y descanso; la recomendación del coach queda arriba */
   await importReco(p, D[0], answer([R[0]]));
   await p.click('#sheet [data-aix="go"]'); await p.waitForTimeout(900);
-  const S = await p.evaluate(n => { const e = state.draft.exercises.find(x => x.name === n), pg = document.querySelector('#sx-pager > .sx-page.cur .card.ex'); return { w: e.log.map(s => s.w), rir: e.rirT, rest: e.rest, restT: e.restT, top: pg && !!pg.querySelector(':scope > .su-pills + .su-co') }; }, R[0].ex[0]);
+  const S = await p.evaluate(n => { const e = state.draft.exercises.find(x => x.name === n), pg = document.querySelector('#sx-pager > .sx-page.cur .card.ex'); return { w: e.log.map(s => s.w), rir: e.rirT, rest: e.rest, restT: e.restT, top: pg && !!pg.querySelector(':scope > .su-pills + .su-co, :scope > .su-pills + .g2-rec') }; }, R[0].ex[0]);
   ok(S.w.join() === '52.5,52.5' && S.rir.join() === '2,1' && S.rest === 120, `"Entrenar ahora": ${R[0].ex[0]} 52,5 kg ×2, RIR 2·1, descanso 120 s`);
   ok(S.top, 'en la sesión, la recomendación (importada) va arriba, bajo las píldoras');
   await shot(p, 'a1-sesion-importada');

@@ -138,6 +138,8 @@ public class HabitAlarms {
        No va en la lista `items`: reprogramar los recordatorios no lo toca. Con la pantalla encendida no hace nada: queda
        la notificación normal de la app ("¡A la siguiente serie!", id 9001). */
     static final int REST_ID = 2998, REST_LN_ID = 9001;
+    /* La app dice que hay una sesión en curso en pantalla (HabitAlarmPlugin.sessionLock): "Volver a la sesión" no pide el patrón */
+    static volatile boolean sessShow = false;
     static java.lang.ref.WeakReference<android.app.Activity> restAct;
     static boolean isRest(JSONObject o) { return "rest".equals(o.optString("kind")); }
     static Intent appIntent(Context c) {
@@ -217,7 +219,9 @@ public class HabitAlarms {
         go.setOnClickListener(v -> {
             final Runnable open = () -> { try { c.startActivity(appIntent(c)); } catch (Exception ignored) { } close.run(); };
             android.app.KeyguardManager km = (android.app.KeyguardManager) c.getSystemService(Context.KEYGUARD_SERVICE);
-            if (Build.VERSION.SDK_INT >= 26 && c instanceof android.app.Activity && km != null && km.isKeyguardLocked()) {
+            /* Con la sesión en curso, la app ya se ve encima del bloqueo (solo la pantalla de la sesión): sin patrón */
+            if (sessShow) open.run();
+            else if (Build.VERSION.SDK_INT >= 26 && c instanceof android.app.Activity && km != null && km.isKeyguardLocked()) {
                 km.requestDismissKeyguard((android.app.Activity) c, new android.app.KeyguardManager.KeyguardDismissCallback() {
                     @Override public void onDismissSucceeded() { open.run(); }
                 });

@@ -197,7 +197,10 @@ console.log('3. Siguiente ejercicio');
   await p.T(120000); await mark(p, 'Curl Femoral Tumbado', 1, 30, 12, 2); await p.waitForTimeout(150);
   t = await ln(); ok(!!t, 'vuelve a sugerir al marcar una serie');
   const to = await p.evaluate(() => { const b = document.querySelector('[data-ag="go"]'); const i = +b.dataset.i; b.click(); return i; }); await p.waitForTimeout(700);
-  ok(await p.evaluate(() => state.draft.cur) === to, '"Ir" te lleva a ese ejercicio');
+  /* Desde ajustes-gym-2: a mitad del ejercicio "Ir" lo deja elegido y pasas ahí al terminar la última serie */
+  ok(await p.evaluate(t => state.draft.cur === 0 && state.draft.agGo === t, to), '"Ir" a mitad del ejercicio lo deja elegido');
+  await p.T(200000); await mark(p, 'Curl Femoral Tumbado', 0, 30, 12, 2); await mark(p, 'Curl Femoral Tumbado', 2, 30, 12, 2); await p.waitForTimeout(1800);   /* el paso se desliza suave: se mira cuando termina */   /* la prueba de arriba desmarcó las series: se completan las 3 */
+  ok(await p.evaluate(() => state.draft.cur) === to, '"Ir" te lleva a ese ejercicio al terminar el que hacías');
   ok(await p.evaluate(() => state.draft.exercises.map(e => e.name).join()) === before, 'la rutina del día no se reordena');
   const nm = await p.evaluate(i => state.draft.exercises[i].name, to);
   await p.T(300000); await mark(p, nm, 0, 40, 10, 2); await p.T(400000); await p.evaluate(() => { finishSession(); }); await p.waitForTimeout(600);

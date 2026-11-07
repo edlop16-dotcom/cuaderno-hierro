@@ -132,6 +132,28 @@ public class HabitAlarmPlugin extends Plugin {
         } catch (Exception e) { call.reject(e.getMessage()); }
     }
 
+    /** Sesión en curso con la pantalla bloqueada (ajustes-gym-2): `on` deja ver solo la pantalla de la sesión encima del
+     *  bloqueo, como un cronómetro. Al apagarlo (terminar, salir a otra parte), si el celular está bloqueado, Android vuelve
+     *  a mostrar el bloqueo y pide el patrón. Devuelve `locked` para que la app tape la pantalla mientras tanto. */
+    @PluginMethod
+    public void sessionLock(final PluginCall call) {
+        final boolean on = call.getBoolean("on", false);
+        final android.app.Activity a = getActivity();
+        HabitAlarms.sessShow = on;
+        if (a == null) { JSObject r = new JSObject(); r.put("locked", false); call.resolve(r); return; }
+        a.runOnUiThread(() -> {
+            try {
+                if (Build.VERSION.SDK_INT >= 27) a.setShowWhenLocked(on);
+                else if (on) a.getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED);
+                else a.getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED);
+            } catch (Throwable t) { }
+            android.app.KeyguardManager km = (android.app.KeyguardManager) a.getSystemService(Context.KEYGUARD_SERVICE);
+            JSObject r = new JSObject();
+            r.put("locked", km != null && km.isKeyguardLocked());
+            call.resolve(r);
+        });
+    }
+
     @PluginMethod
     public void restCancel(PluginCall call) {
         HabitAlarms.restCancel(getContext());

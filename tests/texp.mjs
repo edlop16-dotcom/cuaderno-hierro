@@ -201,6 +201,7 @@ console.log('E. Domingo: después de la última sesión');
   await finish(p); await p.waitForTimeout(1200);
   ok(await p.evaluate(() => !!document.querySelector('#sheet .fs-card [data-xp="week"]')), 'el resumen del domingo ofrece "Exportar semana"');
   await p.click('#sheet [data-act="fs-close"]'); await p.waitForTimeout(600);
+  await p.evaluate(() => document.querySelectorAll('.celebrate').forEach(x => x.remove()));   /* desde ajustes-gym-2 la racha sale después del resumen */
   await p.evaluate(() => { state.tab = 'train'; render(); }); await p.waitForTimeout(300);
   const c = await p.evaluate(() => { const x = document.querySelector('.wx-card'); return x ? x.textContent : ''; });
   ok(/Cerraste tu semana/.test(c) && /7 sesiones/.test(c), 'y Hoy la ofrece con las 7 sesiones de la semana');
@@ -255,7 +256,8 @@ console.log('G. Usuario nuevo');
   ok(/Mi objetivo: ganar músculo \(el de la app por defecto/.test(T) && /LO QUE TE PIDO \(sesión de (fuerza|bombeo), todavía en curso\)/.test(T) && !/undefined|NaN|null|\{[a-z ]+\}/.test(T), 'exporta a media sesión, con el objetivo por defecto y sin huecos');
   await finish(p); await p.waitForTimeout(1200);
   ok(await p.evaluate(() => !!document.querySelector('#sheet .fs-card [data-xp="fs"]')), 'el resumen tiene "Exportar"');
-  await p.evaluate(() => { closeSheet(); state.tab = 'progress'; state.progSub = 'historial'; render(); }); await p.waitForTimeout(300);
+  await p.evaluate(() => { closeSheet(); state.tab = 'progress'; state.progSub = 'historial'; render(); }); await p.waitForTimeout(700);
+  await p.evaluate(() => document.querySelectorAll('.celebrate').forEach(x => x.remove()));   /* desde ajustes-gym-2 la racha sale después del resumen */
   await p.click('.ex-hrow'); await p.waitForTimeout(300);
   const t = await p.evaluate(() => aixWeekText(state.exOff).txt);
   ok(/MIS SESIONES DE LA SEMANA \(1;/.test(t) && /DÍA LUNES · 2026-10-19/.test(t) && !/undefined|NaN/.test(t), 'Historial: exporta su semana con el día en el bloque');
