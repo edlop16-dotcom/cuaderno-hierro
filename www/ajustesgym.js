@@ -371,7 +371,7 @@ function agBalance(s) {
   const hit = {}; s.exercises.forEach(e => { const z = zoneShares(e.name); for (const k in z) hit[k] = 1; });
   for (const p of PG_SS_OPP) {
     const a = S[p[0]] || 0, b = S[p[1]] || 0, hi = a >= b ? p[0] : p[1], lo = a >= b ? p[1] : p[0], H = Math.max(a, b), L = Math.min(a, b);
-    if ((hit[p[0]] || hit[p[1]]) && H >= 6 && L < H * 0.6) return 'Esta semana van ' + wcR(L) + ' series de ' + agLow(lo) + ' frente a ' + wcR(H) + ' de ' + agLow(hi) + ': suma ' + agLow(lo) + ' para equilibrar.';
+    if ((hit[p[0]] || hit[p[1]]) && H >= 6 && L < H * 0.6) return (off ? 'Esa semana hubo ' : 'Esta semana van ') + wcR(L) + ' series de ' + agLow(lo) + ' frente a ' + wcR(H) + ' de ' + agLow(hi) + ': suma ' + agLow(lo) + ' para equilibrar.';
   }
   return null;
 }

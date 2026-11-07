@@ -44,7 +44,7 @@ function prWeek(off) {
 function prBalance(off) {
   const o = prWeek(off); if (o.push < 6 || o.push < o.pull * 1.3 || o.push - o.pull < 3) return null;
   const g = activeGym().id, L = wcCands('esp').concat(wcCands('homb')).filter(n => { const x = libFind(n); return x && /^(row|rear)$/.test(x.pat || '') && exAvail(n, g); });
-  return { push: o.push, pull: o.pull, ex: L[0] || null, txt: `Esta semana van ${o.push} series de empuje frente a ${o.pull} de jalón: ${L[0] ? 'suma ' + L[0] : 'suma espalda alta o hombro posterior'} para cuidar tu postura.` };
+  return { push: o.push, pull: o.pull, ex: L[0] || null, txt: `${off ? 'Esa semana hubo' : 'Esta semana van'} ${o.push} series de empuje frente a ${o.pull} de jalón: ${L[0] ? 'suma ' + L[0] : 'suma espalda alta o hombro posterior'} para cuidar tu postura.` };
 }
 const prBalHtml = off => { const B = prBalance(off); return B ? `<div class="safe tip pr-bal">${ic('info', 16)}<span>${esc(B.txt)}</span></div>` : ''; };
 const _wcSumHtmlPR = wcSumHtml;
@@ -57,12 +57,15 @@ wcReportHtml = function () {
   const h = _wcReportHtmlPR.apply(this, arguments), b = prBalHtml(0), k = h.indexOf('<div class="wc-list"');
   return b ? (k >= 0 ? h.slice(0, k) + b + h.slice(k) : h + b) : h;
 };
-/* En el análisis de la sesión (rama ajustes-gym), si ya está unida */
+/* En el análisis de la sesión, solo si esa sesión tuvo empuje o jalón. Reemplaza el aviso de espalda y pecho (dicen lo mismo); el fallo sigue primero */
 if (typeof agFix === 'function') {
   const _agFixPR = agFix;
   agFix = function (s) {
-    const L = _agFixPR.apply(this, arguments), off = Math.round((weekStartOf(new Date()) - weekStartOf(new Date(s.date))) / (7 * 864e5)), B = prBalance(off);
-    return B ? [B.txt].concat(L).slice(0, 3) : L;
+    const L = _agFixPR.apply(this, arguments).slice(), off = Math.round((weekStartOf(new Date()) - weekStartOf(new Date(s.date))) / (7 * 864e5));
+    const B = s.exercises.some(e => prSide(e.name)) ? prBalance(off) : null; if (!B) return L;
+    const k = L.findIndex(t => /series de (espalda|pecho) frente a/.test(t));
+    if (k >= 0) L[k] = B.txt; else L.splice(/^Llegaste al fallo/.test(L[0] || '') ? 1 : 0, 0, B.txt);
+    return L.slice(0, 3);
   };
 }
 

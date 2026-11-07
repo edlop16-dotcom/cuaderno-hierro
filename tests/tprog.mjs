@@ -93,6 +93,14 @@ console.log('3. Equilibrio para la postura');
   ok(B && /11 series de empuje frente a 3 de jalón/.test(B.t), 'cuenta empuje y jalón de la semana');
   ok(B && /suma /.test(B.t), 'sugiere un ejercicio');
   ok(B && B.s.includes('pr-bal') && B.r.includes('pr-bal'), 'sale en el resumen y en el reporte semanal');
+  const A = await p.evaluate(() => { if (typeof agFix !== 'function') return null; const x = state.sessions.find(y => y.id === 'a'), z = state.sessions.find(y => y.id === 'z'); const legs = Object.assign({}, x, { exercises: [{ name: 'Sentadilla Hack', sets: [{ w: 50, r: 10, rir: 2 }] }] }); return { fix: agFix(x), h: agAnalysisHtml(x), old: agFix(z), legs: agFix(legs) }; });
+  if (A) {
+    console.log('      en el análisis:', JSON.stringify(A.fix));
+    ok(A.fix.length <= 3 && /11 series de empuje frente a 3 de jalón/.test(A.fix[0]) && A.h.includes('series de empuje'), 'sale en el análisis de la sesión, sin pasar de 3 puntos');
+    ok(!A.fix.some(t => /series de (espalda|pecho) frente a/.test(t)), 'no repite lo mismo con otras palabras');
+    ok(A.old.length <= 3 && /^Esa semana hubo 11 series de empuje/.test(A.old[0]), 'una sesión de la semana pasada habla de esa semana');
+    ok(!A.legs.some(t => /series de empuje/.test(t)), 'una sesión solo de pierna no ocupa el análisis con esto');
+  }
   const off = await p.evaluate(() => { const g = activeGym().id; const n = prBalance(0).ex, e = (libFind(n) || {}); gymNoSet(g, e.eq, true); return { n, now: prBalance(0).ex }; }); console.log('      sin esa máquina:', JSON.stringify(off));
   ok(off.n !== off.now, 'solo sugiere lo disponible en tu gimnasio');
   noErr(p); await p.done();
