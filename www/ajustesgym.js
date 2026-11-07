@@ -80,6 +80,8 @@ function agPick(d) {
   return why ? { i: top.i, name: top.e.name, why } : null;
 }
 function agNextHtml(d) {
+  /* Sale cuando ya empezaste el ejercicio: antes no hace falta y empujaría la 1.ª serie fuera de la pantalla */
+  const cur = d.exercises[Math.min(d.cur || 0, d.exercises.length - 1)]; if (!cur || !cur.log.some(s => s.done)) return '';
   const P = agPick(d); if (!P || d.agNo === P.name) return '';
   return `<div class="ag-next" id="ag-next"><div class="grow"><b>Después: ${esc(P.name)}</b><small>${esc(P.why)}</small></div>
     <button type="button" class="btn small" data-ag="go" data-i="${P.i}">Ir</button><button type="button" class="icon-btn sm" data-ag="no" data-n="${esc(P.name)}" aria-label="Ignorar esta sugerencia">${ic('x', 15)}</button></div>`;
@@ -421,8 +423,10 @@ function agAnalysisHtml(s) {
 const _fsHtmlAG = fsHtml;
 fsHtml = function (s) {
   const h = _fsHtmlAG.apply(this, arguments); if (isWatch()) return h;
-  const k = h.indexOf('Para tu próxima sesión'), a = h.lastIndexOf('<div class="fs-sec">', k), b = h.indexOf('<button', k);
-  return k < 0 || a < 0 || b < 0 ? h : h.slice(0, a) + agAnalysisHtml(s) + h.slice(b);
+  const k = h.indexOf('Para tu próxima sesión'), a = h.lastIndexOf('<div class="fs-sec">', k);
+  /* Solo la lista: lo que viene después (duración, Exportar, Listo) se queda */
+  const b = ['<div class="muted pg-time', '<div class="dd-acts', '<button'].map(m => h.indexOf(m, k)).filter(x => x >= 0).sort((x, y) => x - y)[0];
+  return k < 0 || a < 0 || b == null ? h : h.slice(0, a) + agAnalysisHtml(s) + h.slice(b);
 };
 /* En cualquier sesión guardada: en el detalle del día */
 const _daySheetAG = daySheet;

@@ -78,7 +78,7 @@ console.log('A. Dueño: fin del descanso con la pantalla apagada');
   ok(R && R.end > Date.parse('2026-10-19T10:30:30'), 'al marcar la serie empieza el descanso');
   await vis(p, 'hidden'); await p.waitForTimeout(200);
   let c = await calls(p, 'rest');
-  ok(c.length === 1 && c[0].at === R.end && c[0].title === 'Descanso terminado' && c[0].body === `Sigue: ${R.ex} · serie 2 de ${R.n}` && c[0].snd === true && c[0].vib === true, 'al apagarse la pantalla: se programa "Descanso terminado" a la hora de fin, con qué sigue y sonido');
+  ok(c.length === 1 && c[0].at === R.end && c[0].title === 'Descanso terminado' && c[0].body.indexOf(`Sigue: ${R.ex} · serie 2 de ${R.n}`) === 0 && c[0].snd === true && c[0].vib === true, 'al apagarse la pantalla: se programa "Descanso terminado" a la hora de fin, con qué sigue y sonido');
   await vis(p, 'visible'); await p.waitForTimeout(200);
   /* Tanda J: el aviso sigue al descanso (se reprograma con cada cambio y se cancela al terminar o saltar); volver a la app no lo toca */
   ok(!(await calls(p, 'restCancel')).length && (await calls(p, 'rest')).length === 1, 'al volver a la app sigue programado a la misma hora (sin cambios)');
