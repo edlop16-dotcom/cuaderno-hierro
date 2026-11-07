@@ -209,7 +209,8 @@ console.log('3. Siguiente ejercicio');
   noErr(p); await p.done();
 
   /* Cansancio: sin series pendientes por músculo, lo pesado primero */
-  const full = []; for (let i = 0; i < 6; i++) full.push({ id: 's' + i, date: new Date(T0 - (3 - i % 3) * 864e5).toISOString(), planId: 'pA', planName: '', dayId: 'old' + i, dayName: 'x', gymId: 'rokaz', gymName: 'Gimnasio A', kind: 'fuerza', durationSec: 3000, exercises: ['Prensa 45°', 'Extensión de Pierna', 'Curl Femoral Tumbado', 'Elevación de Talones de Pie', 'Peso Muerto Rumano', 'Sentadilla Hack'].map(n => ({ name: n, sets: [1, 2, 3, 4].map(() => ({ w: 40, r: 10, rir: 2 })) })) });
+  /* Ajustes del gimnasio 4: hace 2-3 días (no ayer), para que el descanso muscular de 48 h no cambie lo que se prueba aquí */
+  const full = []; for (let i = 0; i < 6; i++) full.push({ id: 's' + i, date: new Date(T0 - (3 - i % 2) * 864e5).toISOString(), planId: 'pA', planName: '', dayId: 'old' + i, dayName: 'x', gymId: 'rokaz', gymName: 'Gimnasio A', kind: 'fuerza', durationSec: 3000, exercises: ['Prensa 45°', 'Extensión de Pierna', 'Curl Femoral Tumbado', 'Elevación de Talones de Pie', 'Peso Muerto Rumano', 'Sentadilla Hack'].map(n => ({ name: n, sets: [1, 2, 3, 4].map(() => ({ w: 40, r: 10, rir: 2 })) })) });
   const q = await open({ sessions: full, plans: [PLAN('fuerza', [X('Curl Femoral Tumbado', 2, 30), X('Elevación de Talones de Pie', 2, 40), X('Extensión de Pierna', 2, 40), X('Prensa 45°', 2, 80)])] }); await start(q); await q.waitForTimeout(200);
   const P = await q.evaluate(() => agPick(state.draft)); console.log('      sugerencia:', JSON.stringify(P));
   ok(P && P.name === 'Prensa 45°' && /pesado/.test(P.why), 'músculos cubiertos: primero el pesado, los aislados al final');
