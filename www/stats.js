@@ -218,7 +218,10 @@ markSet = function (i, j, v, k) {
   const d2 = state.draft, e2 = d2 && d2.exercises[i];
   if (e2 && k == null && !was && e2.log[j] && e2.log[j].done) {
     const w = setWin(e2, j, d2);
-    if (w && w !== before) toast(w === 'pr' ? `🛡️ ¡Récord en ${e2.name}! ${fmtKg(+e2.log[j].w || 0)} kg × ${e2.log[j].r}` : `🛡️ ¡Mejoraste! Superaste tu serie ${j + 1} de la vez anterior.`);
+    /* En el teléfono: aviso corto, y solo si supera también lo de hoy (igualarlo en la serie siguiente no lo repite). El reloj sigue igual */
+    const s2 = e2.log[j], hoy = e2.log.reduce((a, x, n) => (n !== j && x.done ? Math.max(a, e1rm(+x.w || 0, +x.r || 0)) : a), 0);
+    if (w === 'pr' && !isWatch()) { if (w !== before && e1rm(+s2.w || 0, +s2.r || 0) > hoy + 0.01) toast(`¡Récord en ${e2.name}: ${fmtKg(+s2.w || 0)}×${s2.r}!`); }
+    else if (w && w !== before) toast(w === 'pr' ? `🛡️ ¡Récord en ${e2.name}! ${fmtKg(+e2.log[j].w || 0)} kg × ${e2.log[j].r}` : `🛡️ ¡Mejoraste! Superaste tu serie ${j + 1} de la vez anterior.`);
   }
 };
 const _finishSt = finishSession;

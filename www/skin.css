@@ -2330,3 +2330,6 @@ body:not(.watch) .ag-gr .grow { min-width: 0; }
 body:not(.watch) .ag-gr.ag-off { opacity: .4; pointer-events: none; }
 /* Respaldo completo (respaldo.js) */
 body:not(.watch) .rc-box { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+/* Progreso (progreso.js) */
+body:not(.watch) .pr-w { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; font-size: 13px; }
+body:not(.watch) .pr-w .bd-in { max-width: 96px; }
