@@ -152,11 +152,11 @@ console.log('E. Dueño en la app: Agua también en pantalla completa (antes solo
   // apagar la pantalla completa de un recordatorio de Agua
   const wi = await p.evaluate(() => state.reminders.findIndex(x => x.kind === 'water'));
   await p.click(`[data-act="r-edit"][data-i="${wi}"]`); await p.waitForSelector('#rm-fs');
-  ok(await p.evaluate(() => document.getElementById('rm-fs').checked), 'en Editar, "Aparecer en toda la pantalla" viene marcado');
+  ok(await p.evaluate(() => document.getElementById('rm-fs').value === '1'), 'en Editar, "Cómo avisarme" viene en Pantalla completa');
   if (SHOTS) await p.screenshot({ path: path.join(SHOTS, 'e-editar.png') });
-  await p.click('#rm-fs'); await p.click('#f-rem button[type="submit"]'); await p.waitForTimeout(300);
+  await p.selectOption('#rm-fs', '0'); await p.click('#f-rem button[type="submit"]'); await p.waitForTimeout(300);
   const R = await p.evaluate(i => state.reminders[i], wi);
-  ok(R.fs === false, 'al desmarcarlo se guarda (fs: false)');
+  ok(R.fs === false, 'al elegir Solo notificación se guarda (fs: false)');
   const items2 = await lastSched(p);
   ok(!items2.some(x => x.id >= 3000 + wi * 20 && x.id < 3000 + wi * 20 + 14), 'ese ya no va a pantalla completa');
   ok(await p.evaluate(i => { const at = new Date(Date.now() + 864e5); return !remSkip(state.reminders[i], 1, at); }, wi), 'y vuelve a llegar como notificación normal');
@@ -225,12 +225,12 @@ console.log('I. Usuario nuevo en la app: Agua sigue como notificación (puede el
   ok(!items.some(x => x.kind === 'water'), 'por defecto el agua no va a pantalla completa');
   await p.evaluate(() => { state.tab = 'settings'; render(); document.querySelectorAll('details').forEach(d => { d.open = true; }); });
   await p.click('[data-act="r-new"]'); await p.waitForSelector('#rm-fs');
-  const f0 = await p.evaluate(() => document.getElementById('rm-fs').checked);
-  await p.selectOption('#rm-kind', 'hab'); const f1 = await p.evaluate(() => document.getElementById('rm-fs').checked);
-  await p.selectOption('#rm-kind', 'water'); const f2 = await p.evaluate(() => document.getElementById('rm-fs').checked);
-  ok(!f0 && f1 && !f2, 'en Nuevo: sin marcar; al elegir Hábito se marca; al volver a Agua se desmarca');
-  await p.click('#rm-fs'); await p.selectOption('#rm-kind', 'custom');
-  ok(await p.evaluate(() => document.getElementById('rm-fs').checked), 'si lo marcas a mano, se respeta al cambiar de tipo');
+  const f0 = await p.evaluate(() => document.getElementById('rm-fs').value);
+  await p.selectOption('#rm-kind', 'hab'); const f1 = await p.evaluate(() => document.getElementById('rm-fs').value);
+  await p.selectOption('#rm-kind', 'water'); const f2 = await p.evaluate(() => document.getElementById('rm-fs').value);
+  ok(f0 === '0' && f1 === '0' && f2 === '0', 'en Nuevo: Solo notificación por defecto, en cualquier tipo');
+  await p.selectOption('#rm-fs', '1'); await p.selectOption('#rm-kind', 'custom');
+  ok(await p.evaluate(() => document.getElementById('rm-fs').value === '1'), 'si eliges Pantalla completa, se respeta al cambiar de tipo');
   await p.fill('#rm-label', 'Estirar'); await p.click('#f-rem button[type="submit"]'); await p.waitForTimeout(300);
   const items2 = await lastSched(p);
   ok(items2.some(x => x.kind === 'custom' && x.title === 'Estirar' && x.ok === 'Listo ✓'), 'el nuevo "Estirar" va a pantalla completa');

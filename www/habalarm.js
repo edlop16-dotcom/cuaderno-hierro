@@ -133,7 +133,8 @@ function haMark(k, day, quiet) {
 async function haTake() {
   if (!HA) return;
   try {
-    const r = await HA.takeEvents(), ev = (r && r.events) || [];
+    const r = await HA.takeEvents(), all = (r && r.events) || [], ev = all.filter(e => !e.cancel);
+    if (typeof agEvents === 'function') agEvents(all);   /* ajustesgym.js: el ✕ cuenta; "Hecho" pone el contador a cero */
     /* "Omitir hoy" desde la notificación o la pantalla completa */
     const skip = ev.filter(e => e.habit && e.day && e.skip);
     skip.forEach(e => habSkip(e.habit, e.day, true, true));
@@ -187,8 +188,8 @@ function haCheck() {
     x.shown = 1; haShow(x);
   });
 }
-setInterval(haCheck, 15000);
-document.addEventListener('visibilitychange', haCheck);
+setInterval(() => haCheck(), 15000);   /* así vale también lo que envuelve a haCheck (recordatorios juntos) */
+document.addEventListener('visibilitychange', () => haCheck());
 
 document.addEventListener('click', ev => {
   const b = ev.target.closest('[data-act^="ha-"]'); if (!b) return;
@@ -233,8 +234,8 @@ function haRemOf(k) {
 }
 function haFsField(r) {
   if (isWatch()) return '';
-  const on = r && r.kind ? haFull(r) : !pubUser();
-  return `<label class="field rem-fsf" id="rm-fs-f"><span class="row" style="gap:10px"><input type="checkbox" id="rm-fs" ${on ? 'checked' : ''} style="width:22px;height:22px;flex-shrink:0"><span class="grow"><b>Aparecer en toda la pantalla</b><small class="muted" style="display:block;font-size:12px">Como un despertador: ✓ hecho, ✕ descartar o aplazar. Si no, llega como notificación normal.</small></span></span></label>`;
+  const on = r && r.kind ? haFull(r) : false;
+  return `<div class="field rem-fsf" id="rm-fs-f"><label class="label" for="rm-fs">Cómo avisarme</label><select id="rm-fs"><option value="0" ${on ? '' : 'selected'}>Solo notificación</option><option value="1" ${on ? 'selected' : ''}>Pantalla completa</option></select>${typeof agFsHint === 'function' ? agFsHint() : ''}</div>`;
 }
 function haField(r) {
   const cur = r && habKeyOf(r), list = habList().filter(h => !h.hidden || h.k === cur), ag = r ? +r.again || 0 : 0, hid = cur ? '' : 'hidden';
@@ -266,12 +267,10 @@ function haSync(force) {
   if (!kind || !f) return;
   f.hidden = kind.value !== 'hab';
   const fa = document.getElementById('rm-again-f'); if (fa) fa.hidden = kind.value !== 'hab';
-  const fs = document.getElementById('rm-fs'); if (fs && !fs.dataset.touched) fs.checked = kind.value === 'hab' || !pubUser();   // si no lo tocaste, sigue al tipo
   const hint = document.getElementById('rm-hint'); if (hint) hint.textContent = REM_KINDS[kind.value].hint;
   if (kind.value === 'hab' && hab && lab) { const h = habOf(hab.value); if (h && (force || !lab.value.trim() || lab.value === haAuto)) { lab.value = haAuto = 'Toma tu ' + h.name.toLowerCase(); } }
 }
 document.addEventListener('change', ev => { if (ev.target.id === 'rm-kind' || ev.target.id === 'rm-hab') haSync(false); });
-document.addEventListener('change', ev => { if (ev.target.id === 'rm-fs') ev.target.dataset.touched = '1'; });
 
 /* Guardar el hábito elegido junto con el recordatorio */
 let haPending = null;
@@ -279,7 +278,7 @@ window.addEventListener('submit', ev => {
   const f = ev.target; if (!f || f.id !== 'f-rem') return;
   const kind = document.getElementById('rm-kind'), hab = document.getElementById('rm-hab'), ag = document.getElementById('rm-again');
   const fsb = document.getElementById('rm-fs');
-  haPending = { i: f.dataset.i === '' ? null : +f.dataset.i, n: state.reminders.length, hab: kind && kind.value === 'hab' && hab ? hab.value : null, again: ag ? +ag.value || 0 : 0, fs: fsb ? fsb.checked : null };
+  haPending = { i: f.dataset.i === '' ? null : +f.dataset.i, n: state.reminders.length, hab: kind && kind.value === 'hab' && hab ? hab.value : null, again: ag ? +ag.value || 0 : 0, fs: fsb ? fsb.value === '1' : null };
 }, true);
 const _saveRemHA = saveReminders;
 saveReminders = function () {

@@ -115,7 +115,7 @@ function habForm(k) {
   const h = k ? habList().find(x => x.k === k) : null, L = k ? hfRems(k) : [], on = L.filter(r => r.on), r0 = on[0] || L[0];
   state.hF = { k: k || null, name: h ? h.name : '', dose: h ? h.dose || '' : '', icon: h ? h.icon || 'pill' : 'pill',
     rem: !!on.length, times: (on.length ? on : L).map(r => r.time).filter(Boolean), days: r0 ? r0.days.slice() : [1, 2, 3, 4, 5, 6, 0],
-    fs: r0 ? haFull(r0) : true, again: r0 ? +r0.again || 0 : 0, snz: r0 && r0.snz ? +r0.snz : 15, ring: r0 && r0.ring ? +r0.ring : 0, label: r0 ? r0.label || '' : '' };
+    fs: r0 ? haFull(r0) : isWatch(), again: r0 ? +r0.again || 0 : 0, snz: r0 && r0.snz ? +r0.snz : 15, ring: r0 && r0.ring ? +r0.ring : 0, label: r0 ? r0.label || '' : '' };
   if (!state.hF.times.length) state.hF.times = ['21:00'];
   hfView();
 }
@@ -132,7 +132,7 @@ function hfView() {
       <div class="field"><span class="label">Hora${F.times.length > 1 ? 's' : ''}</span>${F.times.map((t, i) => `<div class="row hf-trow"><input type="time" class="hf-t" data-i="${i}" value="${t}" aria-label="Hora ${i + 1}">${F.times.length > 1 ? `<button type="button" class="icon-btn sm" data-hf="t-del" data-i="${i}" aria-label="Quitar esta hora">${ic('x', 16)}</button>` : ''}</div>`).join('')}
         ${F.times.length < 6 ? `<button type="button" class="btn small" data-hf="t-add">${ic('plus', 15)} Otra hora</button>` : ''}</div>
       <div class="field"><span class="label">Días</span><div class="daypick">${[1, 2, 3, 4, 5, 6, 0].map(d => `<label><input type="checkbox" class="hf-d" value="${d}" ${F.days.indexOf(d) >= 0 ? 'checked' : ''}><span>${WD1[d]}</span></label>`).join('')}</div></div>
-      ${isWatch() ? '' : `<div class="row hf-row"><span class="grow"><b>Aparecer en toda la pantalla</b><br><small class="muted">Como un despertador: ✓ hecho, ✕ o aplazar.</small></span><button type="button" class="switch ${F.fs ? 'on' : ''}" data-hf="fs" role="switch" aria-checked="${F.fs}" aria-label="Aparecer en toda la pantalla"><i></i></button></div>`}
+      ${isWatch() ? '' : `<div class="field"><span class="label">Cómo avisarme</span><div class="seg hf-how"><button type="button" class="${F.fs ? '' : 'on'}" data-hf="fs" data-v="0">Solo notificación</button><button type="button" class="${F.fs ? 'on' : ''}" data-hf="fs" data-v="1">Pantalla completa</button></div>${F.fs && typeof agFsHint === 'function' ? agFsHint() : ''}</div>`}
       <div class="field"><span class="label">Sonido</span><div class="seg hf-ring">${ringOpts.map(([v, l]) => `<button type="button" class="${F.ring === v ? 'on' : ''}" data-hf="ring" data-v="${v}">${esc(l)}</button>`).join('')}</div></div>
       ${hfAgainHtml(F.again)}${hfSnzHtml(F.snz)}
     </div>` : ''}
@@ -225,7 +225,7 @@ document.addEventListener('click', ev => {
     savePlans(); saveReminders(); state.hF = null; state.confirm = null; habManage(); render(); toast('Hábito borrado.'); return;
   }
   if (a === 'rem') F.rem = !F.rem;
-  else if (a === 'fs') F.fs = !F.fs;
+  else if (a === 'fs') F.fs = b.dataset.v === '1';
   else if (a === 'ring') F.ring = +b.dataset.v;
   else if (a === 't-add') F.times.push(F.times[F.times.length - 1] || '21:00');
   else if (a === 't-del') F.times.splice(+b.dataset.i, 1);

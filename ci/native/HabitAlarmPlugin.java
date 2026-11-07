@@ -117,8 +117,11 @@ public class HabitAlarmPlugin extends Plugin {
             JSONObject o = new JSONObject();
             o.put("id", HabitAlarms.REST_ID);
             o.put("kind", "rest");
-            Double at = call.getDouble("at");
-            o.put("at", at != null ? at.longValue() : System.currentTimeMillis());
+            /* getDouble y getLong no sirven aquí: una hora en milisegundos llega como Long y getDouble devuelve null
+               (el aviso salía al instante, con el descanso aún corriendo). optLong acepta cualquier número. */
+            long at = call.getData().optLong("at", 0);
+            if (at <= 0) { call.reject("Falta la hora de fin del descanso"); return; }
+            o.put("at", at);
             o.put("title", call.getString("title", "Descanso terminado"));
             o.put("body", call.getString("body", ""));
             o.put("snd", call.getBoolean("snd", true));
