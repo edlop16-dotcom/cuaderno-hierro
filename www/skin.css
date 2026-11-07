@@ -2304,3 +2304,7 @@ body:not(.watch) .tk-t{font-weight:700}
 body:not(.watch) .tk-t.low{color:var(--warn)}
 body:not(.watch) .tk-t.high{color:var(--bad)}
 body:not(.watch) .tk-set{margin-top:8px}
+
+/* Progreso (progreso.js) */
+body:not(.watch) .pr-w { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; font-size: 13px; }
+body:not(.watch) .pr-w .bd-in { max-width: 96px; }
