@@ -522,8 +522,10 @@ nsCoachEx = function (ex, gymId, kind, ctx) {
   if (M && M.deload && !pgDlNow()) { n = Math.max(1, Math.ceil(n / 2)); w = pgRound(ex.name, (up ? w - pgStep(ex.name, w) : w) * 0.9, true); up = false; why = `Semana de descarga del bloque: ${n} ${n === 1 ? 'serie' : 'series'}${c.bw ? '' : ` con ${fmtKg(w)} kg`} y RIR 3.`; rirs = rirs.map(() => 3); }
   else if (M && M.plus) { n += 1; why += ' Semana final del bloque: +1 serie.'; }
   if (pgDlNow()) n = Math.max(1, Math.ceil(n / 2));
-  if (ctx && ctx.ready === 'low') { n = Math.max(1, n - 1); w = pgRound(ex.name, w * 0.9, true); up = false; why += c.bw ? ' Hoy llegas cansado: 1 serie menos.' : ' Hoy llegas cansado: 1 serie menos y −10 %.'; }
-  else if (ctx && ctx.ready === 'mid' && up) { w = Math.max(0, w - pgStep(ex.name, w)); up = false; why += ' Hoy sin forzar: la subida queda para la próxima.'; }
+  /* El texto dice lo mismo que el peso (ajustes del gimnasio 4): si hoy no se sube, ya no empieza con "Sube" */
+  const lastW = c.last ? +c.last.w || 0 : 0;
+  if (ctx && ctx.ready === 'low') { n = Math.max(1, n - 1); w = pgRound(ex.name, (up && lastW ? lastW : w) * 0.9, true); why = c.bw ? (up ? 'Hoy llegas cansado: 1 serie menos; la subida queda para la próxima.' : why + ' Hoy llegas cansado: 1 serie menos.') : up ? `Hoy llegas cansado: 1 serie menos y ${fmtKg(w)} kg (−10 %); la subida a ${fmtKg(c.w)} kg queda para la próxima.` : why + ' Hoy llegas cansado: 1 serie menos y −10 %.'; up = false; }
+  else if (ctx && ctx.ready === 'mid' && up) { w = lastW || Math.max(0, w - pgStep(ex.name, w)); up = false; why = `Mantén ${fmtKg(w)} kg: hoy sin forzar, la subida a ${fmtKg(c.w)} kg queda para la próxima.`; }
   const sets = Array.from({ length: n }, (_, j) => ({ w, rMin: goal[Math.min(j, goal.length - 1)] || rx.rMin, rMax: rx.rMax, rir: rirs[Math.min(j, rirs.length - 1)] != null ? rirs[Math.min(j, rirs.length - 1)] : pgRir(rx, j, n), rest: rx.rest }));
   return { exId: ex.id, name: ex.name, sets, why: why.trim(), mode: up ? 'up' : c.mode === 'up' ? 'hold' : c.mode, bw: c.bw ? c.bw.label : '' };
 };

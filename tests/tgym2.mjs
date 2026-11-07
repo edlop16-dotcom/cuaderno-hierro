@@ -292,6 +292,8 @@ const stubWeek = p => p.evaluate(W => { wcVolume = () => ({ rows: Object.keys(W)
     if (kind === 'bombeo') {
       ok(W('Curl Bíceps') === 12.5, 'Curl Bíceps: el peso con el que terminaste (12,5 kg), no 17,5');
       ok(W('Remo Sentado con Cable') >= 55 && W('Press de Banca en Smith') >= 35, 'Remo y Press Smith: no por debajo de lo que hiciste');
+      /* Ajustes del gimnasio 4: solo hay un día pesado, así que en Bombeo cada peso sale convertido de ese día y lo dice */
+      ok(B.list.every(e => /lo convertí desde tu sesión pesada/.test(e.why)), 'Bombeo sin una sesión de bombeo: cada peso dice que viene convertido del día pesado');
       const g = B.list.filter(e => e.t === 'comp').map(e => e.r), i = B.list.filter(e => e.t !== 'comp' && e.t !== 'cardio').map(e => e.r);
       ok(g.every(r => r === '8-10') && i.every(r => r === '12-15'), 'Bombeo: grandes 8-10 y aislados 12-15 (la parte alta de 6-10 y 10-15)');
     } else {

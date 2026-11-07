@@ -75,23 +75,27 @@ window.addEventListener('click', ev => {
 
 /* ---------- 4-5. Tu semana en vivo bajo cada ejercicio (teléfono) ---------- */
 function lvNext(d, i) {
-  const V = wcVolume(), sore = soreMap();
-  const low = V.rows.filter(r => r.st === 'low' && !(sore[r.k] && sore[r.k].lvl >= 2)).sort((a, b) => a.t - b.t);
-  if (!low.length) return { ok: 1 };
+  const V = wcVolume(), sore = soreMap(), R = !isWatch() && typeof restMap === 'function' ? restMap() : {};
+  /* Descanso muscular (ajustes del gimnasio 4): lo entrenado fuerte hace menos de 48 h (24 h los pequeños) no se prioriza */
+  const rest = V.rows.filter(r => r.st === 'low' && R[r.k] && R[r.k].block).map(r => r.k);
+  const low = V.rows.filter(r => r.st === 'low' && !(sore[r.k] && sore[r.k].lvl >= 2) && rest.indexOf(r.k) < 0).sort((a, b) => a.t - b.t);
+  if (!low.length) return rest.length ? { ok: 1, rest, R } : { ok: 1 };
   const open = (x, k) => k !== i && !x.log.every(s => s.done);
   for (const r of low) {
     const j = d.exercises.findIndex((x, k) => open(x, k) && wcMain(x.name) === r.k);
-    if (j >= 0) return { k: r.k, need: Math.ceil(WC_MIN - r.t), j, low };
+    if (j >= 0) return { k: r.k, need: Math.ceil(WC_MIN - r.t), j, low, rest, R };
   }
   const r = low[0], add = wcCands(r.k).find(n => !d.exercises.some(x => exSame(x.name, n)));
-  return { k: r.k, need: Math.ceil(WC_MIN - r.t), add, low };
+  return { k: r.k, need: Math.ceil(WC_MIN - r.t), add, low, rest, R };
 }
 function lvNextHtml(d, i) {
   const N = lvNext(d, i);
+  const rt = N.rest && N.rest.length ? ` <small class="g4-rest">${esc(N.rest.map(k => restWhy(k, N.R[k])).join('; '))}: ${N.rest.length === 1 ? 'ese músculo descansa' : 'esos músculos descansan'} hoy.</small>` : '';
+  if (N.ok && rt) return `<div class="lv-next ok">${ic('check', 16)}<span>Lo que falta esta semana aún necesita descanso.${rt}</span></div>`;
   if (N.ok) return `<div class="lv-next ok">${ic('check', 16)}<span>Vas bien: contando lo que te queda de la semana, ningún músculo queda bajo ${WC_MIN} series.</span></div>`;
   const what = `<b>${zoneName(N.k)}</b> (faltan ${N.need} series esta semana)`;
   const more = N.low.filter(r => r.k !== N.k).slice(0, 2).map(r => zoneName(r.k).toLowerCase());
-  return `<div class="lv-next">${ic('target', 16)}<span>Ahora conviene priorizar ${what}${more.length ? `; después ${more.join(' y ')}` : ''}.
+  return `<div class="lv-next">${ic('target', 16)}<span>Ahora conviene priorizar ${what}${more.length ? `; después ${more.join(' y ')}` : ''}.${rt}
     ${N.j != null ? `<button type="button" class="btn small" data-lv="go" data-j="${N.j}">Ir a ${esc(d.exercises[N.j].name)}</button>` : N.add ? `<button type="button" class="btn small" data-lv="add" data-n="${esc(N.add)}" data-i="${i}">Agregar ${esc(N.add)}</button>` : ''}</span></div>`;
 }
 function lvBox(d, i, W) {

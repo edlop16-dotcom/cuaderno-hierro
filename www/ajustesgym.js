@@ -57,26 +57,58 @@ function agNeed(d) {
   wcVolume().rows.forEach(r => { const v = WC_MIN - (r.t - (today[r.k] || 0)); if (v > 0) need[r.k] = v; });
   return need;
 }
+/* ---------- Descanso muscular (ajustes del gimnasio 4) ----------
+   Un músculo entrenado fuerte (2 o más series con RIR 0-1, o 6 o más series en una sesión; los que ayudan cuentan ½)
+   necesita descanso antes de volver a cargarlo: los grandes (cuádriceps, glúteos, isquiotibiales, pecho y espalda)
+   48 h = 2 días de calendario; los pequeños, las pantorrillas y el abdomen 24 h = 1 día, y después van con RIR 1-2.
+   Se cuenta en días de calendario desde el día elegido: viernes → domingo = 48 h, aunque no sepamos la hora del entreno. */
+const REST_BIG = ['cuad', 'glu', 'isq', 'pecho', 'esp'];
+const restDay = t => { const d = new Date(t); d.setHours(0, 0, 0, 0); return d.getTime(); };
+const restDays = (a, b) => Math.round((restDay(b) - restDay(a)) / 864e5);
+/* Músculos que entrenaste fuerte y aún descansan el día `day` ('AAAA-MM-DD' o una fecha; vacío = hoy).
+   { k: { dd: días desde ese entreno, big, block: aún no toca cargarlo, soft: pequeño con 24 h (va con RIR 1-2), date } } */
+function restMap(day) {
+  const ref = day ? (typeof day === 'string' ? new Date(day + 'T12:00:00').getTime() : +day) : Date.now(), out = {};
+  state.sessions.forEach(s => {
+    if (s.approx) return;
+    const dd = restDays(s.date, ref); if (dd < 0 || dd > 1) return;
+    const hard = {}, tot = {};
+    s.exercises.forEach(e => { const sh = zoneShares(e.name); for (const k in sh) { tot[k] = (tot[k] || 0) + sh[k] * e.sets.length; hard[k] = (hard[k] || 0) + sh[k] * e.sets.filter(x => x.rir != null && x.rir !== '' && +x.rir <= 1).length; } });
+    for (const k in tot) {
+      if (!(hard[k] >= 2 || tot[k] >= 6)) continue;
+      const big = REST_BIG.indexOf(k) >= 0, block = big ? dd < 2 : dd < 1, o = out[k];
+      if (!o || dd < o.dd) out[k] = { dd, big, block, soft: !big && !block, date: s.date };
+    }
+  });
+  return out;
+}
+/* "Ayer entrenaste isquiotibiales fuerte" (hoy, ayer o el día de la semana) */
+function restWhen(R) { const n = restDays(R.date, Date.now()); return n === 0 ? 'hoy' : n === 1 ? 'ayer' : 'el ' + WDL[new Date(R.date).getDay()].toLowerCase(); }
+function restWhy(k, R) { const w = restWhen(R); return w.charAt(0).toUpperCase() + w.slice(1) + ' entrenaste ' + zoneName(k).toLowerCase() + ' fuerte'; }
 function agPick(d) {
   if (!d || isWatch()) return null;
   const cur = Math.min(d.cur || 0, d.exercises.length - 1), f = ssInfo(d, cur);
   if (f && !exComplete(d.exercises[cur])) return null;   /* en plena superserie ya sabes qué sigue */
   const pend = d.exercises.map((e, i) => ({ e, i, n: e.log.filter(s => !s.done).length })).filter(o => o.n > 0 && o.i !== cur);
   if (pend.length < 2) return null;
-  const need = agNeed(d), late = AG_LATEWK.indexOf(new Date().getDay()) >= 0 ? 1.5 : 1;
+  const need = agNeed(d), late = AG_LATEWK.indexOf(new Date().getDay()) >= 0 ? 1.5 : 1, R = restMap();
+  /* Un músculo que aún descansa (lo entrenaste fuerte hace menos de 48 h, o 24 h si es pequeño) no se prioriza por las series que faltan */
+  for (const k in R) if (R[k].block) delete need[k];
   const left = pgAvail() * 60 - (Date.now() - new Date(d.start)) / 1000;
   const sec = o => pgExSec(o.e.name, o.n, +o.e.rest || 90, false), short = pend.reduce((a, o) => a + sec(o), 0) > left;
   const L = pend.map(o => {
     const sh = zoneShares(o.e.name); let gain = 0, zone = null, faltan = 0;
     for (const k in sh) { const g = sh[k] * Math.min(o.n, need[k] || 0); gain += g; if (need[k] && (!zone || need[k] > faltan)) { zone = k; faltan = need[k]; } }
     const heavy = AG_HEAVY[pgTypeOf(o.e.name)] || 0, fits = sec(o) <= left;
-    return Object.assign(o, { gain, zone, faltan, heavy, fits, score: gain * late * (short ? 1.5 : 1) + heavy * 1.2 - (fits ? 0 : 3) });
+    const mk = typeof wcMain === 'function' ? wcMain(o.e.name) : null, rest = !!(mk && R[mk] && R[mk].block);
+    return Object.assign(o, { gain, zone, faltan, heavy, fits, rest, score: gain * late * (short ? 1.5 : 1) + heavy * 1.2 - (fits ? 0 : 3) - (rest ? 6 : 0) });
   }).sort((a, b) => b.score - a.score || a.i - b.i);
   const top = L[0], nx = pend.filter(o => o.i > cur)[0] || pend[0], m = Math.max(0, Math.round(left / 60));
   let why = '';
   if (top.gain > 0) why = `Te faltan ${Math.ceil(top.faltan)} ${Math.ceil(top.faltan) === 1 ? 'serie' : 'series'} de ${zoneName(top.zone).toLowerCase()} esta semana`;
   else if (short && top.fits) why = `Te quedan ${m} min y este alcanza a entrar`;
-  else if (top.i !== nx.i && top.heavy > nx.heavy) why = 'Es el más pesado que te queda: mejor antes de cansarte';
+  else if (top.i !== nx.i && top.heavy > nx.heavy && !top.rest) why = 'Es el más pesado que te queda: mejor antes de cansarte';
+  else if (top.i !== nx.i && nx.rest && !top.rest) { const k = wcMain(nx.e.name); why = restWhy(k, R[k]) + ': mejor deja ' + nx.e.name + ' para el final, con RIR 2'; }
   return why ? { i: top.i, name: top.e.name, why } : null;
 }
 function agNextHtml(d) {
@@ -387,8 +419,11 @@ function agFix(s) {
   }
   const irr = s.exercises.filter(e => { const C = e.sets.filter(x => !x.q).map(x => +x.r); return C.length > 1 && C.slice(1).some(r => r - C[0] >= 3); })[0];
   if (irr) out.push(irr.name + ': repeticiones irregulares (' + irr.sets.map(x => x.r).join(', ') + '), el peso está bajo.');
-  const top = s.exercises.filter(e => +pgFirst(e).r > pgRx(e.name, kind).rMax).map(e => e.name);
-  if (top.length) out.push('Pasaste el tope del rango en ' + agList(top.slice(0, 2)) + ': toca subir el peso.');
+  /* "Toca subir" solo si la tabla de abajo de verdad sube el peso; si el coach mantiene, lo dice con su razón */
+  const topE = s.exercises.filter(e => +pgFirst(e).r > pgRx(e.name, kind).rMax && +pgFirst(e).w > 0).map(e => ({ e, c: agAfter(s, agPe(s, e)) }));
+  const up = topE.filter(o => +o.c.w > +pgFirst(o.e).w).map(o => o.e.name + ' (' + agKg(+o.c.w) + ')'), hold = topE.filter(o => Math.abs(+o.c.w - +pgFirst(o.e).w) < 0.01);
+  if (up.length) out.push('Pasaste el tope del rango en ' + agList(up.slice(0, 2)) + ': toca subir el peso.');
+  else if (hold.length) out.push('Pasaste el tope del rango en ' + hold[0].e.name + ', pero mantén ' + agKg(+hold[0].c.w) + ': ' + String(hold[0].c.why || '').replace(/<[^>]+>/g, '').replace(/^Mantén[^:]*:\s*/, '').replace(/\.$/, '') + '.');
   const few = (day ? day.exercises : []).map(p => { const e = exIn(s, p.name); return { n: p.name, d: e ? e.sets.length : 0, t: pgSets(p) }; }).filter(x => x.d && x.d < x.t)[0];
   if (few) out.push(few.n + ': hiciste ' + few.d + ' de ' + few.t + ' series planeadas.');
   return out.slice(0, 3);

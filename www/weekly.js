@@ -197,6 +197,15 @@ learnWeights = function (s) { if (s && s.planId === 'wcfill') return; return _le
 /* Semana que se resume: la actual desde el día del resumen (vie/sáb/dom); antes de ese día o con el lunes elegido, la que terminó */
 const wcSumOff = () => { const si = wcIdx(wcCfg().sun); return si >= 4 && wcToday() >= si ? 0 : 1; };
 const wcSumKey = () => wkKey(new Date(Date.now() - wcSumOff() * 7 * 864e5));
+/* Días de descanso de un músculo alrededor de un día de la rutina (el más cercano antes o después, en el ciclo de la semana,
+   entre los días que le dan 3 series o más); 7 si ningún otro día lo trabaja */
+function wcRestGap(plan, dayId, k) {
+  const vol = d => d.exercises.reduce((a, e) => a + (zoneShares(e.name)[k] || 0) * (+e.sets || 0), 0);
+  const me = plan.days.find(d => d.id === dayId); if (!me) return 7;
+  let gap = 7;
+  plan.days.forEach(d => { if (d === me || vol(d) < 3) return; const a = (wcIdx(me.weekday) - wcIdx(d.weekday) + 7) % 7, b = (7 - a) % 7; gap = Math.min(gap, a, b); });
+  return gap;
+}
 function wcProposal(off) {
   const plan = activePlan(); if (!plan || !plan.days.length) return null;
   const ws = weekStartOf(new Date()); ws.setDate(ws.getDate() - 7 * off);
@@ -215,6 +224,8 @@ function wcProposal(off) {
     if (v < WC_MIN) {
       if (!mine.length) { notes.push(`Tu rutina no tiene un ejercicio principal de ${zoneName(k).toLowerCase()} (${wcR(v)} series por semana). Agrega uno en Rutinas o usa "Crear entreno para completar".`); return; }
       const need0 = Math.ceil(WC_MIN - v); let need = need0;   // como mucho +1 serie por ejercicio y semana: el volumen sube de a poco
+      /* Descanso muscular (ajustes del gimnasio 4): las series de más van primero al día con más descanso de ese músculo */
+      if (typeof wcRestGap === 'function') mine.sort((a, b) => wcRestGap(plan, b.day, k) - wcRestGap(plan, a.day, k) || items.indexOf(a) - items.indexOf(b));
       mine.forEach(it => { if (need > 0 && it.s1 < Math.min(5, typeof pgMaxSets === 'function' ? pgMaxSets() : 5)) { it.s1++; need--; it.vr = `${zoneName(k)}: ${wcR(v)} series por semana, menos de ${WC_MIN}`; } });
       if (need > 0) notes.push(`${zoneName(k)} seguirá corto (${wcR(v + need0 - need)} de ${WC_MIN} series): súmale un ejercicio en Rutinas o usa "Crear entreno para completar" el fin de semana.`);
     } else if (v > WC_MAX) {

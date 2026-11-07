@@ -2400,3 +2400,7 @@ body:not(.watch) .g3-acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top
 body:not(.watch) .g3-acts .btn[aria-expanded="true"] { border-color: var(--accent); }
 body:not(.watch) .g3-box { margin-top: 8px; }
 body:not(.watch) .g3-set { margin-top: 10px; }
+
+/* Ajustes del gimnasio 4: descanso muscular */
+body:not(.watch) .lv-next .g4-rest { display: block; margin-top: 4px; color: var(--muted); font-size: 12.5px; }
+body:not(.watch) .g4-moved, body:not(.watch) .tk-rest { margin-top: 8px; }

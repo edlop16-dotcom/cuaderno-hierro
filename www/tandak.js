@@ -60,7 +60,13 @@ function tkDist(P) {
   const tot = {}; MM_MAIN.forEach(k => { tot[k] = days.reduce((a, d) => a + (d.v[k] || 0), 0); });
   /* Un músculo con sus series en un solo día, teniendo más días: mejor repartirlo */
   const one = days.length > 1 ? MM_MAIN.filter(k => tot[k] >= 6 && days.filter(d => (d.v[k] || 0) >= 1).length === 1) : [];
-  return { days, tot, one };
+  /* Descanso muscular (ajustes del gimnasio 4): un músculo grande con 3+ series en dos días con menos de 48 h entre ellos */
+  const close = [];
+  (typeof REST_BIG !== 'undefined' ? REST_BIG : []).forEach(k => {
+    const D = days.filter(d => (d.v[k] || 0) >= 3).sort((a, b) => wcIdx(a.wd) - wcIdx(b.wd));
+    for (let i = 0; i < D.length; i++) { const a = D[i], b = D[(i + 1) % D.length]; if (a === b) break; const g = (wcIdx(b.wd) - wcIdx(a.wd) + 7) % 7; if (g < 2) { close.push({ k, a, b }); break; } }
+  });
+  return { days, tot, one, close };
 }
 function tkDistHtml(P) {
   const D = tkDist(P); if (!D.days.length) return '';
@@ -70,7 +76,8 @@ function tkDistHtml(P) {
     <div class="tk-wrap"><table class="tk-dist"><thead><tr><th scope="col">Músculo</th>${D.days.map(d => `<th scope="col" title="${esc(d.n)}">${WD[d.wd]}</th>`).join('')}<th scope="col">Total</th></tr></thead>
     <tbody>${MM_MAIN.map(k => `<tr><th scope="row">${zoneName(k)}</th>${D.days.map(d => `<td class="num">${cell(d.v[k])}</td>`).join('')}<td class="num tk-t ${st(D.tot[k])}">${wcR(D.tot[k])}</td></tr>`).join('')}</tbody></table></div>
     <div class="muted wc-sub">Series por semana con este plan. Meta: ${WC_MIN}-${WC_MAX} por músculo (principal = 1, los que ayudan = ½).</div>
-    ${D.one.length ? `<div class="safe tip">${ic('info', 16)}<span>${esc(D.one.map(zoneName).join(', '))}: todo en un solo día. Si puedes, reparte esas series en dos días.</span></div>` : ''}`;
+    ${D.one.length ? `<div class="safe tip">${ic('info', 16)}<span>${esc(D.one.map(zoneName).join(', '))}: todo en un solo día. Si puedes, reparte esas series en dos días.</span></div>` : ''}
+    ${D.close.length ? `<div class="safe tip tk-rest">${ic('timer', 16)}<span>${esc(D.close.map(c => `${zoneName(c.k)}: ${WDL[c.a.wd].toLowerCase()} y ${WDL[c.b.wd].toLowerCase()}${c.a.wd === c.b.wd ? ' (el mismo día)' : ' seguidos'}`).join('; '))}. Un músculo grande entrenado fuerte necesita 48 h: si puedes, deja un día entre ellos; las series de más ya van al día con más descanso.</span></div>` : ''}`;
 }
 const _wcSumHtmlTK = wcSumHtml;
 wcSumHtml = function () {
@@ -89,7 +96,8 @@ wcSumText = function () {
   const t = _wcSumTextTK.apply(this, arguments).replace('Propuesta para la semana del', 'Tu plan de la semana del');
   const off = wcSumOff(), P0 = wcProposal(off), P = P0 && (wcApplied(P0) || P0); if (!P) return t;
   const D = tkDist(P);
-  return t + '\n\nDistribución muscular (series por semana):\n' + D.days.map(d => `${WD[d.wd]} · ${d.n}: ${MM_MAIN.filter(k => d.v[k]).map(k => `${zoneName(k)} ${wcR(d.v[k])}`).join(', ') || 'sin series'}`).join('\n') + '\nTotal: ' + MM_MAIN.map(k => `${zoneName(k)} ${wcR(D.tot[k])}`).join(', ');
+  return t + '\n\nDistribución muscular (series por semana):\n' + D.days.map(d => `${WD[d.wd]} · ${d.n}: ${MM_MAIN.filter(k => d.v[k]).map(k => `${zoneName(k)} ${wcR(d.v[k])}`).join(', ') || 'sin series'}`).join('\n') + '\nTotal: ' + MM_MAIN.map(k => `${zoneName(k)} ${wcR(D.tot[k])}`).join(', ')
+    + (D.close.length ? '\nDescanso: ' + D.close.map(c => `${zoneName(c.k)} ${WDL[c.a.wd].toLowerCase()} y ${WDL[c.b.wd].toLowerCase()} (menos de 48 h)`).join('; ') : '');
 };
 
 /* ---------- Ajustes → Coach semanal: el aviso y su hora ---------- */

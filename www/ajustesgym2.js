@@ -116,7 +116,9 @@ agTip = function (d, i) {
   const quick = !!agFlags(d).get(s), tired = quick || !!((typeof ssOf === 'function' && ssOf(d, e)) || (d.ssT || []).indexOf(name) >= 0);
   if (r > rx.rMax && (rir == null || rir >= 2)) {
     if (!load) return { t: did + ', más que tu rango ' + g2Rng(rx) + ': vas sobrado, sigue con esa técnica', k: 'ok' };
-    const W = pgRound(name, w + pgStep(name, w));
+    /* "Sube" siempre sube: el siguiente escalón; en tu peso máximo, mantén y suma reps */
+    const cap = pgMaxOf(name, d.gymId || 'rokaz'), W = pgNextUp(name, w);
+    if (cap > 0 && W > cap + 0.01) return { t: did + ': mantén ' + agKg(w) + ', es tu peso máximo aquí; suma reps o baja más lento', k: 'ok' };
     return { t: did + ': sube a ' + agKg(W) + ' en la próxima (pasaste tu rango ' + g2Rng(rx) + ')', W, k: 'up' };
   }
   if (!tired) {
@@ -384,10 +386,38 @@ function g2Cands(k, where) {
 }
 /* Peso: tu última vez en ese ejercicio y gimnasio (la serie con la que terminaste, si bajaste el peso a mitad), con las reglas
    del coach: en el tope del rango sube un escalón, dentro del rango mantiene, fuera del rango se calcula por tu 1RM estimado */
-function g2Load(name, rx, where) {
-  const g = activeGym().id, free = PG_FREE.test(pgFam(name));
-  let L = lastHere(name, g);
-  if (!L && (free || where !== 'gym')) { for (const s of state.sessions) { const x = !s.approx && exIn(s, name); if (x && x.sets.length) { L = { date: s.date, sets: x.sets }; break; } } }
+/* Ajustes del gimnasio 4: el peso sale del MISMO tipo de día (Fuerza = tu última sesión pesada, Bombeo = la última de bombeo)
+   en ese gimnasio; si no hay de ese tipo, se convierte desde el otro con tu 1RM estimado y se explica. "Sube" siempre sube. */
+const g2KindTxt = k => (k === 'fuerza' ? 'pesada' : 'de bombeo');
+/* El siguiente peso disponible por encima de w (en máquinas el escalón puede cambiar con el peso: 15 → 20, no 16 redondeado a 15) */
+function pgNextUp(name, w) {
+  let x = w + Math.max(pgStep(name, w), 0.5);
+  for (let i = 0; i < 30; i++) { const c = pgRound(name, x); if (c > w + 1e-9) return c; x += pgInc(name, x) || 1; }
+  return w + pgStep(name, w);
+}
+function g2KHist(name, g, kind, any) {
+  const H = [];
+  for (const s of state.sessions) { if (s.approx || (!any && sGym(s) !== g)) continue; const x = exIn(s, name); if (x && x.sets.length) H.push({ date: s.date, sets: x.sets, kind: sKind(s), gymId: sGym(s) }); }
+  return H;
+}
+function g2Load(name, rx, where, kind) {
+  const g = activeGym().id, free = PG_FREE.test(pgFam(name)), k = kind === 'fuerza' ? 'fuerza' : 'bombeo';
+  let H = g2KHist(name, g, k);
+  if (!H.length && (free || where !== 'gym')) H = g2KHist(name, g, k, true);
+  let L = H.find(h => h.kind === k);
+  if (!L && H.length) {
+    /* Solo del otro tipo de día: por tu 1RM estimado (reps + RIR; sin RIR anotado, 1) al rango de hoy con RIR 2 */
+    const O = H[0], S = O.sets.filter(x => +x.r > 0), bar = barFor(name), e1s = S.map(x => e1rm((+x.w || 0) + bar, (+x.r || 0) + (x.rir != null && x.rir !== '' ? +x.rir : 1)));
+    const e1 = Math.max.apply(null, e1s), top = S[e1s.indexOf(e1)] || S[0], last = S.map(x => (+x.w ? fmtKg(+x.w) + '×' + x.r : x.r + ' reps')).join(', '), tw = +top.w || 0;
+    if (!tw) return { w: 0, reps: rx.rMin, last, note: 'tu última vez fue ' + g2KindTxt(O.kind) + '; busca ' + rx.rMin + '-' + rx.rMax + ' reps' };
+    let w = pgRound(name, pgWFor(name, e1, rx.rMax, 2), true);
+    w = Math.max(pgInc(name, tw), Math.min(w, tw + pgUpMax(name, tw)));
+    /* Si esas reps ya caen en el rango de hoy, el mismo peso (no se baja algo que ya te sale aquí) */
+    const fr = +(S.find(x => (+x.w || 0) === tw) || top).r || 0; if (fr >= rx.rMin && fr <= rx.rMax) w = tw;
+    const cap = pgMaxOf(name, g); if (cap > 0 && w > cap) w = cap;
+    const reps = pgRepsFor(name, e1, w, rx);
+    return { w, reps, last, conv: 1, kind: O.kind, note: 'no hay una sesión ' + g2KindTxt(k) + ' de este ejercicio, así que lo convertí desde tu sesión ' + g2KindTxt(O.kind) + ' (1RM estimado ≈ ' + fmtKg(Math.round(e1 - bar)) + ' kg): para ' + rx.rMin + '-' + rx.rMax + ' reps, ' + fmtKg(w) + ' kg' + (w < tw ? ' (menos peso, más reps)' : w > tw ? ' (más peso, menos reps)' : ' (el mismo peso: esas reps ya están en el rango de hoy)') };
+  }
   if (!L) {
     const st = typeof startLoad === 'function' ? startLoad({ name, type: typeOf(name), repsMin: rx.rMin, repsMax: rx.rMax }) : null, w = pgIsBw(name) ? 0 : st && st.w > 0 ? st.w : 0;
     return { w, reps: rx.rMin, last: '', note: w ? 'primera vez: empieza cómodo y ajusta tras la 1.ª serie' : 'primera vez: elige un peso cómodo' };
@@ -397,16 +427,20 @@ function g2Load(name, rx, where) {
   const lowered = S.some(x => (+x.w || 0) > wEnd + 0.01);
   if (!wEnd) { const r = Math.min(rx.rMax, (+f.r || rx.rMin) + 1); return { w: 0, reps: Math.max(rx.rMin, r), last, note: 'suma 1 repetición' }; }
   const e1 = Math.max.apply(null, atEnd.map(x => e1rm(wEnd + barFor(name), (+x.r || 0) + (x.rir != null ? +x.rir : 1)))), r1 = +f.r || 0;
+  /* Subir = como mínimo el siguiente escalón disponible (nunca el mismo peso con el texto "sube") */
+  const upTo = W => Math.max(W, pgNextUp(name, wEnd));
   let w = wEnd, note;
-  if (r1 >= rx.rMax + 3) { w = Math.max(wEnd, Math.min(pgRound(name, pgWFor(name, e1, rx.rMax, 2), true), wEnd + pgUpMax(name, wEnd))); note = 'hiciste muchas más reps que ' + rx.rMin + '-' + rx.rMax + ': sube'; }
-  else if (r1 >= rx.rMax && (f.rir == null || +f.rir >= 1)) { w = Math.min(pgRound(name, wEnd + pgStep(name, wEnd)), wEnd + pgUpMax(name, wEnd)); note = 'llegaste al tope del rango: sube un escalón'; }
+  if (r1 >= rx.rMax + 3) { w = upTo(Math.min(pgRound(name, pgWFor(name, e1, rx.rMax, 2), true), wEnd + pgUpMax(name, wEnd))); note = 'hiciste muchas más reps que ' + rx.rMin + '-' + rx.rMax + ': sube a ' + fmtKg(w) + ' kg'; }
+  else if (r1 >= rx.rMax && (f.rir == null || +f.rir >= 1)) { w = upTo(Math.min(pgRound(name, wEnd + pgStep(name, wEnd)), wEnd + pgUpMax(name, wEnd))); note = 'llegaste al tope del rango: sube un escalón, a ' + fmtKg(w) + ' kg'; }
+  else if (r1 >= rx.rMax) note = 'llegaste al tope pero al fallo (RIR 0): mantén ' + fmtKg(wEnd) + ' kg hasta hacerlo con 1 rep de sobra';
   else if (r1 >= rx.rMin) note = lowered ? 'terminaste con ' + fmtKg(wEnd) + ' kg: sigue ahí y suma reps' : 'mantén el peso y suma reps';
   else if (rx.rMin - r1 === 1) note = (lowered ? 'terminaste con ' + fmtKg(wEnd) + ' kg; ' : '') + 'a 1 rep del rango: mantén el peso';
   else if (rx.rMin - r1 === 2) { w = Math.min(wEnd, pgRound(name, wEnd * 0.92)); note = (lowered ? 'terminaste con ' + fmtKg(wEnd) + ' kg; ' : '') + (w < wEnd ? 'baja un poco para entrar en ' + rx.rMin + '-' + rx.rMax + ' reps' : 'mantén el peso'); }
   else { w = Math.min(wEnd, pgRound(name, pgWFor(name, e1, rx.rMin, 2), true)); note = w < wEnd ? 'baja para entrar en ' + rx.rMin + '-' + rx.rMax + ' reps' : 'mantén el peso'; }
+  const cap = pgMaxOf(name, g); if (cap > 0 && w > cap + 0.01) { w = Math.max(wEnd, cap); note = 'mantén ' + fmtKg(w) + ' kg: es tu peso máximo aquí; suma reps'; }
   w = Math.max(0, w);
   const reps = Math.max(rx.rMin, Math.min(rx.rMax, w === wEnd ? r1 + (r1 < rx.rMax ? 1 : 0) : pgRepsFor(name, e1, w, rx)));
-  return { w, reps, last, note };
+  return { w, reps, last, note, kind: L.kind };
 }
 const g2Sets = (name, sets, kind) => pgExSec(name, sets, pgRx(name, kind).rest, false);
 /* Entrenos que te quedan esta semana para completar: tu meta de días menos lo hecho y lo que aún toca de la rutina, sin pasar de los días que quedan */
@@ -420,14 +454,15 @@ wcBuild = function (kind, seed) {
   if (isWatch()) return { list: [], skipped: [], dl: false };
   const V = wcVolume(), sore = soreMap(), where = g2Where(), days = g2DaysLeft(V), avail = pgAvail() * 60 - 6 * 60;
   const need = V.rows.filter(r => r.st === 'low').map(r => ({ k: r.k, n: Math.ceil(WC_MIN - r.t) })).sort((a, b) => b.n - a.n || WC_BIG.indexOf(a.k) - WC_BIG.indexOf(b.k));
-  const skipped = [], left = [], later = [], picks = [], used = {};
+  const skipped = [], left = [], later = [], picks = [], used = {}, moved = [], tired = [];
+  /* Descanso muscular desde el día elegido (Hoy o el siguiente): lo entrenado fuerte hace menos de 48 h (24 h los pequeños) no se carga */
+  const day = wc.day || dk(new Date()), R = restMap(day), after = typeof wcFillDays === 'function' ? wcFillDays().filter(d => d.k > day) : [];
+  const wdOf = k => WDL[new Date(k + 'T12:00:00').getDay()].toLowerCase();
   let sec = 0;
-  need.forEach(x => {
-    if (sore[x.k] && sore[x.k].lvl >= 2) { skipped.push(x.k); return; }
-    const T = Math.max(1, Math.min(G2_MAX_MUS, Math.ceil(x.n / days)) - (sore[x.k] ? 1 : 0));
+  /* Un ejercicio por músculo; un segundo solo si faltan más de 5 y es un movimiento distinto (no dos variantes casi iguales) */
+  const take = (x, T, tag) => {
     const cands = qkShuffle(g2Cands(x.k, where), seed).filter(n => !used[exHKey(n)]);
-    if (!cands.length) { left.push({ k: x.k, n: x.n, why: 'no hay un ejercicio para hacerlo aquí' }); return; }
-    /* Un ejercicio por músculo; un segundo solo si faltan más de 5 y es un movimiento distinto (no dos variantes casi iguales) */
+    if (!cands.length) return null;
     const pat = n => (libFind(n) || {}).pat || n, a = cands[0], sa = Math.min(T, G2_MAX_EX);
     const b = x.n > 5 && T - sa >= 2 ? cands.find(n => n !== a && pat(n) !== pat(a)) : null;
     const plan = b ? [{ n: a, s: sa }, { n: b, s: Math.min(G2_MAX_EX, T - sa) }] : [{ n: a, s: Math.min(T, 5) }];
@@ -436,27 +471,57 @@ wcBuild = function (kind, seed) {
       let s = Math.max(2, c.s); while (s >= 2 && sec + g2Sets(c.n, s, kind) > avail) { s--; cut = true; }
       if (s < 2) return;
       sec += g2Sets(c.n, s, kind); used[exHKey(c.n)] = 1; got += s;
-      picks.push({ name: c.n, sets: s, k: x.k, need: x.n });
+      picks.push(Object.assign({ name: c.n, sets: s, k: x.k, need: x.n }, tag || {}));
     });
+    return { got, cut };
+  };
+  need.forEach(x => {
+    if (sore[x.k] && sore[x.k].lvl >= 2) { skipped.push(x.k); return; }
+    const F = R[x.k];
+    if (F && F.block) {
+      /* Si queda otro día, sus series van al que tenga más descanso (el último), siempre que allí ya se cumplan las 48 h (24 h los pequeños) */
+      const to = after.slice().reverse().find(d => restDays(F.date, d.k + 'T12:00:00') >= (F.big ? 2 : 1));
+      if (to) moved.push({ k: x.k, n: x.n, to: wdOf(to.k), why: restWhy(x.k, F), h: F.big ? 48 : 24 });
+      else tired.push(x);
+      return;
+    }
+    const T = Math.max(1, Math.min(G2_MAX_MUS, Math.ceil(x.n / days)) - (sore[x.k] ? 1 : 0));
+    const soft = F && F.soft ? restWhy(x.k, F) : '';
+    const tk = take(x, T, soft ? { soft } : null);
+    if (!tk) { left.push({ k: x.k, n: x.n, why: 'no hay un ejercicio para hacerlo aquí' }); return; }
+    const got = tk.got, cut = tk.cut;
     const lack = x.n - got; if (lack <= 0) return;
     if (days > 1 && !cut && got >= T) later.push({ k: x.k, n: lack });
     else left.push({ k: x.k, n: lack, why: cut || !got ? 'no entra en tu tiempo' : got < T ? 'un segundo ejercicio sería casi igual al primero' : 'más de ' + G2_MAX_MUS + ' series de un músculo en una sesión ya no suman' });
+  });
+  /* Músculos que aún descansan y no hay otro día: si son lo único que falta, como máximo 2 series con RIR 2 y la razón; si no, quedan fuera */
+  const only = !picks.length;
+  tired.forEach(x => {
+    const F = R[x.k], txt = restWhen(F) + ' lo entrenaste fuerte y necesita ' + (F.big ? 48 : 24) + ' h';
+    if (!only || !F.big) { left.push({ k: x.k, n: x.n, why: txt, rest: 1 }); return; }
+    const tk = take(x, 2, { r2: restWhy(x.k, F) });
+    if (!tk || !tk.got) { left.push({ k: x.k, n: x.n, why: txt, rest: 1 }); return; }
+    if (x.n > tk.got) left.push({ k: x.k, n: x.n - tk.got, why: txt, rest: 1 });
   });
   /* Orden: grandes primero (press, remo, sentadilla), luego los aislados; pantorrillas y abdomen al final */
   const rank = p => (g2Last(p.k) ? 3 : g2Big(p.name) ? 0 : pgTypeOf(p.name) === 'glu' ? 1 : 2);
   picks.sort((a, b) => rank(a) - rank(b) || b.need - a.need);
   const list = picks.map(p => {
-    const rx = g2FillRx(p.name, kind), L = g2Load(p.name, rx, where), pe = wcPlanEx(p.name);
+    let rx = g2FillRx(p.name, kind); if (p.r2) rx = Object.assign({}, rx, { rirMin: 2, rirMax: 2 });
+    const L = g2Load(p.name, rx, where, kind), pe = wcPlanEx(p.name);
     const e = E(p.name, pe ? pe.type : pbType(p.name), L.w, p.sets, rx.rMin + '-' + rx.rMax, kind === 'fuerza' ? 2 : 1.5);
     delete e.bar; const bar = pe && pe.bar != null ? +pe.bar : BAR_DEFAULT[p.name] != null ? (pbLb() ? 45 : BAR_DEFAULT[p.name]) : null; if (bar != null) e.bar = bar;
     e.repsMin = rx.rMin; e.repsMax = rx.rMax; e.weight = L.w; e.wcZ = p.k; e.fillRx = rx; e.g2Reps = L.reps;
-    e.rirT = Array.from({ length: p.sets }, (z, j) => (j === p.sets - 1 ? 1 : 2));
+    e.rirT = Array.from({ length: p.sets }, (z, j) => (p.r2 ? 2 : j === p.sets - 1 ? 1 : 2));
     e.rest = pgRx(p.name, kind).rest;
-    e.g2Why = `${p.need === 1 ? 'Te falta 1 serie' : 'Te faltan ' + p.need + ' series'} de ${zoneName(p.k).toLowerCase()}${L.last ? ' · la última vez ' + L.last + ': ' + L.note : ' · ' + L.note}`;
+    const lastTxt = !L.last ? ' · ' + L.note : L.conv ? ' · ' + L.note + ' (tu última vez: ' + L.last + ')' : ' · tu última sesión ' + g2KindTxt(L.kind || kind) + ' ' + L.last + ': ' + L.note;
+    const restTxt = p.r2 ? p.r2 + ': solo 2 series con RIR 2, porque es lo único que te falta · ' : p.soft ? p.soft + ': con 24 h basta, hoy RIR 1-2 · ' : '';
+    e.g2Why = `${restTxt}${p.need === 1 ? 'Te falta 1 serie' : 'Te faltan ' + p.need + ' series'} de ${zoneName(p.k).toLowerCase()}${lastTxt}`;
+    if (p.r2) e.g4R2 = 1;
     if (!L.last) e.wcNew = 1;
     return e;
   });
-  return { list, skipped, dl: V.dl, left, later, where, days, min: Math.round((sec + 6 * 60) / 60) };
+  return { list, skipped, dl: V.dl, left, later, moved, where, days, day, min: Math.round((sec + 6 * 60) / 60) };
 };
 wcPreview = function (e, kind) {
   if (!e.fillRx) return { w: +e.weight || 0, sets: e.sets };
@@ -477,6 +542,11 @@ wcFillSheet = function () {
   c.querySelectorAll('.qk-list .qk-ex').forEach((n, k) => { const e = B.list[k]; if (e && e.g2Why) { const sm = n.querySelector('small'); if (sm) sm.insertAdjacentHTML('afterend', `<small class="g2-why">${esc(e.g2Why)}</small>`); } });
   const Bx = wcBuild.last, list = c.querySelector('.qk-list'), nS = n => n + ' ' + (n === 1 ? 'serie' : 'series');
   if (list && Bx && Bx.later && Bx.later.length) list.insertAdjacentHTML('afterend', `<div class="muted wc-sub g2-later">Te quedan ${Bx.days} entrenos esta semana: lo demás va en los otros (${Bx.later.map(x => `${zoneName(x.k).toLowerCase()} ${nS(x.n)}`).join(', ')}), como máximo ${G2_MAX_MUS} series de un músculo por sesión.</div>`);
+  /* Descanso muscular: lo que pasa a otro día, con la razón */
+  if (list && Bx && Bx.moved && Bx.moved.length) {
+    if (!(Bx.list || []).length) list.innerHTML = `<div class="muted">Hoy no conviene completar nada: lo que falta aún necesita descanso.</div>`;
+    list.insertAdjacentHTML('afterend', `<div class="safe tip g4-moved">${ic('timer', 16)}<span>${Bx.moved.map(x => `${esc(x.why)}: ${zoneName(x.k).toLowerCase()} (${nS(x.n)}) pasa al ${x.to}, cuando ya habrán pasado ${x.h} h.`).join(' ')} Guarda otro entreno para completar ese día.</span></div>`);
+  }
   if (list && Bx && Bx.left && Bx.left.length) list.insertAdjacentHTML('afterend', `<div class="safe tip g2-left">${ic('info', 16)}<span>Quedan sin cubrir: ${Bx.left.map(x => `${zoneName(x.k).toLowerCase()} (${nS(x.n)}, ${x.why})`).join('; ')}. No es grave: lo compensas la semana que viene.</span></div>`);
   return r;
 };
@@ -495,7 +565,7 @@ startSession = function (planId, dayId) {
     if (planId === 'wcfill' && pe && pe.fillRx) {
       const rx = Object.assign({}, pgRx(e.name, d.kind, pe));
       e.repsMin = rx.rMin; e.repsMax = rx.rMax; e.g2Why = pe.g2Why; e.rest = pe.rest || e.rest;
-      e.rirT = e.log.map((s, j) => (j === e.log.length - 1 ? 1 : 2));
+      e.rirT = e.log.map((s, j) => (pe.g4R2 ? 2 : j === e.log.length - 1 ? 1 : 2));
       const goal = e.log.map(() => pe.g2Reps || rx.rMin);
       e.coach = Object.assign({}, e.coach || {}, { w: +pe.weight || 0, goal, rirT: e.rirT, rx, why: pe.g2Why });
       e.log.forEach((s, j) => { if (s.done) return; s.w = +pe.weight || 0; s.r = goal[j]; });
