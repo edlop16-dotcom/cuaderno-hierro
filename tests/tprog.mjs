@@ -87,8 +87,8 @@ console.log('3. Equilibrio para la postura');
 {
   const push = [['Press Banca Plano (Barra)', R(60, 10, 4)], ['Press Inclinado con Mancuernas', R(20, 10, 4)], ['Press Militar (Mancuernas)', R(16, 10, 3)]], pull = [['Remo Sentado con Cable', R(50, 10, 3)]];
   const plan = PLAN([X('Press Banca Plano (Barra)', 3, 60), X('Remo Sentado con Cable', 3, 50)]);
-  const p = await open({ sessions: [S('a', 1, push.concat(pull))], plans: [plan] });
-  const B = await p.evaluate(() => { const b = prBalance(0), f = wcSumOff; wcSumOff = () => 0; const s = wcSumHtml(); wcSumOff = f; return b && { t: b.txt, s, r: wcReportHtml() }; });
+  const p = await open({ sessions: [S('a', 1, push.concat(pull)), S('z', 7, push.concat(pull))], plans: [plan] });
+  const B = await p.evaluate(() => { const b = prBalance(0); return b && { t: b.txt, s: wcSumHtml(), r: wcReportHtml() }; });
   console.log('      aviso:', B && B.t);
   ok(B && /11 series de empuje frente a 3 de jalón/.test(B.t), 'cuenta empuje y jalón de la semana');
   ok(B && /suma /.test(B.t), 'sugiere un ejercicio');
