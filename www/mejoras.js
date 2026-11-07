@@ -108,7 +108,8 @@ addToDraft = function (names, at) {
 /* Por la hora de la primera serie completada; sin hora (sesiones de antes), donde estaban */
 function mjOrder(list) {
   const t = e => e.log.reduce((m, s) => (s.done && s.at && s.at < m ? s.at : m), Infinity);
-  return list.map((e, i) => ({ e, i, t: t(e) })).sort((a, b) => (a.t === b.t ? a.i - b.i : a.t - b.t)).map(o => o.e);
+  const L = list.map(e => ({ e, t: t(e) })), timed = L.filter(o => o.t < Infinity).sort((a, b) => a.t - b.t);
+  let k = 0; return L.map(o => (o.t < Infinity ? timed[k++].e : o.e));
 }
 const _finishMJ = finishSession;
 finishSession = function () {

@@ -65,7 +65,7 @@ function aixSessLine(s, o) {
   const subs = aixSubsOf(s);
   const ex = s.exercises.map(e => {
     const bar = BAR_DEFAULT[e.name] ? ` · ${u} en discos, barra de ${fmtKg(BAR_DEFAULT[e.name])} aparte` : '', r = aixRest(s, e);
-    return `- ${e.name}${aixSubTxt(subs[e.name])}: ${e.sets.length ? e.sets.map(x => ddSetTxt(x, e)).join(', ') : 'sin series'}${bar}${r ? ' · descanso ' + r : ''}${e.note ? ' · nota: ' + e.note.replace(/\s+/g, ' ') : ''}`;
+    return `- ${e.name}${aixSubTxt(subs[e.name])}: ${e.sets.length ? e.sets.map(x => ddSetTxt(x, e)).join(', ') : 'sin series'}${bar}${r ? ' · descanso ' + r : ''}${e.sets.some(x => x.q) ? ' · alguna serie en superserie o sin descanso completo' : ''}${e.note ? ' · nota: ' + e.note.replace(/\s+/g, ' ') : ''}`;
   });
   return head + '\n' + ex.join('\n') + (s.note ? '\nNota de la sesión: ' + s.note : '');
 }

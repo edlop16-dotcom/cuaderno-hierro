@@ -236,6 +236,8 @@ public class HabitAlarms {
         if (isRest(o)) { showRest(c, o); return; }
         channel(c);
         final int id = o.optInt("id");
+        /* Recordatorios juntos: `group` trae cada uno; `full` = false si todos son "Solo notificación" */
+        final boolean grp = o.has("group"), onlyNotif = grp && !o.optBoolean("full", true);
         String item = o.toString();
         Intent full = new Intent(c, HabitAlarmActivity.class).putExtra("item", item)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_USER_ACTION);
@@ -253,13 +255,14 @@ public class HabitAlarms {
             .setVibrate(null)
             .setAutoCancel(true)
             .setContentIntent(fullPI)
-            .setFullScreenIntent(fullPI, true)
-            .addAction(0, "✓ Hecho", actionPI(c, A_DONE, id, item))
-            .addAction(0, "Aplazar " + againText(snzOf(o)), actionPI(c, A_SNOOZE, id, item))
+            .addAction(0, grp ? "Hecho todo" : "✓ Hecho", actionPI(c, A_DONE, id, item))
             .setDeleteIntent(actionPI(c, A_DISMISS, id, item));   // deslizar la notificación = ✕
-        if (o.optBoolean("skipBtn")) b.addAction(0, "Omitir hoy", actionPI(c, A_SKIP, id, item));   // solo el teléfono lo pide
+        if (!onlyNotif) b.setFullScreenIntent(fullPI, true);   // sin el permiso, Android la deja como notificación normal
+        if (!grp) b.addAction(0, "Aplazar " + againText(snzOf(o)), actionPI(c, A_SNOOZE, id, item));
+        if (o.optBoolean("skipBtn")) b.addAction(0, grp ? "Omitir todo" : "Omitir hoy", actionPI(c, A_SKIP, id, item));   // solo el teléfono lo pide
         NotificationManager nm = (NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm != null) nm.notify(id, b.build());
+        if (onlyNotif) { ding(c); return; }   // tocar la notificación abre la lista
         /* Cómo se abre la pantalla completa:
            - Bloqueado o con la pantalla apagada: la abre Android por la notificación (setFullScreenIntent), si la app
              tiene "Notificaciones de pantalla completa" (Android 14+).
@@ -389,7 +392,56 @@ public class HabitAlarms {
         return ok.length() > 0 ? ok : "¡Hecho! " + o.optString("name", "");
     }
     static void toast(Context c, String s) { try { android.widget.Toast.makeText(c, s, android.widget.Toast.LENGTH_SHORT).show(); } catch (Throwable ignored) { } }
+    /* Varios recordatorios juntos: la lista con Hecho u Omitir para cada uno, y Hecho todo / Omitir todo.
+       Cada uno guarda su propio resultado (done y skip por recordatorio). */
+    static android.view.View buildGroupUi(final Context c, final JSONObject item, final Runnable close) {
+        android.widget.FrameLayout root = new android.widget.FrameLayout(c);
+        root.setBackground(new android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM, new int[] { 0xFF0B0D12, 0xFF2A1410, 0xFF8A3414, 0xFFFF6A1F }));
+        root.setClickable(true);
+        android.widget.LinearLayout col = new android.widget.LinearLayout(c);
+        col.setOrientation(android.widget.LinearLayout.VERTICAL);
+        col.setPadding(dp(c, 24), dp(c, 72), dp(c, 24), dp(c, 32));
+        col.addView(text(c, item.optString("title", "Recordatorios"), 30, true));
+        android.widget.TextView sub = text(c, "Hoy · " + item.optString("time", ""), 16, false);
+        sub.setPadding(0, dp(c, 8), 0, dp(c, 18)); sub.setAlpha(0.9f);
+        col.addView(sub);
+        final JSONArray g = item.optJSONArray("group");
+        final int n = g == null ? 0 : g.length(), id = item.optInt("id");
+        final boolean[] did = new boolean[n];
+        final android.view.View[] rows = new android.view.View[n];
+        final Runnable check = () -> {
+            for (boolean d : did) if (!d) return;
+            dismiss(c, id); close.run();
+        };
+        for (int k = 0; k < n; k++) {
+            final int i = k; final JSONObject x = g.optJSONObject(k); if (x == null) { did[k] = true; continue; }
+            android.widget.LinearLayout row = new android.widget.LinearLayout(c);
+            row.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+            row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+            row.setPadding(0, dp(c, 8), 0, dp(c, 8));
+            android.widget.TextView nm = text(c, x.optString("name", "Recordatorio"), 18, false);
+            nm.setGravity(android.view.Gravity.START);
+            row.addView(nm, new android.widget.LinearLayout.LayoutParams(0, -2, 1f));
+            android.widget.TextView ok = text(c, "Hecho", 15, true), no = text(c, "Omitir", 15, false);
+            ok.setPadding(dp(c, 14), dp(c, 12), dp(c, 14), dp(c, 12)); no.setPadding(dp(c, 14), dp(c, 12), dp(c, 14), dp(c, 12));
+            ok.setOnClickListener(v -> { if (did[i]) return; did[i] = true; done(c, x); rows[i].setAlpha(0.35f); check.run(); });
+            no.setOnClickListener(v -> { if (did[i]) return; did[i] = true; skip(c, x); rows[i].setAlpha(0.35f); check.run(); });
+            row.addView(ok); row.addView(no);
+            rows[k] = row; col.addView(row);
+        }
+        android.widget.TextView all = text(c, "Hecho todo", 20, true), none = text(c, "Omitir todo", 17, false);
+        all.setPadding(0, dp(c, 26), 0, dp(c, 10)); none.setPadding(0, dp(c, 10), 0, dp(c, 10));
+        all.setOnClickListener(v -> { for (int k = 0; k < n; k++) if (!did[k]) { did[k] = true; done(c, g.optJSONObject(k)); } check.run(); });
+        none.setOnClickListener(v -> { for (int k = 0; k < n; k++) if (!did[k]) { did[k] = true; skip(c, g.optJSONObject(k)); } check.run(); });
+        col.addView(all); col.addView(none);
+        android.widget.ScrollView sc = new android.widget.ScrollView(c);
+        sc.addView(col);
+        root.addView(sc, new android.widget.FrameLayout.LayoutParams(-1, -1));
+        return root;
+    }
+
     static android.view.View buildUi(final Context c, final JSONObject item, final Runnable close) {
+        if (item.has("group")) return buildGroupUi(c, item, close);
         final int id = item.optInt("id");
         android.widget.FrameLayout root = new android.widget.FrameLayout(c);
         root.setBackground(new android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM, new int[] { 0xFF0B0D12, 0xFF2A1410, 0xFF8A3414, 0xFFFF6A1F }));
@@ -419,6 +471,7 @@ public class HabitAlarms {
         android.widget.TextView no = circle(c, "✕", true);
         no.setContentDescription("Descartar");
         no.setOnClickListener(v -> {
+            cancelEvent(c, item);   // solo el ✕: deslizar la notificación no cuenta como cancelar
             if (again(c, item)) toast(c, "Te lo recuerdo en " + againText(item.optInt("again")));
             else dismiss(c, id);
             close.run();
@@ -469,13 +522,26 @@ public class HabitAlarms {
         return root;
     }
 
+    /** ✕ en la pantalla completa: la app lo lee al abrirse (takeEvents, `cancel`) y lo cuenta para el recordatorio `rk`. */
+    static void cancelEvent(Context c, JSONObject o) {
+        JSONArray ev = load(c, "events");
+        try {
+            JSONObject e = new JSONObject();
+            e.put("cancel", true); e.put("rk", o.optString("rk", "")); e.put("day", o.optString("day", "")); e.put("at", System.currentTimeMillis());
+            ev.put(e);
+        } catch (JSONException ignored) {}
+        prefs(c).edit().putString("events", ev.toString()).apply();
+    }
+
     /** Omitir hoy: la app lo lee al abrirse (takeEvents, `skip`) y se cancelan los demás avisos de ese hábito ese día. */
     static void skip(Context c, JSONObject o) {
+        JSONArray g = o.optJSONArray("group");
+        if (g != null) { for (int k = 0; k < g.length(); k++) { JSONObject x = g.optJSONObject(k); if (x != null) skip(c, x); } dismiss(c, o.optInt("id")); return; }
         String hab = o.optString("habit", ""), day = o.optString("day", "");
         JSONArray ev = load(c, "events");
         try {
             JSONObject e = new JSONObject();
-            e.put("habit", hab); e.put("kind", "hab"); e.put("day", day); e.put("skip", true); e.put("at", System.currentTimeMillis());
+            e.put("habit", hab); e.put("kind", "hab"); e.put("day", day); e.put("skip", true); e.put("rk", o.optString("rk", "")); e.put("at", System.currentTimeMillis());
             ev.put(e);
         } catch (JSONException ignored) {}
         prefs(c).edit().putString("events", ev.toString()).apply();
@@ -503,11 +569,14 @@ public class HabitAlarms {
 
     /** Hecho: la app lo lee al abrirse (takeEvents). Hábito = lo marca; agua = suma un vaso (250 ml). */
     static void done(Context c, JSONObject o) {
+        JSONArray g = o.optJSONArray("group");
+        if (g != null) { for (int k = 0; k < g.length(); k++) { JSONObject x = g.optJSONObject(k); if (x != null) done(c, x); } dismiss(c, o.optInt("id")); return; }
         JSONArray ev = load(c, "events");
         try {
             JSONObject e = new JSONObject();
             e.put("habit", o.optString("habit"));
             e.put("kind", o.optString("kind", ""));
+            e.put("rk", o.optString("rk", ""));
             if ("water".equals(o.optString("kind"))) e.put("water", 250);
             e.put("day", o.optString("day"));
             e.put("at", System.currentTimeMillis());

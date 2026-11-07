@@ -69,6 +69,7 @@ console.log('A. Dueño');
   await tap(p, '#sheet [data-hf="rem"]');
   await p.locator('#sheet .hf-t').first().fill('21:00');
   for (const d of [6, 0]) await p.locator(`#sheet .hf-d[value="${d}"]`).uncheck({ force: true });
+  await tap(p, '#sheet [data-hf="fs"][data-v="1"]');
   await tap(p, '#sheet [data-hf="ag-on"]'); await tap(p, '#sheet [data-hf="ag-q"][data-v="1"]');
   await p.locator('#hf-sz-n').fill('4');
   await shot(p, 'a2-nuevo-habito');

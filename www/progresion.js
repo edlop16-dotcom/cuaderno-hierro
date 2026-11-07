@@ -185,7 +185,9 @@ function pgGoalReps(e, j) { const g = e && e.coach && e.coach.goal; const v = g 
 
 /* ---------- Motor ---------- */
 /* Sesión completa en el tope: todas sus series llegan al máximo del rango (Salud y energía) */
-const pgFull = (h, rx) => !!(h && h.sets.length && h.sets.every(s => +s.r >= rx.rMax));
+/* Series con descanso normal; una serie marcada `q` (superserie o sin descanso completo, ajustesgym.js) no mide tu fuerza. Si todas lo son, vale la primera */
+const pgClean = h => { const S = h.sets.filter(s => !s.q); return S.length ? S : h.sets.slice(0, 1); };
+const pgFull = (h, rx) => !!(h && h.sets.length && pgClean(h).every(s => +s.r >= rx.rMax));
 /* Principiante: completó el rango = todas las series en el tope, sin ir al fallo (si anotó el RIR) */
 const pgNovDone = (h, rx) => { const f = h && h.sets.filter(s => +s.r > 0)[0]; return pgFull(h, rx) && (!f || f.rir == null || +f.rir >= rx.rirMin); };
 /* Sesión completa para la regla de Salud y energía: el principiante además no fue al fallo */
@@ -436,7 +438,11 @@ function pgCoach(ex, gymId, kind) {
     }
   } else {
     const L = H[0], s1 = pgFirst(L), top = +s1.w || 0, r1 = +s1.r || 0, rir1 = s1.rir != null ? +s1.rir : null, note = normName(L.note || '');
-    const below = h => { const f = pgFirst(h); return +f.r > 0 && +f.r < rx.rMin; };
+    const below = h => { const f = pgFirst(h); return +f.r > 0 && +f.r < rx.rMin && !f.q; };
+    /* Caída fuerte entre series con descanso normal: de la primera a la última, 4 reps o más y al menos un 30 % */
+    const CL = L.sets.filter(s => !s.q && +s.r > 0), rA = CL.length > 1 ? +CL[0].r : 0, rB = CL.length > 1 ? +CL[CL.length - 1].r : 0;
+    const fall = rA - rB >= Math.max(4, Math.ceil(rA * 0.3)), fallTxt = `las reps cayeron de ${rA} a ${rB} con descanso normal`;
+    const irr = CL.length > 1 && CL.slice(1).some(s => +s.r - rA >= 3);   /* como 20, 25, 20: te sobraba en la primera */
     w = top; mode = 'hold';
     if (PAIN.test(note)) { w = pgRound(name, top * 0.85, true); mode = 'pain'; why = `Tu nota menciona dolor: baja a ${fmtKg(w)} kg y cuida la técnica.`; }
     else if (capped && !DOWN.test(note)) {
@@ -450,6 +456,7 @@ function pgCoach(ex, gymId, kind) {
     else if (rx.g === 'salud' && r1 >= rx.rMax && !(pgSaludDone(L, rx) && pgSaludDone(H[1], rx) && +pgFirst(H[1]).w === top)) {   /* Salud: sube solo tras 2 sesiones completas seguidas en el tope, con ese mismo peso (también el principiante) */
       goal = rx.rMax; why = `Salud y energía: subes solo tras 2 sesiones completas en el tope (${rx.rMax} reps en todas las series${rx.nov ? ', sin ir al fallo' : ''}); ${pgSaludDone(L, rx) ? 'llevas 1' : 'aún no'}. Mantén ${fmtKg(top)} kg.`;
     }
+    else if (r1 >= rx.rMax && fall && rB < rx.rMin) { goal = rx.rMin; why = `Mantén ${fmtKg(top)} kg: ${fallTxt}. Busca ${rx.rMin} reps en todas antes de subir.`; }
     /* 3+ reps por encima del rango: el peso es bajo aunque el RIR sea menor que el objetivo */
     /* Principiante: sube cada sesión que complete el rango (todas las series en el tope, sin ir al fallo); con Salud y energía, tras las 2 de arriba */
     else if (r1 >= rx.rMax && (rx.nov ? pgNovDone(L, rx) : rir1 == null || rir1 >= rx.rirMax || rx.g === 'salud' || r1 - rx.rMax >= 3)) {
@@ -458,17 +465,21 @@ function pgCoach(ex, gymId, kind) {
       const e1 = pgE1(name, s1), lim = rx.g === 'mov' ? step : pgUpMax(name, top);
       let by = '';
       w = top + step; goal = rx.rMin;
-      if (!soft && extra >= 1 && extra <= 2) w = Math.max(w, pgRound(name, top * (1 + 0.04 * extra)));   /* 1-2 reps de más: ~4 % por rep */
+      if (fall) by = '';   /* con caída fuerte, solo el paso mínimo */
+      else if (!soft && extra >= 1 && extra <= 2) w = Math.max(w, pgRound(name, top * (1 + 0.04 * extra)));   /* 1-2 reps de más: ~4 % por rep */
       else if (!soft && extra >= 3) { w = Math.max(w, pgRound(name, pgWFor(name, e1, rx.rMax, rx.rirMax), true)); by = 'e1'; }   /* 3+: por el 1RM estimado */
       if (w > top + lim) { w = Math.max(top + step, pgRound(name, top + lim, true)); by = by ? by + '+tope' : 'tope'; }
       if (by) goal = pgRepsFor(name, e1, w, rx);   /* reps coherentes con el peso nuevo */
       mode = 'up';
-      why = `Sube: 1.ª serie ${pgSetTxt(s1)} (${extra >= 3 ? `muy por encima de ${rx.rMin}-${rx.rMax}; 1RM estimado ≈ ${fmtKg(Math.round(e1))} kg` : rx.nov ? `completaste ${rx.rMin}-${rx.rMax} en todas las series` : `tope ${rx.rMax}${rir1 == null ? '' : ', RIR ' + rx.rirMax}`}) → ${fmtKg(w)} kg${/tope/.test(by) ? ` (tope de subida: +${fmtKg(w - top)} kg por sesión)` : ''} y ${goal === rx.rMin ? 'vuelve a ' + rx.rMin + ' reps' : 'busca ' + goal + ' reps'}.${rir1 == null ? ' (Sin RIR anotado: decidí por las reps.)' : ''}${extra >= 3 && !H.slice(1).some(h => { const f = pgFirst(h); return +f.r > 0 && +f.r <= rx.rMax + 2; }) ? RANGE_TIP : ''}`;
+      if (fall) why = `Sube poco: 1.ª serie ${pgSetTxt(s1)} pasó el tope, pero ${fallTxt} → ${fmtKg(w)} kg.`;
+      else why = `Sube: 1.ª serie ${pgSetTxt(s1)} (${extra >= 3 ? `muy por encima de ${rx.rMin}-${rx.rMax}; 1RM estimado ≈ ${fmtKg(Math.round(e1))} kg` : rx.nov ? `completaste ${rx.rMin}-${rx.rMax} en todas las series` : `tope ${rx.rMax}${rir1 == null ? '' : ', RIR ' + rx.rirMax}`}) → ${fmtKg(w)} kg${/tope/.test(by) ? ` (tope de subida: +${fmtKg(w - top)} kg por sesión)` : ''} y ${goal === rx.rMin ? 'vuelve a ' + rx.rMin + ' reps' : 'busca ' + goal + ' reps'}.${rir1 == null ? ' (Sin RIR anotado: decidí por las reps.)' : ''}${extra >= 3 && !H.slice(1).some(h => { const f = pgFirst(h); return +f.r > 0 && +f.r <= rx.rMax + 2; }) ? RANGE_TIP : ''}`;
     } else if (r1 >= rx.rMax) {
       why = !rx.nov ? `Mantén: llegaste al tope (${pgSetTxt(s1)}) con menos reserva que el RIR ${rx.rirMax}; repite ${fmtKg(top)} kg.`
         : pgFull(L, rx) ? `Mantén ${fmtKg(top)} kg: completaste el rango, pero muy cerca del fallo (RIR ${rir1}). Repite dejando ${rx.rirMin} reps de sobra.`
         : `Mantén ${fmtKg(top)} kg: subes cuando completes ${rx.rMax} reps en todas las series (${L.sets.map(z => z.r).join(', ')}).`;
       goal = rx.rMax;
+    } else if (r1 > 0 && r1 < rx.rMin && s1.q) {
+      goal = rx.rMin; why = `Mantén ${fmtKg(top)} kg: esa serie (${pgSetTxt(s1)}) fue sin descanso completo y no cuenta como falta de fuerza.`;
     } else if (r1 > 0 && r1 < rx.rMin) {
       const diff = rx.rMin - r1;
       if (rx.g === 'grasa' && (diff >= 2 || (H[1] && below(H[1])))) { goal = rx.rMin; why = `Perder grasa: mantén ${fmtKg(top)} kg aunque hoy rindas menos (${pgSetTxt(s1)}) por la dieta; mantener ya es ganar.`; }
@@ -476,6 +487,10 @@ function pgCoach(ex, gymId, kind) {
       else if (diff === 2) { w = pgRound(name, top * (1 - 0.04 * diff), true); mode = 'down'; goal = rx.rMin; why = `Ajusta: ${pgSetTxt(s1)} quedó ${diff} reps bajo el rango (−4 % por rep) → ${fmtKg(w)} kg.`; }
       else if (diff >= 3) { const e1 = pgE1(name, s1); w = Math.min(top, pgRound(name, pgWFor(name, e1, rx.rMin, rx.rirMax), true)); mode = 'down'; goal = rx.rMin; why = `Ajusta: ${pgSetTxt(s1)} quedó ${diff} reps bajo el rango; por tu 1RM estimado (≈ ${fmtKg(Math.round(e1))} kg) → ${fmtKg(w)} kg para ${rx.rMin} reps.`; }
       else { goal = rx.rMin; why = `Mantén ${fmtKg(top)} kg: te faltó 1 rep para el mínimo (${rx.rMin}).`; }
+    } else if (irr && rx.g !== 'salud' && rx.g !== 'mov') {
+      w = Math.min(top + pgStep(name, top), top + pgUpMax(name, top)); mode = 'up'; goal = rx.rMin; why = `Sube: repeticiones irregulares (${L.sets.map(z => z.r).join(', ')}), el peso está bajo → ${fmtKg(w)} kg.`;
+    } else if (fall && rB < rx.rMin && rx.g !== 'grasa') {
+      w = Math.max(0, top - pgInc(name, top)); mode = 'down'; goal = rx.rMin; why = `Ajuste moderado: ${fallTxt} → ${fmtKg(w)} kg para sostener ${rx.rMin} reps en todas.`;
     } else if (rir1 != null && rir1 < rx.rirMin) {
       goal = Math.max(rx.rMin, r1); why = `Mantén ${fmtKg(top)} kg: llegaste más cerca del fallo (RIR ${rir1}) que lo planeado (${pgRirTxt(rx)}).`;
     } else {
@@ -587,7 +602,7 @@ function pgLate(d) {
   const cut = left.filter(e => pgSsOk(e.name) && (+e.rest || 0) > pgRx(e.name, d.kind).restMin);
   if (cut.length) out.tips.push({ k: 'rest', t: `Acorta el descanso de ${cut.map(e => e.name).slice(0, 2).join(' y ')}${cut.length > 2 ? '…' : ''} a su mínimo` });
   const ss = left.filter(e => pgSsOk(e.name) && !e.log.some(s => s.done));
-  if (ss.length >= 2) out.tips.push({ k: 'ss', t: `Haz ${ss[0].name} y ${ss[1].name} en superserie` });
+  if (ss.length >= 2) { out.tips.push({ k: 'ss', t: `Haz ${ss[0].name} y ${ss[1].name} en superserie` }); d.ssT = [ss[0].name, ss[1].name]; }   /* el coach lo tiene en cuenta (ajustesgym.js) */
   const small = left.filter(e => pgTypeOf(e.name) === 'peq' && e.log.filter(s => !s.done).length >= 2);
   if (small.length) out.tips.push({ k: 'drop', t: `Deja la última serie de ${small[0].name}` });
   return out;

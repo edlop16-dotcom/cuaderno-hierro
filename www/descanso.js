@@ -1,9 +1,9 @@
 /* ==========================================================================
    Tanda I2 · Fin del descanso con la pantalla apagada (24-oct-2026). Solo teléfono con la app instalada.
-   - Al quedar la app en segundo plano durante un descanso (pantalla apagada o se fue a otra app), se programa
-     en el nativo (HabitAlarm.rest) un aviso a la hora en que termina. Si a esa hora la pantalla está apagada,
-     HabitAlarmActivity la enciende con "Descanso terminado", qué sigue y "Volver a la sesión"; si está
-     encendida, queda solo la notificación normal de siempre (native.js, id 9001). Al volver, se cancela.
+   - Durante un descanso se programa en el nativo (HabitAlarm.rest) un aviso a la hora en que termina (`state.rest.end`,
+     la misma que muestra la app). Si a esa hora la pantalla está apagada, HabitAlarmActivity la enciende con "Descanso
+     terminado", qué sigue y "Volver a la sesión"; si está encendida, queda solo la notificación normal de siempre
+     (native.js, id 9001). Si el descanso cambia, se reprograma; si se salta o se quita, se cancela.
    - Ajustes → Fin del descanso: "Pantalla completa con el celular apagado" (`settings.restFull`, activado por
      defecto) y los permisos que faltan (pantalla completa en Android 14+, alarmas exactas).
    - Sonido: el ding dong de los hábitos (sale aunque el celular esté en silencio) salvo "Sin sonido"; si no
@@ -33,10 +33,15 @@ function rfArm() {
   rfAt = at; RF.rest({ at, title: 'Descanso terminado', body: rfNext(), snd: c.sound !== 'silencio', vib: +c.vib !== 0 }).catch(() => {});
 }
 function rfCancel() { rfAt = 0; if (RF) RF.restCancel().catch(() => {}); }
-function rfSync() { const at = rfWant(); if (at === rfAt) return; if (at) rfArm(); else if (rfAt) rfCancel(); }
+/* En segundo plano el reloj de la app sigue corriendo: faltando poco, o ya terminado, no se le quita el aviso a la pantalla completa */
+function rfSync() {
+  const at = rfWant(); if (at === rfAt) return;
+  if (!at && rfAt && document.visibilityState === 'hidden' && rfAt <= Date.now() + 1500) return;
+  if (at) rfArm(); else if (rfAt) rfCancel();
+}
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState !== 'hidden') { rfSync(); rfStatus(); return; }
-  if (rfWant()) rfArm(); else if (rfAt) rfCancel();   /* al apagar la pantalla: siempre con la hora y el sonido de ahora */
+  if (document.visibilityState !== 'hidden') { rfSync(); rfStatus(); if (!isWatch()) tick(); return; }   /* al volver: la cuenta correcta al instante */
+  if (rfWant()) rfArm(); else rfSync();   /* al apagar la pantalla: siempre con la hora y el sonido de ahora */
 });
 const _tickRF = tick;
 tick = function () { _tickRF.apply(this, arguments); rfSync(); };

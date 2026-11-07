@@ -2304,3 +2304,27 @@ body:not(.watch) .tk-t{font-weight:700}
 body:not(.watch) .tk-t.low{color:var(--warn)}
 body:not(.watch) .tk-t.high{color:var(--bad)}
 body:not(.watch) .tk-set{margin-top:8px}
+
+/* Ajustes del gimnasio (ajustesgym.js): siguiente ejercicio y recordatorio desactivado */
+body:not(.watch) .ag-next { display: flex; align-items: center; gap: 8px; margin: 6px 12px; padding: 8px 10px; border-radius: 12px; background: var(--card2, #292d32); font-size: 13px; flex-shrink: 0; }
+body:not(.watch) .ag-next .grow { min-width: 0; }
+body:not(.watch) .ag-next b { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+body:not(.watch) .ag-next small { display: block; color: var(--muted); }
+body:not(.watch) .ag-rem { display: flex; flex-direction: column; gap: 8px; }
+body:not(.watch) .ag-rem small { display: block; }
+body:not(.watch) .ag-hide { display: none !important; }
+body:not(.watch) .ag-tip { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 10px; background: var(--card2, #292d32); font-size: 13.5px; line-height: 1.3; flex-shrink: 0; }
+body:not(.watch) .ag-tip .grow { min-width: 0; }
+body:not(.watch) .ag-ul { margin: 4px 0 8px; padding-left: 18px; font-size: 13.5px; line-height: 1.35; }
+body:not(.watch) .ag-tbw { overflow-x: auto; margin: 4px 0 10px; }
+body:not(.watch) .ag-tb { width: 100%; border-collapse: collapse; font-size: 13px; }
+body:not(.watch) .ag-tb th { text-align: left; font-weight: 600; color: var(--muted); padding: 4px 6px; white-space: nowrap; }
+body:not(.watch) .ag-tb td { padding: 6px; border-top: 1px solid rgba(255,255,255,.08); vertical-align: top; }
+body:not(.watch) .ag-tb td.num { white-space: nowrap; }
+body:not(.watch) .ag-tb small { display: block; color: var(--muted); }
+body:not(.watch) .ag-an { margin-top: 8px; }
+body:not(.watch) .ag-an summary { font-weight: 600; min-height: 44px; display: flex; align-items: center; }
+body:not(.watch) .ag-gl { margin-bottom: 12px; }
+body:not(.watch) .ag-gr { display: flex; align-items: center; gap: 8px; padding: 6px 0; }
+body:not(.watch) .ag-gr .grow { min-width: 0; }
+body:not(.watch) .ag-gr.ag-off { opacity: .4; pointer-events: none; }
