@@ -2304,3 +2304,6 @@ body:not(.watch) .tk-t{font-weight:700}
 body:not(.watch) .tk-t.low{color:var(--warn)}
 body:not(.watch) .tk-t.high{color:var(--bad)}
 body:not(.watch) .tk-set{margin-top:8px}
+
+/* Respaldo completo (respaldo.js) */
+body:not(.watch) .rc-box { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
