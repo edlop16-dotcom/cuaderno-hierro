@@ -113,7 +113,7 @@ agTip = function (d, i) {
     const why = nw > w ? 'llegaste al tope del rango' : nw && nw < w ? 'te costó más de la cuenta' : 'suma repeticiones con el mismo peso';
     return { t: 'Ejercicio terminado: ' + (nw ? (nw === w ? 'la próxima vez repite ' + agKg(nw) : 'la próxima vez empieza con ' + agKg(nw)) + (g ? ' × ' + g : '') : 'la próxima vez busca ' + g + (rx.sec ? ' s' : ' reps')) + ' (' + why + ')', k: 'end' };
   }
-  const quick = !!agFlags(d).get(s), tired = quick || !!((typeof ssOf === 'function' && ssOf(d, e)) || (d.ssT || []).indexOf(name) >= 0);
+  const quick = !!agFlags(d).get(s), tired = quick || !!((typeof ssOf === 'function' && ssOf(d, e)) || agSsDone(d).indexOf(name) >= 0);
   if (r > rx.rMax && (rir == null || rir >= 2)) {
     if (!load) return { t: did + ', más que tu rango ' + g2Rng(rx) + ': vas sobrado, sigue con esa técnica', k: 'ok' };
     /* "Sube" siempre sube: el siguiente escalón; en tu peso máximo, mantén y suma reps */
@@ -397,7 +397,7 @@ function pgNextUp(name, w) {
 }
 function g2KHist(name, g, kind, any) {
   const H = [];
-  for (const s of state.sessions) { if (s.approx || (!any && sGym(s) !== g)) continue; const x = exIn(s, name); if (x && x.sets.length) H.push({ date: s.date, sets: x.sets, kind: sKind(s), gymId: sGym(s) }); }
+  for (const s of state.sessions) { if (s.approx || (!any && sGym(s) !== g)) continue; const x = exIn(s, name); if (x && x.sets.some(t => +t.r > 0)) H.push({ date: s.date, sets: x.sets, kind: sKind(s), gymId: sGym(s) }); }   /* una sesión sin ninguna repetición anotada no sirve de referencia */
   return H;
 }
 function g2Load(name, rx, where, kind) {

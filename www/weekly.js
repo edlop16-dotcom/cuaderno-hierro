@@ -147,9 +147,10 @@ function wcPreview(e, kind) {
 }
 const wcMins = list => Math.round(list.reduce((a, e) => a + e.sets * (45 + e.rest) + 90, 0) / 60) + 5;
 function wcFillDays() {
-  const ws = weekStartOf(new Date()), tk = dk(new Date()), out = [];
-  [5, 6].forEach(i => { const d = new Date(ws); d.setDate(d.getDate() + i); const k = dk(d); if (k >= tk) out.push({ k, l: k === tk ? 'Hoy' : WDL[d.getDay()] + ' ' + d.getDate() }); });
-  if (!out.length) out.push({ k: tk, l: 'Hoy' });
+  /* "Hoy" siempre es la primera opción (la hoja se abre cualquier día desde Hoy): así el descanso muscular se calcula
+     para el día en que de verdad entrenas; después, el sábado y el domingo que queden de esta semana */
+  const ws = weekStartOf(new Date()), tk = dk(new Date()), out = [{ k: tk, l: 'Hoy' }];
+  [5, 6].forEach(i => { const d = new Date(ws); d.setDate(d.getDate() + i); const k = dk(d); if (k > tk) out.push({ k, l: WDL[d.getDay()] + ' ' + d.getDate() }); });
   return out;
 }
 function wcFill() { const f = state.settings.wcFill; return f && f.wk === wkKey(new Date()) && f.date >= dk(new Date()) && !state.sessions.some(s => s.dayId === f.id) ? f : null; }
@@ -393,7 +394,18 @@ document.addEventListener('click', ev => {
   if (a === 'kind') { wc.kind = b.dataset.v; return wcFillSheet(); }
   if (a === 'again') { wc.seed = (wc.seed || 0) + 1; return wcFillSheet(); }
   if (a === 'save') return wcSaveFill();
-  if (a === 'go') { if (!wc.list || !wc.list.length) return; return wcStart({ id: 'wf-' + uid(), kind: wc.kind, gym: activeGym().id, list: wc.list }); }
+  if (a === 'go') {
+    if (!wc.list || !wc.list.length) return;
+    /* "Empezar ahora" con otro día elegido: la lista se vuelve a calcular para hoy (el descanso muscular es el de hoy);
+       si cambia, se muestra antes de empezar */
+    const tk = dk(new Date());
+    if (wc.day !== tk) {
+      const sig = L => (L || []).map(e => e.name + ':' + e.sets + ':' + e.weight).join('|'), old = sig(wc.list);
+      wc.day = tk; wcFillSheet();
+      if (!wc.list || !wc.list.length || sig(wc.list) !== old) { toast('Para empezar ahora la calculé para hoy. Revísala y toca Empezar.'); return; }
+    }
+    return wcStart({ id: 'wf-' + uid(), kind: wc.kind, gym: activeGym().id, list: wc.list });
+  }
   if (a === 'fill-go') { const f = wcFill(); if (f) wcStart(f); return; }
   if (a === 'fill-del') { delete state.settings.wcFill; savePlans(); toast('Entreno para completar quitado.'); return render(); }
   if (a === 'apply') { wcApply(); wcSheet('s'); return render(); }

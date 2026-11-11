@@ -87,7 +87,7 @@ const _finishG3 = finishSession;
 finishSession = function () {
   const d = state.draft, id = d && d.id;
   if (!d || isWatch()) return _finishG3.apply(this, arguments);
-  const rows = d.exercises.map(e => ({ name: e.name, ss: (typeof ssOf === 'function' && ssOf(d, e)) || ((d.ssT || []).indexOf(e.name) >= 0 ? 'S' : ''), dur: e.log.filter(s => s.done).map(s => s.dur || 0) }));
+  const rows = d.exercises.map(e => ({ name: e.name, ss: (typeof ssOf === 'function' && ssOf(d, e)) || ((typeof agSsDone === 'function' ? agSsDone(d) : []).indexOf(e.name) >= 0 ? 'S' : ''), dur: e.log.filter(s => s.done).map(s => s.dur || 0) }));
   const r = _finishG3.apply(this, arguments);
   const s = !state.draft && state.sessions.find(x => x.id === id);
   if (s) {

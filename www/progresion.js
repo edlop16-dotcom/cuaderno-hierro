@@ -604,7 +604,7 @@ function pgLate(d) {
   const cut = left.filter(e => pgSsOk(e.name) && (+e.rest || 0) > pgRx(e.name, d.kind).restMin);
   if (cut.length) out.tips.push({ k: 'rest', t: `Acorta el descanso de ${cut.map(e => e.name).slice(0, 2).join(' y ')}${cut.length > 2 ? '…' : ''} a su mínimo` });
   const ss = left.filter(e => pgSsOk(e.name) && !e.log.some(s => s.done));
-  if (ss.length >= 2) { out.tips.push({ k: 'ss', t: `Haz ${ss[0].name} y ${ss[1].name} en superserie` }); d.ssT = [ss[0].name, ss[1].name]; }   /* el coach lo tiene en cuenta (ajustesgym.js) */
+  if (ss.length >= 2) { out.tips.push({ k: 'ss', t: `Haz ${ss[0].name} y ${ss[1].name} en superserie` }); const S = d.ssSug = d.ssSug || []; if (!S.some(x => x[0] === ss[0].name && x[1] === ss[1].name)) S.push([ss[0].name, ss[1].name]); }   /* solo queda anotada la sugerencia: cuenta como superserie si de verdad los alternas (agSsDone, ajustesgym.js) */
   const small = left.filter(e => pgTypeOf(e.name) === 'peq' && e.log.filter(s => !s.done).length >= 2);
   if (small.length) out.tips.push({ k: 'drop', t: `Deja la última serie de ${small[0].name}` });
   return out;

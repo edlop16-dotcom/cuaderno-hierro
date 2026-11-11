@@ -66,6 +66,40 @@ const socMe = () => fb.auth.acc;
 const fS = v => ({ stringValue: String(v) });
 const fJ = d => { try { return JSON.parse(d.fields.j.stringValue); } catch (e) { return null; } };
 const fV = (d, k) => (d && d.fields && d.fields[k] && (d.fields[k].stringValue != null ? d.fields[k].stringValue : d.fields[k].arrayValue ? (d.fields[k].arrayValue.values || []).map(x => x.stringValue) : null));
+/* Lo que llega de otra persona (amigo, alumno, entrenador) nunca se muestra ni se guarda tal cual:
+   los números pasan a ser números y los textos, textos cortos (así nadie puede meter código en la pantalla de otro) */
+const socN = (v, max) => { const n = +v; return isFinite(n) ? Math.max(0, Math.min(max || 1e6, Math.round(n * 10) / 10)) : 0; };
+const socT = (v, n) => (v == null || typeof v === 'object' ? '' : String(v).slice(0, n || 80));
+const socL = (v, n) => (Array.isArray(v) ? v.slice(0, n) : []);
+/* Resumen semanal de un amigo */
+function socSumIn(s) {
+  if (!s || typeof s !== 'object') return null;
+  return { ws: socT(s.ws, 12), n: socN(s.n, 99), t: socN(s.t, 99), sets: socN(s.sets, 9999), cd: socN(s.cd, 99999), prs: socN(s.prs, 999), streak: socN(s.streak, 9999), total: socN(s.total), badges: socN(s.badges, 999), goal: socT(s.goal, 20) };
+}
+/* Ficha que un alumno comparte con su entrenador */
+function socShareIn(s) {
+  if (!s || typeof s !== 'object') return null;
+  const w = s.week && typeof s.week === 'object' ? s.week : {};
+  return { name: socT(s.name, 60), goal: socT(s.goal, 20), plan: socT(s.plan, 60), unit: s.unit === 'lb' ? 'lb' : 'kg', kg: s.kg == null ? null : socN(s.kg, 700), inj: socL(s.inj, 12).map(k => socT(k, 30)), at: socN(s.at, 9e13),
+    week: { n: socN(w.n, 99), t: socN(w.t, 99), sets: socN(w.sets, 9999), cd: socN(w.cd, 99999), sleep: socN(w.sleep, 1440), steps: socN(w.steps, 999999) },
+    last: socL(s.last, 8).filter(x => x && typeof x === 'object').map(x => ({ d: socT(x.d, 40), n: socT(x.n, 60), m: socN(x.m, 999),
+      x: socL(x.x, 40).filter(e => e && typeof e === 'object').map(e => ({ n: socT(e.n, 80), no: socT(e.no, 200), s: socL(e.s, 30).filter(Array.isArray).map(y => [socN(y[0], 5000), socN(y[1], 999), y[2] == null ? null : socN(y[2], 10)]) })) })) };
+}
+/* Rutina que envía un entrenador: solo los campos de una rutina, con sus tipos */
+function socPlanIn(p) {
+  if (!p || typeof p !== 'object') return null;
+  const int = (v, a, b, d) => { const n = Math.round(+v); return isFinite(n) && n >= a && n <= b ? n : d; };
+  const days = socL(p.days, 14).filter(d => d && typeof d === 'object').map(d => ({ name: socT(d.name, 60) || 'Día', weekday: int(d.weekday, 0, 6, 1), kind: d.kind === 'bombeo' ? 'bombeo' : 'fuerza',
+    exercises: socL(d.exercises, 40).filter(e => e && typeof e === 'object' && socT(e.name, 80).trim()).map(e => {
+      const name = socT(e.name, 80).trim(), a = int(e.repsMin, 1, 300, 8), b = int(e.repsMax, 1, 300, 12);
+      const o = { name, type: TYPES.indexOf(e.type) >= 0 ? e.type : typeOf(name), weight: socN(e.weight, 5000), sets: int(e.sets, 1, 12, 3), repsMin: Math.min(a, b), repsMax: Math.max(a, b), rest: int(e.rest, 10, 900, 90) };
+      if (e.bar != null && isFinite(+e.bar)) o.bar = socN(e.bar, 100);
+      if (e.note) o.note = socT(e.note, 200);
+      if (e.ss) o.ss = 1;
+      return o;
+    }) })).filter(d => d.exercises.length);
+  return days.length ? { name: socT(p.name, 60) || 'Rutina', days } : null;
+}
 const CODE_AB = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const newCode = () => { let c = ''; for (let i = 0; i < 6; i++) c += CODE_AB[Math.floor(Math.random() * CODE_AB.length)]; return c; };
 async function socCode() {
@@ -111,9 +145,9 @@ async function socInbox() {
     const t = fV(d, 'type'), from = fV(d, 'from'), id = d.name.split('/').pop();
     if (t === 'client') {
       const cl = state.settings.clients = state.settings.clients || [];
-      if (!cl.some(c => c.acc === from)) { cl.push({ acc: from, name: fV(d, 'name') || 'Alumno' }); savePlans(); toast(`${fV(d, 'name') || 'Un alumno'} comparte su progreso contigo.`); }
+      if (from && !cl.some(c => c.acc === from)) { const nm = socT(fV(d, 'name'), 60) || 'Alumno'; cl.push({ acc: socT(from, 128), name: nm }); savePlans(); toast(`${nm} comparte su progreso contigo.`); }
       fb.fs('DELETE', 'inbox/' + socMe() + '/items/' + id).catch(() => {});
-    } else if (t === 'plan') plans.push({ id, from, name: fV(d, 'name') || 'Tu entrenador', plan: fJ(d) });
+    } else if (t === 'plan') { const pl = socPlanIn(fJ(d)); if (pl) plans.push({ id, from: socT(from, 128), name: socT(fV(d, 'name'), 60) || 'Tu entrenador', plan: pl }); }
   }
   SOC.inbox = plans;
 }
@@ -121,7 +155,7 @@ async function socFeed() {
   const fr = state.settings.friends || [];
   const docs = await Promise.all(fr.map(f => fb.fs('GET', 'social/' + f.acc).catch(() => null)));
   const ws = dk(weekStartOf(new Date()));
-  const rows = fr.map((f, i) => { const s = docs[i] && fJ(docs[i]); return { acc: f.acc, name: (docs[i] && fV(docs[i], 'name')) || f.name, s: s && s.ws === ws ? s : (s ? Object.assign({}, s, { n: 0, sets: 0, cd: 0, prs: 0 }) : null) }; });
+  const rows = fr.map((f, i) => { const s = docs[i] && socSumIn(fJ(docs[i])); return { acc: f.acc, name: socT(docs[i] && fV(docs[i], 'name'), 60) || f.name, s: s && s.ws === ws ? s : (s ? Object.assign({}, s, { n: 0, sets: 0, cd: 0, prs: 0 }) : null) }; });
   rows.push({ acc: socMe(), name: meName() + ' (tú)', s: socSummary(), me: true });
   SOC.feed = rows; SOC.at = Date.now();
 }
@@ -144,7 +178,7 @@ function socialCard() {
   const rows = (SOC.feed || []).slice().sort((a, b) => ((b.s && b.s[SOC.metric]) || 0) - ((a.s && a.s[SOC.metric]) || 0));
   return `<div class="card soc-card"><div class="row"><span class="pb-ic">${ic('trophy', 18)}</span><h3 class="grow">Reto de la semana</h3><button type="button" class="icon-btn" data-so="refresh" aria-label="Actualizar">${ic('refresh-cw', 16)}</button></div>
     <div class="seg seg3">${Object.keys(MET).map(k => `<button type="button" class="${SOC.metric === k ? 'on' : ''}" data-so="met" data-v="${k}">${MET[k][1]}</button>`).join('')}</div>
-    ${SOC.feed ? `<div class="soc-list">${rows.map((r, i) => `<div class="soc-row ${r.me ? 'me' : ''}"><span class="soc-pos num">${i + 1}</span><span class="grow"><b>${esc(r.name)}</b>${r.s ? `<small>${r.s.streak ? '🔥 ' + r.s.streak + ' sem · ' : ''}${r.s.badges || 0} logros</small>` : '<small>Aún sin datos</small>'}</span><b class="num">${(r.s && r.s[SOC.metric]) || 0}</b><small class="soc-u">${MET[SOC.metric][0]}</small>${r.me ? '' : `<button type="button" class="icon-btn sm" data-so="del" data-acc="${r.acc}" aria-label="Quitar a ${esc(r.name)}">${ic('x', 14)}</button>`}</div>`).join('')}</div>` : `<div class="muted" style="font-size:13px">${SOC.busy ? 'Cargando…' : SOC.err ? esc(SOC.err) : 'Toca actualizar.'}</div>`}
+    ${SOC.feed ? `<div class="soc-list">${rows.map((r, i) => `<div class="soc-row ${r.me ? 'me' : ''}"><span class="soc-pos num">${i + 1}</span><span class="grow"><b>${esc(r.name)}</b>${r.s ? `<small>${r.s.streak ? '🔥 ' + r.s.streak + ' sem · ' : ''}${r.s.badges || 0} logros</small>` : '<small>Aún sin datos</small>'}</span><b class="num">${(r.s && r.s[SOC.metric]) || 0}</b><small class="soc-u">${MET[SOC.metric][0]}</small>${r.me ? '' : `<button type="button" class="icon-btn sm" data-so="del" data-acc="${esc(r.acc)}" aria-label="Quitar a ${esc(r.name)}">${ic('x', 14)}</button>`}</div>`).join('')}</div>` : `<div class="muted" style="font-size:13px">${SOC.busy ? 'Cargando…' : SOC.err ? esc(SOC.err) : 'Toca actualizar.'}</div>`}
     ${(state.settings.friends || []).length ? '' : '<div class="muted" style="font-size:12.5px">Aún no tienes amigos agregados. Comparte tu código o escribe el de un amigo.</div>'}
     <div class="row" style="gap:8px;flex-wrap:wrap"><button type="button" class="btn small primary" data-so="add">${ic('plus', 15)} Agregar amigo</button><button type="button" class="btn small" data-so="mycode">Mi código: <b class="num">${esc(state.settings.myCode || '······')}</b></button></div></div>`;
 }
@@ -162,8 +196,8 @@ async function addFriend() {
     const f = await socLookup(v); const fr = state.settings.friends = state.settings.friends || [];
     if (fr.some(x => x.acc === f.acc)) throw new Error('Ya está en tu lista.');
     const d = await fb.fs('GET', 'social/' + f.acc).catch(() => null);
-    fr.push({ acc: f.acc, code: f.code, name: (d && fV(d, 'name')) || 'Amigo' }); savePlans();
-    closeSheet(); toast(`${(d && fV(d, 'name')) || 'Tu amigo'} se unió a tu reto.`); SOC.at = 0; socRefresh(true);
+    const nm = socT(d && fV(d, 'name'), 60); fr.push({ acc: f.acc, code: f.code, name: nm || 'Amigo' }); savePlans();
+    closeSheet(); toast(`${nm || 'Tu amigo'} se unió a tu reto.`); SOC.at = 0; socRefresh(true);
   } catch (e) { if (m) m.textContent = e.message; }
 }
 
@@ -172,10 +206,10 @@ function trainerCard() {
   if (!socAuth()) return '';
   const tr = state.settings.trainers || [];
   const offers = SOC.inbox.map(o => `<div class="tr-offer"><b>${esc(o.name)}</b> te envió la rutina <b>${esc(o.plan && o.plan.name || '')}</b> (${o.plan ? o.plan.days.length : 0} días).
-    <div class="row" style="gap:8px;margin-top:6px"><button type="button" class="btn small primary" data-so="plan-ok" data-id="${o.id}">Usar esta rutina</button><button type="button" class="btn small" data-so="plan-no" data-id="${o.id}">Rechazar</button></div></div>`).join('');
+    <div class="row" style="gap:8px;margin-top:6px"><button type="button" class="btn small primary" data-so="plan-ok" data-id="${esc(o.id)}">Usar esta rutina</button><button type="button" class="btn small" data-so="plan-no" data-id="${esc(o.id)}">Rechazar</button></div></div>`).join('');
   return `<div class="card tr-card"><div class="row"><span class="pb-ic">${ic('user', 18)}</span><h3 class="grow">Tu entrenador</h3></div>
     ${offers}
-    ${tr.length ? tr.map(t => `<div class="row soc-row"><span class="grow"><b>${esc(t.name || 'Entrenador')}</b><small>Ve tu progreso y te puede enviar rutinas</small></span><button type="button" class="btn small" data-so="tr-del" data-acc="${t.acc}">Dejar de compartir</button></div>`).join('')
+    ${tr.length ? tr.map(t => `<div class="row soc-row"><span class="grow"><b>${esc(t.name || 'Entrenador')}</b><small>Ve tu progreso y te puede enviar rutinas</small></span><button type="button" class="btn small" data-so="tr-del" data-acc="${esc(t.acc)}">Dejar de compartir</button></div>`).join('')
     : '<div class="muted" style="font-size:13px">¿Entrenas con un entrenador que usa Forja? Comparte tu progreso con su código y recibe tus rutinas en la app.</div>'}
     <button type="button" class="btn small" data-so="tr-add">${ic('plus', 15)} ${tr.length ? 'Agregar otro entrenador' : 'Compartir con mi entrenador'}</button></div>`;
 }
@@ -202,23 +236,23 @@ function clientsCard() {
   if (!state.settings.coachMode || !socAuth()) return '';
   const cl = state.settings.clients || [];
   return `<div class="card cl-card"><div class="row"><span class="pb-ic">${ic('clipboard-list', 18)}</span><h3 class="grow">Mis alumnos</h3><span class="chip">${cl.length}</span></div>
-    ${cl.length ? cl.map(c => `<button type="button" class="set-row" data-so="cl" data-acc="${c.acc}">${ic('user', 16)}<span class="grow">${esc(c.name)}</span>${ic('chevron-right', 16)}</button>`).join('') : '<div class="muted" style="font-size:13px">Aún no tienes alumnos.</div>'}
+    ${cl.length ? cl.map(c => `<button type="button" class="set-row" data-so="cl" data-acc="${esc(c.acc)}">${ic('user', 16)}<span class="grow">${esc(c.name)}</span>${ic('chevron-right', 16)}</button>`).join('') : '<div class="muted" style="font-size:13px">Aún no tienes alumnos.</div>'}
     <div class="muted" style="font-size:12.5px">Tus alumnos escriben tu código <b class="num">${esc(state.settings.myCode || '')}</b> en Perfil → Hoy → Tu entrenador.</div></div>`;
 }
 async function clientSheet(acc) {
   const c = (state.settings.clients || []).find(x => x.acc === acc); if (!c) return;
   openSheet(`<div class="row"><h2 class="grow">${esc(c.name)}</h2><button class="icon-btn" data-act="sheet-close" aria-label="Cerrar">${ic('x', 18)}</button></div><div class="muted">Cargando…</div>`);
   let d = null; try { d = await fb.fs('GET', 'share/' + acc); } catch (e) {}
-  const s = d && fJ(d);
-  if (!s) { openSheet(`<div class="row"><h2 class="grow">${esc(c.name)}</h2><button class="icon-btn" data-act="sheet-close" aria-label="Cerrar">${ic('x', 18)}</button></div><div class="muted">Este alumno dejó de compartir su progreso contigo.</div><button class="btn" data-so="cl-del" data-acc="${acc}">Quitar de mis alumnos</button>`); return; }
+  const s = d && socShareIn(fJ(d));
+  if (!s) { openSheet(`<div class="row"><h2 class="grow">${esc(c.name)}</h2><button class="icon-btn" data-act="sheet-close" aria-label="Cerrar">${ic('x', 18)}</button></div><div class="muted">Este alumno dejó de compartir su progreso contigo.</div><button class="btn" data-so="cl-del" data-acc="${esc(acc)}">Quitar de mis alumnos</button>`); return; }
   const u = s.unit || 'kg', G = PB_GOALS[s.goal] ? PB_GOALS[s.goal][0] : s.goal;
   openSheet(`<div class="row"><h2 class="grow">${esc(s.name || c.name)}</h2><button class="icon-btn" data-act="sheet-close" aria-label="Cerrar">${ic('x', 18)}</button></div>
-    <div class="muted" style="font-size:13px">${esc(G || '')}${s.plan ? ' · Rutina: ' + esc(s.plan) : ''}${s.kg ? ' · ' + fmtKg(s.kg) + ' kg (promedio)' : ''}${(s.inj || []).length ? ' · Molestias: ' + s.inj.map(k => (PB_INJ.find(x => x[0] === k) || [k, k])[1]).join(', ') : ''}</div>
+    <div class="muted" style="font-size:13px">${esc(G || '')}${s.plan ? ' · Rutina: ' + esc(s.plan) : ''}${s.kg ? ' · ' + fmtKg(s.kg) + ' kg (promedio)' : ''}${(s.inj || []).length ? ' · Molestias: ' + s.inj.map(k => esc((PB_INJ.find(x => x[0] === k) || [k, k])[1])).join(', ') : ''}</div>
     <div class="wk-grid"><div class="wk-s"><b class="num">${s.week.n}/${s.week.t}</b><small>sesiones</small></div><div class="wk-s"><b class="num">${s.week.sets}</b><small>series</small></div><div class="wk-s"><b class="num">${s.week.cd}</b><small>min cardio</small></div><div class="wk-s"><b class="num">${s.week.sleep ? fmtHM(s.week.sleep).replace(' min', '') : '—'}</b><small>sueño</small></div></div>
     <div class="label">Últimas sesiones</div>
     <div class="cl-ses">${(s.last || []).map(x => `<details><summary><b>${fmtDate(x.d)}</b> · ${esc(x.n || '')}${x.m ? ' · ' + x.m + ' min' : ''}</summary>${x.x.map(e => `<div class="cl-ex"><b>${esc(e.n)}</b> <span class="muted">${e.s.map(y => fmtKg(y[0]) + '×' + y[1] + (y[2] != null ? ' @' + y[2] : '')).join(' · ')} ${u}</span>${e.no ? `<small>“${esc(e.no)}”</small>` : ''}</div>`).join('')}</details>`).join('') || '<div class="muted">Sin sesiones aún.</div>'}</div>
     <div class="label">Enviarle una de tus rutinas</div>
-    ${gymPlans().map(p => `<button type="button" class="set-row" data-so="send" data-acc="${acc}" data-pid="${p.id}">${ic('clipboard-list', 16)}<span class="grow">${esc(p.name)} <small class="muted">· ${p.days.length} días</small></span>${ic('arrow-right', 16)}</button>`).join('')}
+    ${gymPlans().map(p => `<button type="button" class="set-row" data-so="send" data-acc="${esc(acc)}" data-pid="${esc(p.id)}">${ic('clipboard-list', 16)}<span class="grow">${esc(p.name)} <small class="muted">· ${p.days.length} días</small></span>${ic('arrow-right', 16)}</button>`).join('')}
     <div class="muted" style="font-size:11.5px">Actualizado ${fmtDate(new Date(s.at).toISOString(), true)}. Tu alumno decide si la usa.</div>`);
 }
 async function sendPlan(acc, pid) {

@@ -15,10 +15,20 @@
 
 /* ---------- 1. Series sin descanso completo ---------- */
 const AG_REST = 0.6;   /* menos del 60 % del descanso recomendado no es un descanso completo */
+/* Superserie sugerida por ir atrasado (pgLate): que la app la proponga no significa que la hiciste. Cuenta solo si de verdad
+   alternaste los dos ejercicios: una serie de uno, luego del otro y de vuelta al primero. Devuelve los nombres que sí. */
+function agSsDone(d) {
+  const P = (d && d.ssSug ? d.ssSug : []).concat(d && d.ssT && d.ssT.length === 2 ? [d.ssT] : []); if (!P.length) return [];
+  const L = []; d.exercises.forEach(e => e.log.forEach(s => { if (s.done && s.at) L.push({ at: s.at, n: e.name }); }));
+  L.sort((a, b) => a.at - b.at);
+  const out = [];
+  P.forEach(p => { for (let k = 2; k < L.length; k++) { const a = L[k - 2].n, b = L[k - 1].n; if (a === L[k].n && a !== b && p.indexOf(a) >= 0 && p.indexOf(b) >= 0) { if (out.indexOf(p[0]) < 0) out.push(p[0]); if (out.indexOf(p[1]) < 0) out.push(p[1]); break; } } });
+  return out;
+}
 function agFlags(d) {
   const L = []; d.exercises.forEach(e => e.log.forEach((s, j) => { if (s.done && s.at) L.push({ s, e, j }); }));
   L.sort((a, b) => a.s.at - b.s.at);
-  const out = new Map(), tip = d.ssT || [];
+  const out = new Map(), tip = agSsDone(d);
   L.forEach((x, n) => {
     const p = L[n - 1], inSs = (typeof ssOf === 'function' && ssOf(d, x.e)) || tip.indexOf(x.e.name) >= 0;
     let q = !!inSs && x.j > 0;   /* en superserie la fatiga se acumula: la primera vuelta sí mide tu fuerza */
@@ -328,7 +338,7 @@ function agTip(d, i) {
     const c = agAfter(L, agPe(L, x)), nw = +c.w || 0;
     return { t: nw ? (nw === w ? 'La próxima vez repite ' + agKg(nw) : 'La próxima vez empieza con ' + agKg(nw)) : 'La próxima vez busca ' + c.goal[0] + (rx.sec ? ' s' : ' reps'), k: 'end' };
   }
-  const quick = !!agFlags(d).get(s), tired = quick || !!((typeof ssOf === 'function' && ssOf(d, e)) || (d.ssT || []).indexOf(name) >= 0);   /* en superserie nunca pide bajar */
+  const quick = !!agFlags(d).get(s), tired = quick || !!((typeof ssOf === 'function' && ssOf(d, e)) || agSsDone(d).indexOf(name) >= 0);   /* en superserie nunca pide bajar */
   if (r > rx.rMax && (rir == null || rir >= 2)) {
     const did = 'Hiciste ' + r + (rir != null ? ' con RIR ' + rir : '');
     if (!load) return { t: did + ': vas sobrado, sigue con esa técnica', k: 'ok' };
