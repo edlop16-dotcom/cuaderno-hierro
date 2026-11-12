@@ -259,16 +259,20 @@ console.log('G. Plan para completar la semana');
   ok(P.slots.some(s => /:libre:.*homb4/.test(s)) && !P.out.length, 'hombros va a un entreno para completar y no queda nada sin día');
   /* En Hoy: la tarjeta Tu semana lo muestra */
   await p.evaluate(() => { state.tab = 'train'; render(); }); await p.waitForTimeout(400);
-  const H = await p.evaluate(() => (document.querySelector('.g3-hoy .ms-plan') || {}).innerText || '');
+  const B2 = await p.evaluate(() => { const g = document.querySelector('.g3-hoy'), b = g && g.querySelector('[data-ms="plan"]'), f = g && g.querySelector('[data-wc="fill"]'); return { both: !!(b && f && b.parentNode === f.parentNode), inCard: !!(g && g.querySelector('.ms-plan')) }; });
+  ok(B2.both && !B2.inCard, 'en Tu semana: "Cómo repartirlo" va junto a "Crear entreno para completar" (la tarjeta sigue compacta)');
+  await act(p, '.g3-hoy [data-ms="plan"]'); await p.waitForTimeout(250);
+  const H = await p.evaluate(() => ((document.querySelector('#sheet .ms-plan') || {}).innerText || '') + ((document.querySelector('#sheet [data-wc="fill"]') ? ' CON-BOTON' : '')));
   console.log('      en Hoy: ' + H.replace(/\n+/g, ' / '));
-  ok(/Cómo repartirlo/.test(H) && /En tu rutina \(Piernas \(Bombeo\)\), suma/.test(H) && /isquiotibiales \+1/.test(H) && /pantorrillas \+3/.test(H) && /Entreno para completar/.test(H) && /48 h/.test(H), 'la tarjeta Tu semana dice cómo repartirlo');
+  ok(/Cómo queda repartida tu semana/.test(H) && /CON-BOTON/.test(H) && /En tu rutina \(Piernas \(Bombeo\)\), suma/.test(H) && /isquiotibiales \+1/.test(H) && /pantorrillas \+3/.test(H) && /Entreno para completar/.test(H) && /48 h/.test(H), 'al tocarlo: el reparto y el botón para crear el entreno');
+  await p.evaluate(() => closeSheet());
   /* La hoja de hoy dice lo mismo: isquiotibiales y pantorrillas van el viernes; pecho pasa a otro día por descanso */
   await p.evaluate(() => { wc.kind = 'bombeo'; wc.where = 'gym'; wc.day = null; wc.seed = 0; wcFillSheet(); }); await p.waitForTimeout(250);
   const F = await p.evaluate(() => ({ list: wc.list.map(e => e.wcZ + e.sets), moved: wcBuild.last.moved.map(x => x.k + ':' + x.n + ':' + x.to + (x.plan ? ':plan' : '')), txt: document.getElementById('sheet').innerText, plan: (document.querySelector('#sheet .ms-plan') || {}).innerText || '' }));
   console.log('      hoja de hoy: ' + F.list.join(', ') + ' | ' + F.moved.join(' | '));
-  ok(F.list.join() === 'homb2' && F.moved.some(m => /^homb:2:el domingo, en un entreno para completar:plan/.test(m)), 'la hoja de hoy trae solo hombros (2 hoy y 2 el domingo: repartidos entre los dos entrenos)');
+  ok(F.list.join() === 'homb4' && !F.moved.some(m => /^homb/.test(m)), 'la hoja de hoy trae hombros 4: lo que cabe hoy se hace hoy');
   ok(F.moved.some(m => /^isq:1:el viernes, en tu rutina/.test(m)) && F.moved.some(m => /^pant:3:el viernes, en tu rutina/.test(m)) && F.moved.some(m => /^pecho:5:/.test(m) && !/plan/.test(m)), 'y dice a dónde va lo demás: viernes en tu rutina; pecho, a otro día por el descanso');
-  ok(/Cómo queda repartida tu semana/.test(F.plan) && /isquiotibiales \+1/.test(F.plan) && /hombros 2/.test(F.plan) && /pecho 5/.test(F.plan), 'con el mismo reparto escrito en la hoja');
+  ok(/Cómo queda repartida tu semana/.test(F.plan) && /isquiotibiales \+1/.test(F.plan) && /hombros 4/.test(F.plan) && /pecho 5/.test(F.plan), 'con el mismo reparto escrito en la hoja');
   const same = await p.evaluate(() => { const P = msPlan(wc.day), me = P.slots.find(s => s.k === wc.day && s.type === 'libre'), B = wcBuild.last; return me.items.every(x => B.list.filter(e => e.wcZ === x.k).reduce((a, e) => a + e.sets, 0) === x.n); });
   ok(same, 'las series de la hoja coinciden con las del plan para ese día');
   noErr(p); await p.done();

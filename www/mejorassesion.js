@@ -152,10 +152,12 @@ function msWeeksPut() {
         <div class="ms-sl">${msSesRows(W)}</div></div>`;
     } else {
       tw.classList.add('ms-swipe'); tw.dataset.msc = 'tw';
-      const hh = tw.querySelector('.g3-hh'); if (hh) hh.insertAdjacentHTML('afterend', msNav('tw', 0, W.label));
-      /* 8. Cómo repartir lo que falta */
-      const h = msPlanHtml(msPlan(null), true), btn = tw.querySelector('[data-wc="fill"]');
-      if (h) { if (btn) btn.insertAdjacentHTML('beforebegin', h); else tw.insertAdjacentHTML('beforeend', h); }
+      /* Esta semana: las flechas van en el encabezado, así la tarjeta sigue compacta */
+      const hh = tw.querySelector('.g3-hh');
+      if (hh) { hh.insertAdjacentHTML('afterbegin', `<button type="button" class="icon-btn sm ms-wb" data-ms="wk" data-c="tw" data-d="1" aria-label="Semana anterior" ${msMaxOff() ? '' : 'disabled'}>‹</button><span class="ms-wl ms-sr">${esc(W.label)}</span>`); hh.classList.add('ms-wn'); }
+      /* 8. Cómo repartir lo que falta: un botón junto a "Crear entreno para completar" (la tarjeta no crece); abre el reparto */
+      const btn = tw.querySelector('[data-wc="fill"]');
+      if (btn && msPlanHtml(msPlan(null))) { btn.classList.remove('block'); btn.insertAdjacentHTML('beforebegin', `<div class="grid2 ms-twb"><button type="button" class="btn small" data-ms="plan">${ic('calendar-check', 15)} Cómo repartirlo</button></div>`); btn.previousElementSibling.appendChild(btn); }
     }
   }
 }
@@ -169,6 +171,7 @@ window.addEventListener('click', ev => {
   const b = ev.target.closest && ev.target.closest('[data-ms]'); if (!b || isWatch()) return;
   const a = b.dataset.ms;
   if (a === 'wk') { ev.preventDefault(); ev.stopPropagation(); msWkMove(b.dataset.c, +b.dataset.d); return; }
+  if (a === 'plan') { ev.preventDefault(); ev.stopPropagation(); return msPlanSheet(); }
   const d = state.draft;
   if (a === 'mgo' && d) { ev.preventDefault(); ev.stopPropagation(); const j = +b.dataset.j; closeSheet(); if (d.exercises[j]) { d.cur = j; saveDraft(); state.sessMin = false; state.tab = 'train'; render(); setTimeout(() => pagerGo(j, true), 60); } return; }
   if (a === 'madd' && d) {
@@ -223,7 +226,8 @@ function msPlan(force, V0) {
     need.forEach(x => {
       let left = x.n; const k = x.k, fix = pin[k], lib = S.filter(s => s.type === 'libre' && (!fix || s.k === fix));
       if (!fix) S.forEach(s => { if (s.type === 'rut' && (s.vol[k] || 0) >= 1 && left > 0 && ok(k, s)) left -= put(s, k, Math.min(left, G2_MAX_MUS - Math.ceil(s.vol[k]), MS_RUT_MAX - s.extra)); });
-      lib.forEach((s, n) => { if (left <= 0 || !ok(k, s)) return; const more = lib.slice(n + 1).filter(z => ok(k, z) && (!big(k) || gap(z.k, s.k) >= 2)).length; left -= put(s, k, Math.min(G2_MAX_MUS, Math.ceil(left / (1 + more)))); });
+      /* El día elegido en la hoja va primero y se llena hasta el máximo por sesión: lo que cabe hoy se hace hoy; solo el resto va a otro día */
+      lib.slice().sort((p, q) => (p.k === force ? -1 : q.k === force ? 1 : 0)).forEach((s, n, L) => { if (left <= 0 || !ok(k, s)) return; const more = s.k === force ? 0 : L.slice(n + 1).filter(z => ok(k, z) && (!big(k) || gap(z.k, s.k) >= 2)).length; left -= put(s, k, Math.min(G2_MAX_MUS, Math.ceil(left / (1 + more)))); });
       if (!fix) S.forEach(s => { if (s.type === 'rut' && !((s.vol[k] || 0) >= 1) && left > 0 && ok(k, s)) left -= put(s, k, Math.min(left, 4, MS_RUT_MAX - s.extra)); });
       placed += x.n - left;
       if (left > 0) { const R = restOf(today)[k]; out.push({ k, n: left, why: left < x.n ? 'más de ' + G2_MAX_MUS + ' series de un músculo en una sesión ya no suman' : R && R.block ? restWhy(k, R).toLowerCase() + ' y no queda un día con descanso suficiente' : 'no queda un día con descanso suficiente esta semana' }); }
@@ -246,24 +250,35 @@ function msPlan(force, V0) {
   /* Para "Crear entreno para completar" del día `day`: cuántas series de ese músculo van ahí y a dónde va el resto */
   P.at = (day, k) => {
     const me = P.slots.find(s => s.k === day && s.type === 'libre'), n = me ? ((me.items.find(x => x.k === k) || {}).n || 0) : 0;
-    const more = P.slots.filter(s => s !== me && s.items.some(x => x.k === k)).map(s => ({ to: s.label, n: s.items.find(x => x.k === k).n, rut: s.type === 'rut' }));
+    const more = P.slots.filter(s => s !== me && s.items.some(x => x.k === k)).map(s => ({ to: s.label, k: s.k, n: s.items.find(x => x.k === k).n, rut: s.type === 'rut' }));
     return me || more.length ? { n, more } : null;
   };
+  P.whyOut = k => { const o = P.out.find(x => x.k === k); return o ? o.why : ''; };
   return P;
 }
-function msPlanHtml(P, short) {
+function msPlanHtml(P) {
   if (!P || !P.need.length || (!P.slots.some(s => s.items.length) && !P.out.length)) return '';
   const cap = t => t.charAt(0).toUpperCase() + t.slice(1);
-  const rows = P.slots.filter(s => s.items.length).map(s => `<div class="ms-pr ${s.type}"><b>${esc(cap(s.label.split(',')[0]))}</b><span class="grow">${s.type === 'rut' ? `En tu rutina (${esc(s.name)}), suma ` : 'Entreno para completar: '}${(short ? s.items.slice(0, 4) : s.items).map(x => `${msLow(x.k)} <b class="num">${s.type === 'rut' ? '+' : ''}${x.n}</b>`).join(', ')}${short && s.items.length > 4 ? ' y ' + (s.items.length - 4) + ' más' : ''}</span></div>`).join('');
+  const rows = P.slots.filter(s => s.items.length).map(s => `<div class="ms-pr ${s.type}"><b>${esc(cap(s.label.split(',')[0]))}</b><span class="grow">${s.type === 'rut' ? `En tu rutina (${esc(s.name)}), suma ` : 'Entreno para completar: '}${s.items.map(x => `${msLow(x.k)} <b class="num">${s.type === 'rut' ? '+' : ''}${x.n}</b>`).join(', ')}</span></div>`).join('');
   const out = P.out.length ? `<div class="ms-pr out"><b>Sin día</b><span class="grow">${P.out.map(x => `${msLow(x.k)} ${x.n} (${esc(x.why)})`).join('; ')}. No es grave: lo compensas la semana que viene.</span></div>` : '';
-  return `<div class="ms-plan"><div class="label">${short ? 'Cómo repartirlo' : 'Cómo queda repartida tu semana'}</div>${rows}${out}<div class="muted ms-pn">Respeta el descanso: un músculo grande necesita 48 h después de cargarlo fuerte.</div></div>`;
+  return `<div class="ms-plan"><div class="label">Cómo queda repartida tu semana</div>${rows}${out}<div class="muted ms-pn">Respeta el descanso: un músculo grande necesita 48 h después de cargarlo fuerte.</div></div>`;
+}
+/* Desde Tu semana: el reparto en una hoja, con el botón para crear el entreno */
+function msPlanSheet() {
+  const h = msPlanHtml(msPlan(null)); if (!h) return;
+  openSheet(`<div class="row"><h2 class="grow">Lo que te falta esta semana</h2><button class="icon-btn" data-act="sheet-close" aria-label="Cerrar">${ic('x', 18)}</button></div>
+    <div class="muted" style="font-size:13px">Con tu avance hasta hoy y los entrenos que te quedan. Tus rutinas no cambian.</div>
+    ${h}<button type="button" class="btn primary block" data-wc="fill">${ic('dumbbell', 16)} Crear entreno para completar</button>`);
 }
 /* En la hoja "Entreno para completar": el mismo reparto, con el día elegido */
 const _wcFillSheetMS = wcFillSheet;
 wcFillSheet = function () {
   const r = _wcFillSheetMS.apply(this, arguments); if (isWatch()) return r;
   const c = document.querySelector('#sheet .wc-sheet'); if (!c || c.querySelector('.ms-plan')) return r;
-  const h = msPlanHtml(msPlan(wc.day), false); if (!h) return r;
+  /* El día elegido dice las series que de verdad trae la lista (si un músculo no llega a lo planeado, la hoja lo dice en "Quedan sin cubrir") */
+  const P = msPlan(wc.day), me = P && P.slots.find(s => s.k === wc.day && s.type === 'libre'), L = wc.list || [];
+  if (me) { me.items = me.items.map(x => ({ k: x.k, n: L.filter(e => e.wcZ === x.k).reduce((a, e) => a + (+e.sets || 0), 0) })).filter(x => x.n > 0); L.forEach(e => { if (!me.items.some(x => x.k === e.wcZ)) me.items.push({ k: e.wcZ, n: +e.sets || 0 }); }); }
+  const h = msPlanHtml(P, false); if (!h) return r;
   const at = c.querySelector('.grid2'); if (at) at.insertAdjacentHTML('beforebegin', h); else c.insertAdjacentHTML('beforeend', h);
   return r;
 };

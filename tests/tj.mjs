@@ -143,7 +143,9 @@ console.log('A. Historial: una sola regla en toda la app');
   const N = await p.evaluate(() => { startSession('planB', 'b-lun'); const d = state.draft, g = n => d.exercises.find(e => e.name === n);
     const r = { ht: g('Hip Thrust').prev.map(s => s.w + 'x' + s.r).join(','), pr: g('Prensa 45°').prev.map(s => s.w + 'x' + s.r).join(','), prW: g('Prensa 45°').coach.w, remo: g('Remo Sentado con Cable').refGym, txt: document.getElementById('sx').textContent };
     discardSession(); return r; });
-  ok(N.ht === '40x15,40x15,40x15' && N.pr === '120x15,120x15,120x15', `rutina normal: "Anterior" = tu última vez aquí sin importar el tipo (Hip Thrust ${N.ht}, Prensa ${N.pr})`);
+  /* Mejoras de la sesión: "Anterior" es tu última vez del mismo tipo de día (Prensa: el pesado 160×8, no el bombeo 120×15);
+     si no hay del mismo tipo, la última que haya (Hip Thrust) */
+  ok(N.ht === '40x15,40x15,40x15' && N.pr === '160x8,160x8,160x8', `rutina normal: "Anterior" = tu última vez aquí del mismo tipo de día; si no hay, la última (Hip Thrust ${N.ht}, Prensa ${N.pr})`);
   ok(N.prW >= 160 && N.remo == null, 'y el peso sugerido de fuerza sale de tu última sesión de fuerza; Remo no trae referencia del Gimnasio A');
   /* Récords, progreso y exportaciones */
   const R = await p.evaluate(() => { state.tab = 'progress'; state.progSub = 'ejercicios'; state.gf = 'all'; render();

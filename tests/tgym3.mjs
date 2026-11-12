@@ -167,7 +167,7 @@ console.log('2. Tu semana en Hoy');
   ok(C && C.svg && /Te faltan/.test(C.txt) && C.fill, 'Hoy: mapa de la semana, músculos que faltan y "Crear entreno para completar"');
   ok(C && /2 entrenos · 1 h 35 min/.test(C.txt), 'con entrenos de la semana y el tiempo entrenado');
   ok(C && C.h <= 260, 'compacta (' + (C && C.h) + ' px)');
-  ok(await p.evaluate(() => (document.body.innerHTML.match(/class="card g3-hoy"/g) || []).length === 1), 'una sola vez');
+  ok(await p.evaluate(() => (document.body.innerHTML.match(/class="card g3-hoy[" ]/g) || []).length === 1), 'una sola vez');
   await act(p, '#app .g3-hoy .g3-hl'); await p.waitForTimeout(200);
   ok(await p.evaluate(() => /Reporte de la semana/.test(document.getElementById('sheet').innerText)), 'al tocarla: el reporte completo (el mismo de Progreso)');
   await p.evaluate(() => closeSheet()); await act(p, '#app .g3-hoy [data-wc="fill"]'); await p.waitForTimeout(200);

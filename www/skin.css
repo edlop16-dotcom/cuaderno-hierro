@@ -2426,3 +2426,10 @@ body:not(.watch) .ms-pr { display: flex; gap: 10px; align-items: baseline; font-
 body:not(.watch) .ms-pr > b { flex-shrink: 0; min-width: 64px; }
 body:not(.watch) .ms-pr.out { border-style: dashed; color: var(--muted); }
 body:not(.watch) .ms-pn { font-size: 12px; }
+body:not(.watch) .g3-hh.ms-wn { gap: 6px; }
+body:not(.watch) .ms-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+/* Flecha de Tu semana: pequeña a la vista, zona de toque de 44 px */
+body:not(.watch) .g3-hh .ms-wb { position: relative; flex-shrink: 0; width: 24px; height: 20px; min-width: 0; min-height: 0; padding: 0; margin: 0 2px 0 -4px; font-size: 20px; line-height: 18px; border: 0; background: none; }
+body:not(.watch) .g3-hh .ms-wb::before { content: ""; position: absolute; inset: -12px -10px; }
+body:not(.watch) .ms-twb { gap: 8px; }
+body:not(.watch) .ms-twb .btn { width: 100%; }

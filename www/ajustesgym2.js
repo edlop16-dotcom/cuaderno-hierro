@@ -528,6 +528,12 @@ wcBuild = function (kind, seed) {
     if (sore[x.k] && sore[x.k].lvl >= 2) { skipped.push(x.k); return; }
     const F = R[x.k], pk = PL ? PL.at(day, x.k) : null;
     if (F && F.block) {
+      /* Con el plan de la semana: van a los días que dice el plan (los mismos números que "Cómo queda repartida tu semana") */
+      if (pk && pk.more.length) {
+        let lack = x.n; pk.more.forEach(m => { const n = Math.min(lack, m.n); if (n > 0) { moved.push({ k: x.k, n, to: m.rut ? m.to : wdOf(m.k), why: restWhy(x.k, F), h: F.big ? 48 : 24, rut: m.rut }); lack -= n; } });
+        if (lack > 0) left.push({ k: x.k, n: lack, why: PL.whyOut(x.k) || 'no queda un día con descanso suficiente', rest: 1 });
+        return;
+      }
       /* Si queda otro día, sus series van al que tenga más descanso (el último), siempre que allí ya se cumplan las 48 h (24 h los pequeños) */
       const to = after.slice().reverse().find(d => restDays(F.date, d.k + 'T12:00:00') >= (F.big ? 2 : 1));
       if (to) moved.push({ k: x.k, n: x.n, to: wdOf(to.k), why: restWhy(x.k, F), h: F.big ? 48 : 24 });
@@ -542,8 +548,10 @@ wcBuild = function (kind, seed) {
     if (!tk) { left.push({ k: x.k, n: x.n, why: 'no hay un ejercicio para hacerlo aquí' }); return; }
     const got = tk.got, cut = tk.cut;
     let lack = x.n - got; if (lack <= 0) return;
-    /* Lo que el plan ya puso en otro entreno no es "sin cubrir" */
-    if (pk && pk.more.length && !cut && got >= T) { pk.more.forEach(m => { const n = Math.min(lack, m.n); if (n > 0) { moved.push({ k: x.k, n, to: m.to, plan: 1 }); lack -= n; } }); if (lack <= 0) return; }
+    /* Lo que el plan ya puso en otro entreno no es "sin cubrir" (aunque hoy entre algo menos de lo planeado) */
+    if (pk && pk.more.length) { pk.more.forEach(m => { const n = Math.min(lack, m.n); if (n > 0) { moved.push({ k: x.k, n, to: m.to, plan: 1 }); lack -= n; } }); if (lack <= 0) return; }
+    /* Lo que el plan no pudo poner en ningún día: con su razón */
+    if (pk && !cut && got >= T && PL.whyOut(x.k)) { left.push({ k: x.k, n: lack, why: PL.whyOut(x.k) }); return; }
     if (days > 1 && !cut && got >= T) later.push({ k: x.k, n: lack });
     else left.push({ k: x.k, n: lack, why: cut || !got ? 'no entra en tu tiempo' : got < T ? 'un segundo ejercicio sería casi igual al primero' : 'más de ' + G2_MAX_MUS + ' series de un músculo en una sesión ya no suman' });
   });
@@ -600,7 +608,7 @@ wcFillSheet = function () {
     /* Lo que el plan de la semana reparte en otros entrenos (x.plan) se ve en "Cómo queda repartida tu semana" (mejorassesion.js): aquí solo lo que pasa por descanso */
     const byRest = Bx.moved.filter(x => !x.plan);
     if (!(Bx.list || []).length) list.innerHTML = `<div class="muted">${byRest.length ? 'Hoy no conviene completar nada: lo que falta aún necesita descanso.' : 'Hoy no hace falta: lo que falta va en tus otros entrenos de la semana (mira abajo).'}</div>`;
-    if (byRest.length) list.insertAdjacentHTML('afterend', `<div class="safe tip g4-moved">${ic('timer', 16)}<span>${byRest.map(x => `${esc(x.why)}: ${zoneName(x.k).toLowerCase()} (${nS(x.n)}) pasa al ${x.to}, cuando ya habrán pasado ${x.h} h.`).join(' ')} Guarda otro entreno para completar ese día.</span></div>`);
+    if (byRest.length) list.insertAdjacentHTML('afterend', `<div class="safe tip g4-moved">${ic('timer', 16)}<span>${byRest.map(x => `${esc(x.why)}: ${zoneName(x.k).toLowerCase()} (${nS(x.n)}) ${x.rut ? 'va ' + esc(x.to) : 'pasa al ' + x.to}, cuando ya habrán pasado ${x.h} h.`).join(' ')}${byRest.some(x => !x.rut) ? ' Guarda otro entreno para completar ese día.' : ''}</span></div>`);
   }
   if (list && Bx && Bx.left && Bx.left.length) list.insertAdjacentHTML('afterend', `<div class="safe tip g2-left">${ic('info', 16)}<span>Quedan sin cubrir: ${Bx.left.map(x => `${zoneName(x.k).toLowerCase()} (${nS(x.n)}, ${x.why})`).join('; ')}. No es grave: lo compensas la semana que viene.</span></div>`);
   return r;
