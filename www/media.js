@@ -169,6 +169,8 @@ async function addVideo(file, name) {
 const _howSheet = howSheet;
 howSheet = function (name) {
   const x = libFind(name);
+  /* El reloj no muestra videos (pedido del usuario, 12-nov-2026): solo la técnica */
+  if (isWatch()) { if (x) _howSheet(name); return; }
   if (!x) {
     openSheet(`<div class="row"><div class="grow"><div class="label">Videos</div><h2>${esc(name)}</h2></div><button class="icon-btn" data-act="sheet-close" aria-label="Cerrar">✕</button></div>
       <div class="vids" id="my-vids"></div><button class="btn" data-act="sheet-close">Cerrar</button>`);
@@ -203,7 +205,7 @@ document.addEventListener('click', async ev => {
   const a = b.dataset.act;
   if (a === 'vid-del') {
     ev.stopPropagation();
-    if (state.confirm === 'vdel-' + b.dataset.id) { state.confirm = null; await VID.del(b.dataset.id); VID.loadIndex(); renderVideos(b.dataset.name); toast('Video borrado.'); }
+    if (state.confirm === 'vdel-' + b.dataset.id) { state.confirm = null; await (typeof VXS !== 'undefined' && !isWatch() ? VXS : VID).del(b.dataset.id); VID.loadIndex(); renderVideos(b.dataset.name); toast('Video borrado.'); }
     else { state.confirm = 'vdel-' + b.dataset.id; b.textContent = '¿Borrar?'; }
   }
   if (a === 'link-del') { ev.stopPropagation(); const all = LINKS(), key = exKey(b.dataset.name); (all[key] || []).splice(+b.dataset.i, 1); LS.set('links', all); renderVideos(b.dataset.name); }

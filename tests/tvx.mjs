@@ -102,6 +102,60 @@ console.log('1. Dueño: la lista');
   noErr(p); await p.done();
 }
 
+console.log('1b. Dueño: dónde se guardan, "Lo grabé yo" y Ver en YouTube');
+{
+  const p = await open();
+  /* Un video guardado con la versión anterior (sin "own" ni duración) */
+  await p.evaluate(async () => { await VID.add({ id: 'viejo', ex: exKey('Prensa 45°'), name: 'viejo.mp4', type: 'video/mp4', size: 2048, blob: new Blob(['x'], { type: 'video/mp4' }), added: Date.now() }); });
+  ok(await p.evaluate(() => VXS.backend.id === 'local'), 'los videos se guardan en este teléfono (VXS → local)');
+  await p.evaluate(() => howSheet('Prensa 45°')); await p.waitForTimeout(400);
+  const H = await p.evaluate(() => { const yt = document.querySelector('#my-vids a.vx-yt'), own = document.querySelector('#my-vids [data-act="vx-own"]'); return { yt: yt && yt.getAttribute('href'), ytTxt: yt && yt.textContent, own: own && own.textContent.trim(), box: !!document.getElementById('vid-own'), box0: document.getElementById('vid-own') && document.getElementById('vid-own').checked, txt: document.getElementById('my-vids').innerText }; });
+  ok(H.ytTxt && /Ver en YouTube/.test(H.ytTxt) && /search_query=Prensa%2045%C2%B0%20t%C3%A9cnica/.test(H.yt) && /sp=CAM%253D$/.test(H.yt), '"Ver en YouTube": la búsqueda del ejercicio ordenada por más vistas (' + H.yt + ')');
+  ok(H.own === '¿Lo grabaste tú?', 'un video guardado antes: "¿Lo grabaste tú?" (sin suponer)');
+  ok(H.box && H.box0 === false && /solo los grabados por ti se podrán subir a la nube/.test(H.txt), 'al agregar: casilla "Lo grabé yo", sin marcar por defecto, con la razón');
+  /* Marca "Lo grabé yo" en el video viejo */
+  await p.evaluate(() => document.querySelector('#my-vids [data-act="vx-own"]').click()); await p.waitForTimeout(300);
+  const O = await p.evaluate(async () => ({ rec: (await VXS.get('viejo')).own, btn: document.querySelector('#my-vids [data-act="vx-own"]').textContent.trim() }));
+  ok(O.rec === true && /Lo grabé yo/.test(O.btn), 'tocarlo lo marca como grabado por ti (queda guardado)');
+  /* Agrega uno nuevo con la casilla marcada: guarda todo lo que pedirá la nube */
+  await p.evaluate(async () => { document.getElementById('vid-own').checked = true; await addVideo(new File([new Uint8Array(3000)], 'nuevo.mp4', { type: 'video/mp4' }), 'Prensa 45°'); });
+  await p.waitForTimeout(300);
+  const N = await p.evaluate(async () => { const L = await VXS.list(exKey('Prensa 45°')); const r = L.find(x => x.name === 'nuevo.mp4'); return r && { v: r.v, own: r.own, exName: r.exName, size: r.size, hasDur: 'dur' in r && 'w' in r && 'h' in r, remote: r.remote, n: L.length }; });
+  ok(N && N.v === 2 && N.own === true && N.exName === 'Prensa 45°' && N.size === 3000 && N.hasDur && N.remote === null && N.n === 2, 'video nuevo: grabado por ti, con ejercicio, tamaño, duración y lugar en la nube vacío (listo para la opción C)');
+  /* Sin marcar: queda "De otra fuente" */
+  await p.evaluate(async () => { document.getElementById('vid-own').checked = false; await addVideo(new File([new Uint8Array(10)], 'tiktok.mp4', { type: 'video/mp4' }), 'Prensa 45°'); }); await p.waitForTimeout(300);
+  ok(await p.evaluate(() => [...document.querySelectorAll('#my-vids [data-act="vx-own"]')].some(b => b.textContent.trim() === 'De otra fuente')), 'sin marcar la casilla: "De otra fuente"');
+  /* Borrar pasa por el mismo lugar */
+  await p.evaluate(async () => { const id = (await VXS.list(exKey('Prensa 45°'))).find(x => x.name === 'tiktok.mp4').id; const b = document.querySelector('#my-vids [data-act="vid-del"][data-id="' + id + '"]'); b.click(); await new Promise(r => setTimeout(r, 50)); b.click(); }); await p.waitForTimeout(400);
+  ok(await p.evaluate(async () => (await VXS.list(exKey('Prensa 45°'))).length === 2), 'borrar (dos toques) quita ese video');
+  /* Un ejercicio del catálogo que nunca hiciste también tiene su "Ver en YouTube" */
+  await p.evaluate(() => { closeSheet(); howSheet('Remo en T'); }); await p.waitForTimeout(300);
+  ok(await p.evaluate(() => /search_query=Remo%20en%20T%20t%C3%A9cnica&sp=CAM%253D/.test((document.querySelector('#my-vids a.vx-yt') || {}).href || '')), 'cualquier ejercicio de la app (Remo en T, nunca hecho): "Ver en YouTube"');
+  ok(await p.evaluate(() => LIB.filter(x => !x.hidden).length >= 400), 'y "Cómo se hace" existe para los ' + await p.evaluate(() => LIB.filter(x => !x.hidden).length) + ' ejercicios de la app');
+  noErr(p); await p.done();
+}
+
+console.log('1c. Respaldo completo con los videos nuevos (respaldo.js sin cambios)');
+{
+  const p = await open();
+  const R = await p.evaluate(async () => {
+    await VXS.add({ v: 2, id: 'rv', ex: exKey('Prensa 45°'), exName: 'Prensa 45°', name: 'mio.mp4', type: 'video/mp4', size: 4, blob: new Blob([new Uint8Array([1, 2, 3, 4])], { type: 'video/mp4' }), added: 5, own: true, dur: 31.5, w: 1280, h: 720, remote: null });
+    await VXS.add({ id: 'rold', ex: exKey('Curl Bíceps'), name: 'viejo.mp4', type: 'video/mp4', size: 2, blob: new Blob([new Uint8Array([9, 9])], { type: 'video/mp4' }), added: 6 });
+    const parts = []; await rcWrite(s => { parts.push(s); }); const file = new Blob(parts);
+    const vd = parts.map(l => { try { return JSON.parse(l); } catch (e) { return null; } }).filter(o => o && o.t === 'vd').map(o => o.o);
+    const h = await rcCheck(file);
+    await VXS.del('rv'); await VXS.del('rold');
+    await rcApply(file, false, h);
+    const a = await VXS.get('rv'), b = await VXS.get('rold'), bytes = a && new Uint8Array(await a.blob.arrayBuffer());
+    return { inFile: vd.find(o => o.id === 'rv'), n: h.n.videos, a: a && { v: a.v, own: a.own, dur: a.dur, w: a.w, h: a.h, remote: a.remote, exName: a.exName, size: a.size }, bytes: bytes && Array.from(bytes).join(','), b: b && { own: b.own, size: b.size } };
+  });
+  ok(R.inFile && R.inFile.own === true && R.inFile.dur === 31.5 && R.inFile.v === 2 && !('blob' in R.inFile), 'el respaldo guarda los datos nuevos del video ("Lo grabé yo", duración…) y el video aparte');
+  ok(R.n >= 2, 'y cuenta los videos (' + R.n + ')');
+  ok(R.a && R.a.own === true && R.a.dur === 31.5 && R.a.w === 1280 && R.a.h === 720 && R.a.remote === null && R.a.exName === 'Prensa 45°' && R.a.v === 2 && R.bytes === '1,2,3,4', 'al restaurar vuelve igual: datos y video byte a byte');
+  ok(R.b && R.b.own === undefined && R.b.size === 2, 'un video de antes (sin esos datos) también se restaura igual');
+  noErr(p); await p.done();
+}
+
 console.log('2. Usuario nuevo');
 {
   const p = await open({ first: true });
@@ -109,6 +163,8 @@ console.log('2. Usuario nuevo');
   ok(await p.evaluate(() => !document.querySelector('#app .vx-card')), 'sin entrenos: no sale la tarjeta');
   await p.evaluate(() => vxSheet()); await p.waitForTimeout(200);
   ok(/Aún no hay ejercicios en tu historial/.test(await p.evaluate(() => document.getElementById('sheet').innerText)), 'si abre la lista: explica que aparecerán al terminar su primer entreno');
+  await p.evaluate(() => { closeSheet(); howSheet('Prensa 45°'); }); await p.waitForTimeout(300);
+  ok(await p.evaluate(() => !!document.querySelector('#my-vids a.vx-yt') && !!document.getElementById('vid-own')), 'usuario nuevo: "Ver en YouTube" y "Lo grabé yo" en Cómo se hace');
   noErr(p); await p.done();
 }
 
@@ -124,6 +180,12 @@ console.log('3. Reloj');
     const shots = async dir => { const q = await open({ watch: true, dir }); const a = await q.screenshot(); await q.evaluate(() => { state.tab = 'progress'; state.progSub = 'ejercicios'; render(); }); await q.waitForTimeout(400); const b = await q.screenshot(); await q.evaluate(() => { state.tab = 'train'; render(); }); await q.waitForTimeout(300); const c = await q.screenshot(); const e = q.errs.slice(); await q.done(); return { a, b, c, e }; };
     const A = await shots(DIR), B = await shots(BASE);
     ok(A.a.equals(B.a) && A.b.equals(B.b) && A.c.equals(B.c), 'reloj: pantallas idénticas a la versión anterior (inicio, progreso, entrenar)');
+    /* "Cómo se hace" del reloj: la técnica de siempre, sin "Mis videos" (pedido del usuario) */
+    const how = async dir => { const q = await open({ watch: true, dir }); const r = await q.evaluate(async () => { await VID.add({ id: 'w1', ex: exKey('Prensa 45°'), name: 'p.mp4', type: 'video/mp4', size: 100, blob: new Blob(['x'], { type: 'video/mp4' }), added: 1 }); howSheet('Prensa 45°'); await new Promise(z => setTimeout(z, 500)); const sh = document.getElementById('sheet'), v = document.getElementById('my-vids'), had = !!v || /Mis videos/i.test(sh.innerText), video = sh.querySelectorAll('video').length; if (v) v.parentNode.remove(); return { vids: had, video, txt: sh.innerText }; }); const e = q.errs.slice(); await q.done(); return Object.assign(r, { e }); };
+    const hA = await how(DIR), hB = await how(BASE);
+    ok(!hA.vids && !hA.video && hB.vids === true && /Paso a paso/i.test(hA.txt), 'reloj: "Cómo se hace" ya no muestra "Mis videos" (la versión anterior sí), y conserva su técnica');
+    ok(hA.txt === hB.txt, 'reloj: el resto de "Cómo se hace" igual que antes');
+    ok(!hA.e.length, 'reloj: sin errores al abrir "Cómo se hace"');
     ok(!A.e.length, 'reloj: sin errores de JS');
   }
 }

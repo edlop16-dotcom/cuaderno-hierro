@@ -2445,3 +2445,9 @@ body:not(.watch) .vx-b { flex-shrink: 0; display: inline-flex; align-items: cent
 body:not(.watch) .vx-b.ok { color: var(--ok); border-color: var(--ok); }
 body:not(.watch) .vx-b.link { color: var(--accent2, var(--accent)); border-color: currentColor; }
 body:not(.watch) .vx-b.no { color: var(--muted); border-style: dashed; }
+body:not(.watch) .vx-vrow { gap: 8px; flex-wrap: wrap; align-items: center; }
+body:not(.watch) .vx-vname { font-size: 12px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+body:not(.watch) .vx-own { min-height: 36px; padding: 6px 10px; border-radius: 999px; border: 1px dashed var(--line); background: none; color: var(--muted); font: inherit; font-size: 12.5px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
+body:not(.watch) .vx-own.on { border-style: solid; border-color: var(--ok); color: var(--ok); }
+body:not(.watch) .vx-ownq { gap: 10px; align-items: flex-start; font-size: 13.5px; min-height: 44px; }
+body:not(.watch) .vx-ownq input { width: 20px; height: 20px; flex-shrink: 0; margin-top: 1px; }

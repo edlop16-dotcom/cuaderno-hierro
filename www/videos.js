@@ -3,8 +3,99 @@
    1. Lista de todos los ejercicios que hiciste (de tu historial): cuántas veces, la última fecha y si ya tiene
       video de muestra. Filtros Todos · Sin video · Con video y un buscador. Tocar uno abre "Cómo se hace", donde
       ya se agregan los videos (media.js: guardados solo en este teléfono, o un enlace de YouTube/TikTok).
-   La subida de videos a la nube NO está aquí: espera el plan aprobado.
+   2. Dónde se guardan (VXS): por ahora solo en este teléfono (decisión del usuario, opción A). Todo pasa por VXS para
+      poder cambiar a la nube (opción C, pendiente: Cloudflare R2, comprimidos y solo los grabados por ti) sin rehacerlo.
+   3. "Lo grabé yo" al agregar un video (rec.own) y su duración y tamaño de imagen (rec.dur, w, h), que pedirá la nube.
+   4. "Ver en YouTube": la búsqueda de ese ejercicio ordenada por más vistas (no elige un video concreto).
+   El reloj no cambia: su "Cómo se hace" sigue con el código de siempre (media.js).
    ========================================================================== */
+
+/* ---------- 2. Dónde se guardan tus videos ----------
+   Un "lugar" (backend) con estas funciones: list(ex) → videos de un ejercicio, get(id), add(rec), put(rec), del(id),
+   has(ex) → ¿tiene alguno? (sin cargarlos), src(rec) → dirección para reproducirlo.
+   Hoy: VX_LOCAL (IndexedDB 'cdh-media' de media.js; también lo usa el Respaldo completo).
+   Para la opción C se agrega un VX_R2 con las mismas funciones (subir comprimido solo si rec.own, guardar en rec.remote
+   la dirección en la nube) y se cambia VXS.backend; la lista, "Cómo se hace" y el borrado no cambian. */
+const VX_LOCAL = {
+  id: 'local',
+  list: ex => VID.list(ex),
+  get: id => VID.tx('readonly', s => s.get(id)),
+  add: rec => VID.add(rec),
+  put: rec => VID.tx('readwrite', s => s.put(rec)),
+  del: id => VID.del(id),
+  has: ex => !!(VID.index && VID.index.has(ex)),
+  src: rec => (rec && rec.blob ? URL.createObjectURL(rec.blob) : ''),
+};
+const VXS = { backend: VX_LOCAL };
+['list', 'get', 'add', 'put', 'del', 'has', 'src'].forEach(k => { VXS[k] = function () { return VXS.backend[k].apply(VXS.backend, arguments); }; });
+/* Un video nuevo, con todo lo que la nube va a necesitar (v: 2). Los guardados antes no tienen own/dur: "sin indicar" */
+const vxRecord = (file, name, meta, own) => ({ v: 2, id: uid(), ex: exKey(name), exName: name, name: file.name, type: file.type, size: file.size, blob: file, added: Date.now(), own: !!own, dur: meta.dur || 0, w: meta.w || 0, h: meta.h || 0, remote: null });
+/* Duración y tamaño de imagen, leídos del propio video (si el teléfono no puede, quedan en 0) */
+function vxMeta(file) {
+  return new Promise(res => {
+    let done = false, u = '';
+    const end = o => { if (done) return; done = true; try { if (u) URL.revokeObjectURL(u); } catch (e) {} res(o); };
+    try {
+      const v = document.createElement('video'); v.preload = 'metadata'; v.muted = true; u = URL.createObjectURL(file);
+      v.onloadedmetadata = () => end({ dur: isFinite(v.duration) ? Math.round(v.duration * 10) / 10 : 0, w: v.videoWidth || 0, h: v.videoHeight || 0 });
+      v.onerror = () => end({}); v.src = u;
+    } catch (e) { end({}); }
+    setTimeout(() => end({}), 4000);
+  });
+}
+
+/* ---------- 4. Ver en YouTube: la búsqueda ordenada por más vistas ---------- */
+const vxYt = name => 'https://www.youtube.com/results?search_query=' + encodeURIComponent(name + ' técnica') + '&sp=CAM%253D';
+
+/* ---------- "Cómo se hace" en el teléfono: tus videos, "Lo grabé yo" y Ver en YouTube ---------- */
+const vxDur = s => (s >= 60 ? Math.floor(s / 60) + ' min ' + String(Math.round(s % 60)).padStart(2, '0') + ' s' : Math.round(s) + ' s');
+const _renderVideosVX = renderVideos;
+renderVideos = async function (name) {
+  if (isWatch()) return _renderVideosVX.apply(this, arguments);   /* el reloj: lo de siempre */
+  const box = document.getElementById('my-vids'); if (!box) return;
+  const key = exKey(name);
+  let vids = [];
+  try { vids = await VXS.list(key); } catch (e) { box.innerHTML = '<div class="muted">No se pudo abrir el almacenamiento de videos en este equipo.</div>'; return; }
+  freeVidUrls();
+  const links = LINKS()[key] || [];
+  const own = v => (v.own === true ? `<button type="button" class="vx-own on" data-act="vx-own" data-id="${esc(v.id)}" data-name="${esc(name)}" aria-pressed="true">${ic('check', 13)} Lo grabé yo</button>`
+    : `<button type="button" class="vx-own" data-act="vx-own" data-id="${esc(v.id)}" data-name="${esc(name)}" aria-pressed="false">${v.own === false ? 'De otra fuente' : '¿Lo grabaste tú?'}</button>`);
+  box.innerHTML = `
+    ${vids.length ? vids.map(v => { const u = VXS.src(v); if (u) vidUrls.push(u); return `<div class="vidcard"><video src="${u}" controls playsinline preload="metadata" loop data-vid="${esc(v.id)}"></video>
+      <div class="speeds" role="group" aria-label="Velocidad">${SPEEDS.map(r => `<button class="spd ${r === 1 ? 'on' : ''}" data-act="vid-rate" data-id="${esc(v.id)}" data-rate="${r}" aria-pressed="${r === 1}">${r === 1 ? 'Normal' : r + '×'}</button>`).join('')}</div>
+      <div class="row vx-vrow"><span class="grow muted vx-vname">${esc(v.name)} · ${fmtMB(v.size)}${v.dur ? ' · ' + vxDur(v.dur) : ''}</span>${own(v)}
+      <button class="btn small danger" data-act="vid-del" data-id="${esc(v.id)}" data-name="${esc(name)}">${state.confirm === 'vdel-' + v.id ? '¿Borrar?' : 'Borrar'}</button></div></div>`; }).join('')
+      : '<div class="muted" style="font-size:13px">Aún no guardas videos de este ejercicio. Se guardan solo en este teléfono y se ven sin internet.</div>'}
+    <label class="row vx-ownq"><input type="checkbox" id="vid-own"><span>Lo grabé yo <small class="muted">(más adelante, solo los grabados por ti se podrán subir a la nube)</small></span></label>
+    <label class="btn block" for="vid-file">+ Agregar video del teléfono</label>
+    <input type="file" id="vid-file" accept="video/*" data-name="${esc(name)}" hidden>
+    ${links.length ? `<div class="label" style="margin-top:4px">Enlaces guardados (necesitan internet)</div>${links.map((l, i) => `<div class="row"><a class="vid grow" href="${esc(l)}" target="_blank" rel="noopener" style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(l.replace(/^https?:\/\/(www\.)?/, ''))}</a><button class="icon-btn" data-act="link-del" data-i="${i}" data-name="${esc(name)}" aria-label="Quitar enlace">✕</button></div>`).join('')}` : ''}
+    <div class="row" style="flex-wrap:wrap;gap:8px"><a class="btn small vx-yt" href="${vxYt(name)}" target="_blank" rel="noopener">${ic('play', 15)} Ver en YouTube ↗</a><a class="btn small" href="https://www.tiktok.com/search?q=${encodeURIComponent(name + ' técnica')}" target="_blank" rel="noopener">Buscar en TikTok ↗</a></div>
+    <div class="muted" style="font-size:12.5px">"Ver en YouTube" abre los videos de este ejercicio con más vistas. Para tener uno sin internet, guárdalo en tu galería o grábate, y agrégalo aquí.</div>
+    <form id="f-link" class="row" data-name="${esc(name)}"><input id="link-url" type="url" placeholder="Pega un enlace de YouTube o TikTok" inputmode="url"><button class="btn small" type="submit">Guardar</button></form>`;
+};
+const _addVideoVX = addVideo;
+addVideo = async function (file, name) {
+  if (isWatch()) return _addVideoVX.apply(this, arguments);
+  if (!file) return;
+  if (!/^video\//.test(file.type) && !/\.(mp4|webm|mov|3gp|mkv)$/i.test(file.name)) { toast('Ese archivo no es un video.'); return; }
+  if (file.size > 150 * 1048576) { toast('El video pesa más de 150 MB. Recórtalo o elige uno más corto.'); return; }
+  const ownBox = document.getElementById('vid-own'), own = !!(ownBox && ownBox.checked);
+  toast('Guardando video…');
+  try {
+    await VXS.add(vxRecord(file, name, await vxMeta(file), own));
+    toast('Video guardado en este teléfono. Ya puedes verlo sin internet.');
+  } catch (e) { toast('No se pudo guardar: el teléfono no tiene espacio suficiente.'); }
+  renderVideos(name);
+};
+/* Cambiar "Lo grabé yo" de un video ya guardado (los de antes quedan "¿Lo grabaste tú?" hasta que lo digas) */
+window.addEventListener('click', async ev => {
+  const b = ev.target.closest && ev.target.closest('[data-act="vx-own"]'); if (!b || isWatch()) return;
+  ev.preventDefault(); ev.stopPropagation();
+  try { const r = await VXS.get(b.dataset.id); if (!r) return; r.own = !(r.own === true); await VXS.put(r); } catch (e) { toast('No se pudo cambiar.'); return; }
+  renderVideos(b.dataset.name);
+}, true);
+
 const vx = { q: '', f: 'all' };
 /* Un ejercicio por clave (exHKey: el mismo ejercicio aunque cambie el alias), con su nombre de la última vez */
 function vxList() {
@@ -22,9 +113,9 @@ function vxList() {
   });
   return Array.from(M.values()).map(o => Object.assign(o, vxHas(o.name)));
 }
-/* ¿Tiene video de muestra? En el teléfono (VID.index) o un enlace guardado (LINKS) */
+/* ¿Tiene video de muestra? Guardado (VXS: hoy en el teléfono) o un enlace guardado (LINKS) */
 function vxHas(name) {
-  const key = exKey(name), loc = !!(VID.index && VID.index.has(key)), lnk = ((LINKS()[key] || []).length) > 0;
+  const key = exKey(name), loc = VXS.has(key), lnk = ((LINKS()[key] || []).length) > 0;
   return { loc, lnk, has: loc || lnk };
 }
 const vxHay = o => { const x = libFind(o.name); return normName(o.name + ' ' + (x && typeof catHay === 'function' ? catHay(x) : '')); };
