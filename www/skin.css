@@ -2433,3 +2433,15 @@ body:not(.watch) .g3-hh .ms-wb { position: relative; flex-shrink: 0; width: 24px
 body:not(.watch) .g3-hh .ms-wb::before { content: ""; position: absolute; inset: -12px -10px; }
 body:not(.watch) .ms-twb { gap: 8px; }
 body:not(.watch) .ms-twb .btn { width: 100%; }
+
+/* Videos de tus ejercicios */
+body:not(.watch) .vx-card { gap: 10px; }
+body:not(.watch) .vx-sheet #vx-q { flex-shrink: 0; }
+body:not(.watch) .vx-f { flex-shrink: 0; }
+body:not(.watch) .vx-sum { font-size: 13px; flex-shrink: 0; }
+body:not(.watch) .vx-list { padding-bottom: 24px; }
+body:not(.watch) .vx-row { width: 100%; text-align: left; font: inherit; color: var(--fg); align-items: center; }
+body:not(.watch) .vx-b { flex-shrink: 0; display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 700; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--line); white-space: nowrap; }
+body:not(.watch) .vx-b.ok { color: var(--ok); border-color: var(--ok); }
+body:not(.watch) .vx-b.link { color: var(--accent2, var(--accent)); border-color: currentColor; }
+body:not(.watch) .vx-b.no { color: var(--muted); border-style: dashed; }
