@@ -236,7 +236,7 @@ console.log('6. Superserie fácil de encontrar');
   const pill = await p.evaluate(() => { const b = document.querySelector('.sx-page[data-i="1"] .su-pills .g2-ssb'); return b ? b.innerText.trim() : ''; });
   ok(/Superserie con/.test(pill), 'botón "Superserie con…" en la tarjeta del ejercicio');
   await act(p, '.sx-page[data-i="1"] .g2-ssb'); await p.waitForTimeout(200);
-  ok(await p.evaluate(() => /Elige la pareja/.test(document.getElementById('sheet').innerText)), 'deja elegir el ejercicio pareja');
+  ok(await p.evaluate(() => /Recomendados para|Elige la pareja/.test(document.getElementById('sheet').innerText)), 'deja elegir el ejercicio pareja');
   await p.evaluate(() => { const b = [...document.querySelectorAll('[data-g2="ss-pick"]')].find(x => /Abducción/.test(x.innerText)); b.click(); }); await p.waitForTimeout(300);
   const R = await p.evaluate(() => { const d = state.draft, a = d.exercises[1], b = d.exercises.find(e => e.name === 'Abducción de Cadera'), P = state.plans[0].days[0].exercises; return { same: ssOf(d, a) && ssOf(d, a) === ssOf(d, b), plan: P.map(e => e.name + (e.ss ? '+' : '')) }; });
   ok(R.same, 'en la sesión de hoy queda la superserie');

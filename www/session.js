@@ -104,7 +104,9 @@ function setCur(i) {
 }
 function bindPager(n) {
   let t = null;
-  n.addEventListener('scroll', () => { clearTimeout(t); t = setTimeout(() => setCur(Math.round(n.scrollLeft / Math.max(1, n.clientWidth))), 60); }, { passive: true });
+  /* Si la pantalla se redibujó en esos 60 ms, este paginador ya no está en pantalla: su posición (0) no vale.
+     Antes mandaba un "estás en el 1.º" falso que cancelaba los saltos pendientes (superserie, paso al siguiente) */
+  n.addEventListener('scroll', () => { clearTimeout(t); t = setTimeout(() => { if (n !== document.getElementById('sx-pager')) return; setCur(Math.round(n.scrollLeft / Math.max(1, n.clientWidth))); }, 60); }, { passive: true });
 }
 const _renderSx = render;
 render = function () {

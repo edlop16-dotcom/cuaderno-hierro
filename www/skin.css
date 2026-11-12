@@ -2404,3 +2404,25 @@ body:not(.watch) .g3-set { margin-top: 10px; }
 /* Ajustes del gimnasio 4: descanso muscular */
 body:not(.watch) .lv-next .g4-rest { display: block; margin-top: 4px; color: var(--muted); font-size: 12.5px; }
 body:not(.watch) .g4-moved, body:not(.watch) .tk-rest { margin-top: 8px; }
+
+/* Mejoras de la sesión */
+body:not(.watch) .ms-pk { display: block; font-size: 10px; font-weight: 600; color: var(--muted); line-height: 1.1; }
+body:not(.watch) div.muted > .ms-pk { display: inline; font-size: inherit; }
+body:not(.watch) .ms-pko { color: var(--warn); }
+body:not(.watch) .g3-pk { color: var(--warn); }
+body:not(.watch) .g2-ssrec .g2-ssr { border-color: var(--accent); }
+body:not(.watch) .ms-mrow { align-items: center; }
+body:not(.watch) .ms-mrow .btn { flex-shrink: 0; min-height: 44px; }
+body:not(.watch) .ms-mrest { margin: 8px 0; }
+body:not(.watch) .ms-wn { display: flex; align-items: center; gap: 8px; }
+body:not(.watch) .ms-wn .icon-btn { min-width: 44px; min-height: 44px; font-size: 22px; line-height: 1; }
+body:not(.watch) .ms-wn .icon-btn[disabled] { opacity: .3; }
+body:not(.watch) .ms-wl { text-align: center; font-weight: 700; font-size: 13.5px; }
+body:not(.watch) .ms-sl { display: flex; flex-direction: column; gap: 6px; }
+body:not(.watch) .ms-ses { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface2); color: var(--fg); font: inherit; font-size: 13.5px; text-align: left; flex-shrink: 0; }
+body:not(.watch) .ms-ses b { flex-shrink: 0; min-width: 52px; }
+body:not(.watch) .ms-plan { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 8px; flex-shrink: 0; }
+body:not(.watch) .ms-pr { display: flex; gap: 10px; align-items: baseline; font-size: 13.5px; line-height: 1.35; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface2); }
+body:not(.watch) .ms-pr > b { flex-shrink: 0; min-width: 64px; }
+body:not(.watch) .ms-pr.out { border-style: dashed; color: var(--muted); }
+body:not(.watch) .ms-pn { font-size: 12px; }

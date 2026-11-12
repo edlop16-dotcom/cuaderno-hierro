@@ -49,17 +49,78 @@ let ssHold = null;
 const _startRestSs = startRest;
 startRest = function (sec) { if (ssHold) { ssHold.want = sec; return; } _startRestSs(sec); };
 
+/* ---------- Teléfono (mejoras de la sesión): la vuelta sigue el orden en que la haces ----------
+   Antes la vuelta iba por la posición en la lista: si empezabas por el segundo de la pareja, descansabas tras el primero
+   que marcabas y, al completar el otro, el descanso desaparecía. Ahora cuenta las series hechas de cada uno:
+   - si a otro de la pareja le falta la serie de esta vuelta → pasas a él sin descanso;
+   - si todos ya la hicieron → empieza el descanso y vuelves al que abrió la vuelta.
+   El salto espera a que elijas el RIR; si no lo eliges, se hace al terminar el descanso. El reloj sigue con su regla. */
+let ssPend = null;
+const ssDoneN = e => e.log.filter(stepDone).length;
+/* Orden de la vuelta: por la hora de la primera serie hecha; los que no empezaron, después, en el orden de la lista */
+function ssRound(d, m) {
+  const t = x => d.exercises[x].log.reduce((a, s) => (s.done ? Math.min(a, s.at || Date.now()) : a), Infinity);
+  return m.map(x => ({ x, t: t(x) })).sort((a, b) => a.t - b.t || a.x - b.x).map(o => o.x);
+}
+/* Qué pasa después de una serie del ejercicio i (extra = 1: si marcaras ahora su siguiente serie): { to, rest } */
+function ssNext(d, i, extra) {
+  const m = ssMembers(d, i); if (!m) return null;
+  const E = x => d.exercises[x], n = x => ssDoneN(E(x)) + (extra && x === i ? 1 : 0), open = x => n(x) < E(x).log.length;
+  const R = ssRound(d, m), ci = n(i);
+  const behind = R.filter(x => x !== i && open(x) && n(x) < ci);
+  if (behind.length) return { to: behind[0], rest: false };
+  const left = R.filter(open);
+  if (left.length) return { to: left[0], rest: true };
+  let to = null;
+  for (let x = i + 1; x < d.exercises.length; x++) if (m.indexOf(x) < 0 && !exComplete(E(x))) { to = x; break; }
+  if (to == null) for (let x = 0; x < i; x++) if (m.indexOf(x) < 0 && !exComplete(E(x))) { to = x; break; }
+  return { to, rest: to != null, end: true };
+}
+function ssGo(P) {
+  const d = P.d; if (state.draft !== d || P.to == null || P.to === P.i || !d.exercises[P.to]) return;
+  d.cur = P.to; saveDraft(); render(); pagerGo(P.to, true);
+}
+function ssAfterPhone(d, i, j, hold) {
+  const e = d.exercises[i], N = ssNext(d, i);
+  if (N.rest) startRest(e.rest); else if (state.rest) { state.rest = null; tick(); }
+  /* La pantalla se queda en este ejercicio hasta el salto (session.js y el paso al siguiente no lo mueven antes) */
+  if (typeof sxWait !== 'undefined') sxWait = null;
+  if (typeof g2Hold !== 'undefined' && N.to !== i + 1) { const H = g2Hold = { skip: i + 1, to: N.to == null ? i : N.to }; setTimeout(() => { if (g2Hold === H) g2Hold = null; }, 1500); }
+  d.cur = i; saveDraft(); render();
+  if (N.to == null || N.to === i) { ssPend = null; return; }
+  const P = { d, i, j, to: N.to, rest: N.rest };
+  if (e.log[j].rir != null) { ssPend = null; setTimeout(() => ssGo(P), 700); }
+  else ssPend = P;
+}
+/* Al elegir el RIR de esa serie: el salto */
+window.addEventListener('click', ev => {
+  const b = ev.target.closest && ev.target.closest('[data-act="rir"]'), P = ssPend; if (!b || !P) return;
+  if (+b.dataset.ex !== P.i || +b.dataset.set !== P.j) return;
+  setTimeout(() => { if (ssPend !== P) return; const s = P.d.exercises[P.i] && P.d.exercises[P.i].log[P.j]; ssPend = null; if (s && s.done && s.rir != null) ssGo(P); }, 260);
+}, true);
+/* Sin RIR elegido: al terminar el descanso vuelves igual al que abre la vuelta. Si te mueves a mano, ya no hay salto */
+const _tickSs = tick;
+tick = function () {
+  const r = _tickSs.apply(this, arguments), P = ssPend;
+  if (P && P.rest && (state.draft !== P.d || !state.rest || state.rest.rang)) { ssPend = null; if (state.draft === P.d) ssGo(P); }
+  return r;
+};
+const _setCurSs = setCur;
+setCur = function (k) { if (ssPend && k !== ssPend.i) ssPend = null; return _setCurSs.apply(this, arguments); };
+
 const _markSetSs = markSet;
 markSet = function (i, j, v, k) {
   const d = state.draft, e = d && d.exercises[i], m = e && ssMembers(d, i);
   const main = e && e.log[j], s = main && (k == null ? main : (main.drops || [])[k]);
   const willDone = s ? (v == null ? !s.done : !!v) : false;
+  if (ssPend && ssPend.i === i && ssPend.j === j && s && s.done && !willDone) ssPend = null;   /* la desmarcaste */
   if (!m || !s || s.done || !willDone) return _markSetSs(i, j, v, k);
   const hold = ssHold = { want: null };
   try { _markSetSs(i, j, v, k); } finally { ssHold = null; }
   const d2 = state.draft; if (!d2 || d2 !== d) return;
   const mm = main.drops || [];
   if (!s.done || mm.some(x => !x.done)) { if (hold.want != null) startRest(hold.want); return; }   // drop pendiente: como siempre
+  if (!isWatch() && document.getElementById('sx-pager')) return ssAfterPhone(d, i, j, hold);       // teléfono: la vuelta sigue tu orden real
   const pend = x => !exComplete(d.exercises[x]), pos = m.indexOf(i);
   const later = m.slice(pos + 1).filter(pend)[0], first = m.filter(pend)[0];
   let to = null;
@@ -113,8 +174,11 @@ function ssDecorSession() {
     const i = +p.dataset.i, f = ssInfo(d, i); if (!f || p.querySelector('.ss-ban')) return;
     const hero = p.querySelector('.sx-hero'); if (!hero) return;
     const e = d.exercises[i], nx = f.m[f.pos + 1], first = d.exercises[f.m[0]];
-    const how = !f.lastOfRound ? `Al marcar una serie pasas a <b>${esc(d.exercises[nx].name)}</b> sin descanso.`
-      : `Al marcar una serie descansas <b class="num">${clock(e.rest)}</b> y vuelves a <b>${esc(first.name)}</b>.`;
+    /* Lo que de verdad pasará al marcar su siguiente serie (la vuelta sigue tu orden real, ssNext) */
+    const N = exComplete(e) ? null : ssNext(d, i, 1), dest = N && N.to != null && N.to !== i ? d.exercises[N.to] : null;
+    const how = !N ? 'Ya terminaste este ejercicio de la superserie.'
+      : !N.rest ? `Al marcar una serie pasas a <b>${esc(dest ? dest.name : d.exercises[nx != null ? nx : f.m[0]].name)}</b> sin descanso.`
+      : `Al marcar una serie descansas <b class="num">${clock(e.rest)}</b>${dest ? ` y ${N.end ? 'sigues con' : 'vuelves a'} <b>${esc(dest.name)}</b>` : ''}.`;
     hero.insertAdjacentHTML('afterend', `<div class="ss-ban"><span class="ss-tag">${ic('refresh-cw', 14)} Superserie ${f.tag}</span><span>${how}</span></div>`);
   });
 }

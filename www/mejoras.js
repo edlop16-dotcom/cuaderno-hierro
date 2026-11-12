@@ -106,9 +106,11 @@ addToDraft = function (names, at) {
 
 /* ---------- 3. Orden real de la sesión ---------- */
 /* Por la hora de la primera serie completada; sin hora (sesiones de antes), donde estaban */
+/* Hora de la primera serie hecha de un ejercicio. `now` (solo para la fila de la sesión, mejorassesion.js): una serie recién
+   marcada que aún no tiene hora cuenta como "ahora" */
+const mjFirstAt = (e, now) => e.log.reduce((m, s) => { const a = s.done ? s.at || now || 0 : 0; return a && a < m ? a : m; }, Infinity);
 function mjOrder(list) {
-  const t = e => e.log.reduce((m, s) => (s.done && s.at && s.at < m ? s.at : m), Infinity);
-  const L = list.map(e => ({ e, t: t(e) })), timed = L.filter(o => o.t < Infinity).sort((a, b) => a.t - b.t);
+  const L = list.map(e => ({ e, t: mjFirstAt(e) })), timed = L.filter(o => o.t < Infinity).sort((a, b) => a.t - b.t);
   let k = 0; return L.map(o => (o.t < Infinity ? timed[k++].e : o.e));
 }
 const _finishMJ = finishSession;

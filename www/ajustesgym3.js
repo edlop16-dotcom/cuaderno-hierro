@@ -175,7 +175,7 @@ function g3Rows(s) {
   return s.exercises.map(e => {
     const p = g2Prev(s, e.name), now = fsBest(e.sets), bef = p && fsBest(p.sets);
     const t = !p ? 'new' : now.v > bef.v + 0.05 ? 'up' : now.v < bef.v - 0.05 ? 'down' : 'same';
-    return { n: e.name, ss: e.ss || '', q: e.sets.some(x => x.q), today: e.sets.map(g3Set).join(' · '), prev: p ? p.sets.map(g3Set).join(' · ') : '', pd: p ? p.date : '', t };
+    return { n: e.name, ss: e.ss || '', q: e.sets.some(x => x.q), today: e.sets.map(g3Set).join(' · '), prev: p ? p.sets.map(g3Set).join(' · ') : '', pd: p ? p.date : '', pk: p && p.other ? (p.other === 'fuerza' ? 'pesado' : 'bombeo') : '', t };   /* pk: no había una vez del mismo tipo de día; se compara con la última y se dice de qué tipo fue */
   });
 }
 const G3_ARROW = { up: '↑', down: '↓', same: '=', new: '' };
@@ -187,13 +187,13 @@ const g3D = d => fmtDate(d, true);
 function g3CmpHtml(s) {
   const C = g3CmpData(s);
   return `<div class="g3-cmp" data-sid="${esc(s.id)}"><div class="g3-ch"><b>${esc(C.day)}</b> · ${C.kind} · ${esc(C.gym)}<br><span class="muted">${g3D(C.date)}${C.min ? ' · ' + C.min + ' min' : ''} · ${C.prev ? 'frente a ' + g3D(C.prev) : 'Primera vez aquí'}</span></div>
-    <table class="g3-tb"><thead><tr><th>Ejercicio</th><th>Hoy</th><th>Anterior</th><th></th></tr></thead><tbody>${C.rows.map(r => `<tr class="${r.t}"><td>${esc(r.n)}${r.ss ? ` <span class="g3-ss">SS ${esc(r.ss)}</span>` : ''}</td><td class="num">${r.today}</td><td class="num">${r.prev ? r.prev + (r.pd && C.prev && dk(r.pd) !== dk(C.prev) ? `<small> (${g3D(r.pd)})</small>` : '') : '<span class="muted">Primera vez aquí</span>'}</td><td class="g3-t">${G3_ARROW[r.t]}</td></tr>`).join('')}</tbody></table>
+    <table class="g3-tb"><thead><tr><th>Ejercicio</th><th>Hoy</th><th>Anterior</th><th></th></tr></thead><tbody>${C.rows.map(r => `<tr class="${r.t}"><td>${esc(r.n)}${r.ss ? ` <span class="g3-ss">SS ${esc(r.ss)}</span>` : ''}</td><td class="num">${r.today}</td><td class="num">${r.prev ? r.prev + (r.pk ? `<small class="g3-pk"> (fue ${r.pk})</small>` : '') + (r.pd && C.prev && dk(r.pd) !== dk(C.prev) ? `<small> (${g3D(r.pd)})</small>` : '') : '<span class="muted">Primera vez aquí</span>'}</td><td class="g3-t">${G3_ARROW[r.t]}</td></tr>`).join('')}</tbody></table>
     <button type="button" class="btn small" data-g3="copy" data-sid="${esc(s.id)}">${ic('copy', 15)} Copiar como texto</button></div>`;
 }
 function g3CmpText(s) {
   const C = g3CmpData(s);
   return [`${C.day} · ${C.kind} · ${C.gym} · ${g3D(C.date)}${C.min ? ' · ' + C.min + ' min' : ''}`, C.prev ? `Comparado con: ${g3D(C.prev)}` : 'Primera vez aquí', 'Ejercicio | Hoy | Anterior | Cambio']
-    .concat(C.rows.map(r => `${r.n}${r.ss ? ' (superserie ' + r.ss + ')' : ''} | ${r.today} | ${r.prev ? r.prev + (r.pd && C.prev && dk(r.pd) !== dk(C.prev) ? ' (' + g3D(r.pd) + ')' : '') : 'Primera vez aquí'} | ${G3_ARROW[r.t] || '—'}`)).join('\n');
+    .concat(C.rows.map(r => `${r.n}${r.ss ? ' (superserie ' + r.ss + ')' : ''} | ${r.today} | ${r.prev ? r.prev + (r.pk ? ' (fue ' + r.pk + ')' : '') + (r.pd && C.prev && dk(r.pd) !== dk(C.prev) ? ' (' + g3D(r.pd) + ')' : '') : 'Primera vez aquí'} | ${G3_ARROW[r.t] || '—'}`)).join('\n');
 }
 /* Al terminar: reemplaza la lista de ejercicios del resumen (dice lo mismo, ahora como cuadro) */
 const _fsHtmlG3 = fsHtml;
@@ -229,7 +229,7 @@ function g3Toggle(b, kind) {
 window.addEventListener('click', ev => {
   const b = ev.target.closest && ev.target.closest('[data-g3]'); if (!b) return;
   const a = b.dataset.g3;
-  if (a === 'rep') { if (ev.target.closest('[data-wc]')) return; ev.preventDefault(); ev.stopPropagation(); return wcSheet('f'); }
+  if (a === 'rep') { if (ev.target.closest('[data-wc],[data-ms]')) return;   /* las flechas de semana (mejorassesion.js) no abren el reporte */ ev.preventDefault(); ev.stopPropagation(); return wcSheet('f'); }
   ev.preventDefault(); ev.stopPropagation();
   if (a === 'auto') { state.settings.autoScr = !g3On(); savePlans(); render(); toast(state.settings.autoScr ? 'Pantalla automática activada para la sesión.' : 'Pantalla automática apagada.'); return; }
   if (a === 'copy') { const s = state.sessions.find(x => x.id === b.dataset.sid); if (s) ddCopy(g3CmpText(s)).then(ok => toast(ok ? 'Cuadro copiado como texto.' : 'No se pudo copiar.')); return; }

@@ -73,13 +73,18 @@ fsShow = function () { const r = _fsShowG2.apply(this, arguments); if (fsOpen())
 window.addEventListener('click', ev => { if (g2Cel && ev.target.closest && ev.target.closest('[data-act="fs-close"]')) setTimeout(g2CelGo, 0); }, true);
 setInterval(() => { if (g2Cel && ((g2FsShown && !fsOpen()) || (!g2FsShown && Date.now() - g2FsAt > 4000))) g2CelGo(); }, 400);
 /* La última vez de ese ejercicio en ese gimnasio, antes de esta sesión (cualquier día de la rutina) */
+/* Mejoras de la sesión: primero la última del MISMO tipo de día (Pesado con Pesado, Bombeo con Bombeo); si no hay ninguna,
+   la última que haya, con su tipo (`other`) para decirlo */
 function g2Prev(s, name) {
-  const g = sGym(s); let best = null;
+  const g = sGym(s), kind = sKind(s); let same = null, any = null;
   state.sessions.forEach(x => {
-    if (x.id === s.id || x.approx || x.date >= s.date || sGym(x) !== g || (best && x.date <= best.date)) return;
-    const e = exIn(x, name); if (e && e.sets.length) best = { date: x.date, sets: e.sets };
+    if (x.id === s.id || x.approx || x.date >= s.date || sGym(x) !== g) return;
+    const e = exIn(x, name); if (!e || !e.sets.length) return;
+    const k = sKind(x), o = { date: x.date, sets: e.sets, kind: k };
+    if (k === kind && (!same || x.date > same.date)) same = o;
+    if (!any || x.date > any.date) any = o;
   });
-  return best;
+  return same || (any ? Object.assign(any, { other: any.kind !== kind ? any.kind : '' }) : null);
 }
 const g2SetTxt = x => (+x.w ? fmtKg(+x.w) + '×' + x.r : x.r + ' reps') + (x.rir != null ? ' @' + x.rir : '');
 function g2ExList(s) {
@@ -278,16 +283,56 @@ openSheet = function () {
 
 /* ---------- 6. Superserie con… ---------- */
 const G2_SSL = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+/* Con quién emparejar (mejoras de la sesión): músculos opuestos primero, luego los que no compiten; dos del mismo músculo, no.
+   Un músculo entrenado fuerte hace menos de 48 h (24 h los pequeños) no se recomienda (restMap, ajustesgym.js) */
+const G2_OPP = (typeof PG_SS_OPP !== 'undefined' ? PG_SS_OPP : []).concat([['cuad', 'pant'], ['isq', 'pant'], ['glu', 'pant']]);
+const g2PairMain = n => (typeof wcMain === 'function' ? wcMain(n) : null);
+const g2PairRest = () => { const R = typeof restMap === 'function' ? restMap() : {}, o = {}; for (const k in R) if (R[k].block) o[k] = R[k]; return o; };
+const g2Opp = (a, b) => G2_OPP.some(p => (p[0] === a && p[1] === b) || (p[0] === b && p[1] === a));
+function g2PairScore(a, b, R) {
+  const ka = g2PairMain(a), kb = g2PairMain(b), za = zoneShares(a), zb = zoneShares(b), low = k => (zoneName(k) || '').toLowerCase();
+  if (kb && R && R[kb]) return { s: -100, why: restWhy(kb, R[kb]) + ': hoy descansa' };
+  if (ka && kb && ka === kb) return { s: -50, why: 'Mismo músculo (' + low(kb) + '): mejor no juntarlos' };
+  const light = typeof pgSsOk === 'function' && pgSsOk(b) ? 5 : 0;
+  if (ka && kb && g2Opp(ka, kb) && !za[kb] && !zb[ka]) return { s: 100 + light, why: 'Músculo opuesto: ' + low(kb) };
+  if ((kb && za[kb]) || (ka && zb[ka])) return { s: 10 + light, why: 'Comparten músculo: te cansará antes' };
+  return { s: 60 + light, why: 'No compite: ' + (kb ? low(kb) : 'otro músculo') };
+}
+/* Ejercicios de tu gimnasio para agregar como pareja: del músculo opuesto, con el equipo que hay aquí (wcCands) y descansado */
+function g2PairAdd(d, name, R) {
+  const ka = g2PairMain(name); if (!ka || typeof wcCands !== 'function') return [];
+  const ks = []; G2_OPP.forEach(p => { const o = p[0] === ka ? p[1] : p[1] === ka ? p[0] : null; if (o && ks.indexOf(o) < 0 && !(R && R[o])) ks.push(o); });
+  const out = [], free = x => !d.exercises.some(y => exSame(y.name, x));
+  ks.forEach(k => {
+    const C = wcCands(k).filter(free), n = C.filter(x => typeof pgSsOk !== 'function' || pgSsOk(x))[0] || C[0]; if (!n) return;
+    const P = g2PairScore(name, n, R); if (P.s >= 60) out.push({ n, k, why: P.why, s: P.s });
+  });
+  return out.sort((a, b) => b.s - a.s);
+}
+/* Agrega el ejercicio a la sesión (como cualquier agregado a mano) y lo empareja */
+function g2SsAdd(i, name, keep) {
+  const d = state.draft, a = d && d.exercises[i]; if (!a) return;
+  addToDraft([name], i);
+  const ia = d.exercises.indexOf(a), ib = d.exercises.findIndex(x => exSame(x.name, name));
+  if (ib < 0 || ia < 0) return;
+  d.cur = ia; g2SsSet(ia, ib, keep);
+}
 function g2SsSheet(i) {
   const d = state.draft, e = d && d.exercises[i]; if (!e) return;
   const cur = typeof ssMembers === 'function' && ssMembers(d, i);
-  const L = d.exercises.map((x, k) => ({ x, k })).filter(o => o.k !== i && !exComplete(o.x) && !(typeof ssOf === 'function' && ssOf(d, o.x)));
+  const R = g2PairRest(), L = d.exercises.map((x, k) => ({ x, k })).filter(o => o.k !== i && !exComplete(o.x) && !(typeof ssOf === 'function' && ssOf(d, o.x)))
+    .map(o => Object.assign(o, { P: g2PairScore(e.name, o.x.name, R) })).sort((a, b) => b.P.s - a.P.s || a.k - b.k);
   const f = findDay(d.planId, d.dayId), plan = !!(f.p && f.d && !f.p.quick && d.planId !== 'quick' && d.planId !== 'wcfill');
+  /* Recomendados: de los de hoy, los que no compiten; y hasta 3 de tu gimnasio para agregar (músculo opuesto, descansado) */
+  const rec = L.filter(o => o.P.s >= 60).slice(0, 3), others = L.filter(o => rec.indexOf(o) < 0), add = g2PairAdd(d, e.name, R).slice(0, Math.max(1, 3 - rec.length));
+  const row = (o, top) => `<button type="button" class="qk-ex g2-ssp ${top ? 'g2-ssr' : ''}" data-g2="ss-pick" data-i="${i}" data-k="${o.k}">${thumb(o.x.name)}<span class="grow"><b>${esc(o.x.name)}</b><small class="muted">${esc(o.P.why)} · ${o.x.log.filter(s => !s.done).length} series por hacer</small></span></button>`;
   openSheet(`<div class="row"><h2 class="grow">Superserie con ${esc(e.name)}</h2><button class="icon-btn" data-act="sheet-close" aria-label="Cerrar">${ic('x', 18)}</button></div>
-    <div class="muted" style="font-size:13px">Haces una serie de cada uno sin descanso entre ellos y descansas al cerrar la vuelta. Mejor con músculos distintos (pierna con brazo, empuje con jalón).</div>
+    <div class="muted" style="font-size:13px">Haces una serie de cada uno sin descanso entre ellos y descansas al cerrar la vuelta. Mejor con músculos opuestos o que no compiten (pecho con espalda, cuádriceps con isquiotibiales o pantorrillas).</div>
     ${cur ? `<button type="button" class="btn block" data-g2="ss-off" data-i="${i}">Quitar la superserie</button>` : ''}
-    <div class="label">Elige la pareja</div>
-    <div class="qk-list">${L.length ? L.map(o => `<button type="button" class="qk-ex g2-ssp" data-g2="ss-pick" data-i="${i}" data-k="${o.k}">${thumb(o.x.name)}<span class="grow"><b>${esc(o.x.name)}</b><small class="muted">${o.x.log.filter(s => !s.done).length} series por hacer</small></span></button>`).join('') : '<div class="muted">No queda otro ejercicio libre en esta sesión.</div>'}</div>
+    ${rec.length || add.length ? `<div class="label">Recomendados para ${esc(zoneName(g2PairMain(e.name) || '') || 'este ejercicio').toLowerCase()}</div>
+    <div class="qk-list g2-ssrec">${rec.map(o => row(o, 1)).join('')}${add.map(a => `<button type="button" class="qk-ex g2-ssp g2-ssr" data-g2="ss-add" data-i="${i}" data-n="${esc(a.n)}">${thumb(a.n)}<span class="grow"><b>${esc(a.n)}</b><small class="muted">${esc(a.why)} · lo agrega a la sesión</small></span>${ic('plus', 16)}</button>`).join('')}</div>` : ''}
+    <div class="label">${rec.length || add.length ? 'Otros de hoy' : 'Elige la pareja'}</div>
+    <div class="qk-list">${others.length ? others.map(o => row(o, 0)).join('') : `<div class="muted">${L.length ? 'No hay más ejercicios libres en esta sesión.' : 'No queda otro ejercicio libre en esta sesión.'}</div>`}</div>
     ${plan ? '<label class="row g2-ssk" style="gap:10px"><input type="checkbox" id="g2-ss-keep" checked style="width:20px;height:20px"><span>Guardarla también en mi rutina (quedan juntos)</span></label>' : ''}`);
 }
 function g2SsSet(i, k, keep) {
@@ -318,7 +363,9 @@ function g2SsPills() {
   document.querySelectorAll('#sx-pager > .sx-page').forEach(pg => {
     const i = +pg.dataset.i, e = d.exercises[i], P = pg.querySelector('.su-pills'); if (!e || !P || P.querySelector('.g2-ssb')) return;
     const m = typeof ssMembers === 'function' && ssMembers(d, i), other = m && m.filter(k => k !== i).map(k => d.exercises[k].name)[0];
-    P.insertAdjacentHTML('beforeend', `<button type="button" class="su-p g2-ssb ${m ? 'on' : ''}" data-g2="ss" data-i="${i}">${ic('layers', 15)} ${m ? 'Superserie con ' + esc(other || '') : 'Superserie con…'}</button>`);
+    /* En 4.º lugar de la fila (antes iba al final y había que deslizar para verlo) */
+    const h = `<button type="button" class="su-p g2-ssb ${m ? 'on' : ''}" data-g2="ss" data-i="${i}">${ic('layers', 15)} ${m ? 'Superserie con ' + esc(other || '') : 'Superserie con…'}</button>`, at = P.children[3];
+    if (at) at.insertAdjacentHTML('beforebegin', h); else P.insertAdjacentHTML('beforeend', h);
   });
 }
 window.addEventListener('click', ev => {
@@ -327,6 +374,7 @@ window.addEventListener('click', ev => {
   const a = b.dataset.g2, i = +b.dataset.i;
   if (a === 'ss') return g2SsSheet(i);
   if (a === 'ss-pick') { const k = document.getElementById('g2-ss-keep'); return g2SsSet(i, +b.dataset.k, !!(k && k.checked)); }
+  if (a === 'ss-add') { const k = document.getElementById('g2-ss-keep'); return g2SsAdd(i, b.dataset.n, !!(k && k.checked)); }
   if (a === 'ss-off') return g2SsOff(i);
   if (a === 'where') { wc.where = b.dataset.v; return wcFillSheet(); }
   if (a === 'rec') { const O = state.g2Open = state.g2Open || {}; O[b.dataset.k] = !O[b.dataset.k]; b.classList.toggle('g2-open', !!O[b.dataset.k]); b.setAttribute('aria-expanded', !!O[b.dataset.k]); return; }
@@ -458,6 +506,7 @@ wcBuild = function (kind, seed) {
   /* Descanso muscular desde el día elegido (Hoy o el siguiente): lo entrenado fuerte hace menos de 48 h (24 h los pequeños) no se carga */
   const day = wc.day || dk(new Date()), R = restMap(day), after = typeof wcFillDays === 'function' ? wcFillDays().filter(d => d.k > day) : [];
   const wdOf = k => WDL[new Date(k + 'T12:00:00').getDay()].toLowerCase();
+  const PL = typeof msPlan === 'function' ? msPlan(day, V) : null;
   let sec = 0;
   /* Un ejercicio por músculo; un segundo solo si faltan más de 5 y es un movimiento distinto (no dos variantes casi iguales) */
   const take = (x, T, tag) => {
@@ -477,7 +526,7 @@ wcBuild = function (kind, seed) {
   };
   need.forEach(x => {
     if (sore[x.k] && sore[x.k].lvl >= 2) { skipped.push(x.k); return; }
-    const F = R[x.k];
+    const F = R[x.k], pk = PL ? PL.at(day, x.k) : null;
     if (F && F.block) {
       /* Si queda otro día, sus series van al que tenga más descanso (el último), siempre que allí ya se cumplan las 48 h (24 h los pequeños) */
       const to = after.slice().reverse().find(d => restDays(F.date, d.k + 'T12:00:00') >= (F.big ? 2 : 1));
@@ -485,12 +534,16 @@ wcBuild = function (kind, seed) {
       else tired.push(x);
       return;
     }
-    const T = Math.max(1, Math.min(G2_MAX_MUS, Math.ceil(x.n / days)) - (sore[x.k] ? 1 : 0));
+    /* Plan de la semana (msPlan): si este músculo va entero a otro entreno, aquí no sale y se dice a dónde va */
+    if (pk && !pk.n && pk.more.length) { pk.more.forEach(m => moved.push({ k: x.k, n: m.n, to: m.to, plan: 1 })); return; }
+    const T = Math.max(1, (pk && pk.n ? pk.n : Math.min(G2_MAX_MUS, Math.ceil(x.n / days))) - (sore[x.k] ? 1 : 0));
     const soft = F && F.soft ? restWhy(x.k, F) : '';
     const tk = take(x, T, soft ? { soft } : null);
     if (!tk) { left.push({ k: x.k, n: x.n, why: 'no hay un ejercicio para hacerlo aquí' }); return; }
     const got = tk.got, cut = tk.cut;
-    const lack = x.n - got; if (lack <= 0) return;
+    let lack = x.n - got; if (lack <= 0) return;
+    /* Lo que el plan ya puso en otro entreno no es "sin cubrir" */
+    if (pk && pk.more.length && !cut && got >= T) { pk.more.forEach(m => { const n = Math.min(lack, m.n); if (n > 0) { moved.push({ k: x.k, n, to: m.to, plan: 1 }); lack -= n; } }); if (lack <= 0) return; }
     if (days > 1 && !cut && got >= T) later.push({ k: x.k, n: lack });
     else left.push({ k: x.k, n: lack, why: cut || !got ? 'no entra en tu tiempo' : got < T ? 'un segundo ejercicio sería casi igual al primero' : 'más de ' + G2_MAX_MUS + ' series de un músculo en una sesión ya no suman' });
   });
@@ -544,8 +597,10 @@ wcFillSheet = function () {
   if (list && Bx && Bx.later && Bx.later.length) list.insertAdjacentHTML('afterend', `<div class="muted wc-sub g2-later">Te quedan ${Bx.days} entrenos esta semana: lo demás va en los otros (${Bx.later.map(x => `${zoneName(x.k).toLowerCase()} ${nS(x.n)}`).join(', ')}), como máximo ${G2_MAX_MUS} series de un músculo por sesión.</div>`);
   /* Descanso muscular: lo que pasa a otro día, con la razón */
   if (list && Bx && Bx.moved && Bx.moved.length) {
-    if (!(Bx.list || []).length) list.innerHTML = `<div class="muted">Hoy no conviene completar nada: lo que falta aún necesita descanso.</div>`;
-    list.insertAdjacentHTML('afterend', `<div class="safe tip g4-moved">${ic('timer', 16)}<span>${Bx.moved.map(x => `${esc(x.why)}: ${zoneName(x.k).toLowerCase()} (${nS(x.n)}) pasa al ${x.to}, cuando ya habrán pasado ${x.h} h.`).join(' ')} Guarda otro entreno para completar ese día.</span></div>`);
+    /* Lo que el plan de la semana reparte en otros entrenos (x.plan) se ve en "Cómo queda repartida tu semana" (mejorassesion.js): aquí solo lo que pasa por descanso */
+    const byRest = Bx.moved.filter(x => !x.plan);
+    if (!(Bx.list || []).length) list.innerHTML = `<div class="muted">${byRest.length ? 'Hoy no conviene completar nada: lo que falta aún necesita descanso.' : 'Hoy no hace falta: lo que falta va en tus otros entrenos de la semana (mira abajo).'}</div>`;
+    if (byRest.length) list.insertAdjacentHTML('afterend', `<div class="safe tip g4-moved">${ic('timer', 16)}<span>${byRest.map(x => `${esc(x.why)}: ${zoneName(x.k).toLowerCase()} (${nS(x.n)}) pasa al ${x.to}, cuando ya habrán pasado ${x.h} h.`).join(' ')} Guarda otro entreno para completar ese día.</span></div>`);
   }
   if (list && Bx && Bx.left && Bx.left.length) list.insertAdjacentHTML('afterend', `<div class="safe tip g2-left">${ic('info', 16)}<span>Quedan sin cubrir: ${Bx.left.map(x => `${zoneName(x.k).toLowerCase()} (${nS(x.n)}, ${x.why})`).join('; ')}. No es grave: lo compensas la semana que viene.</span></div>`);
   return r;
