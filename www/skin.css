@@ -2451,3 +2451,19 @@ body:not(.watch) .vx-own { min-height: 36px; padding: 6px 10px; border-radius: 9
 body:not(.watch) .vx-own.on { border-style: solid; border-color: var(--ok); color: var(--ok); }
 body:not(.watch) .vx-ownq { gap: 10px; align-items: flex-start; font-size: 13.5px; min-height: 44px; }
 body:not(.watch) .vx-ownq input { width: 20px; height: 20px; flex-shrink: 0; margin-top: 1px; }
+
+/* Repetir un entreno */
+body:not(.watch) .rp-open { margin-top: 8px; }
+body:not(.watch) .rp-sheet .qk-chips, body:not(.watch) .rp-sheet .safe { flex-shrink: 0; }
+body:not(.watch) .rp-ex { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface2); }
+body:not(.watch) .rp-ex > .grow { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+body:not(.watch) .rp-ex small { font-size: 12.5px; line-height: 1.35; }
+body:not(.watch) .rp-ex.off { opacity: .6; border-style: dashed; }
+body:not(.watch) .rp-ex.off b { text-decoration: line-through; }
+body:not(.watch) .rp-rec { color: var(--fg); }
+body:not(.watch) .rp-alt { color: var(--warn); }
+body:not(.watch) .rp-ss { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 0 5px; border: 1px solid var(--accent); border-radius: 4px; color: var(--accent); vertical-align: 1px; }
+body:not(.watch) .rp-rk { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-top: 6px; font-size: 13px; }
+body:not(.watch) .rp-rk .qk-chip { margin: 0; min-height: 36px; }
+body:not(.watch) .rp-list { flex-shrink: 0; }
+body:not(.watch) .rp-cref { font-size: 12.5px; margin: 6px 0 2px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; flex-shrink: 0; }

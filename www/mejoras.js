@@ -80,7 +80,7 @@ markSet = function (i, j, v, k) {
 /* Se escribe al agregarlo, no al terminar: así no se pierde si cierras la app o terminas antes. El reloj sigue "solo hoy"
    y las rutinas temporales (Entreno rápido, Completar la semana) no guardan nada */
 function mjKeep(d, before, at) {
-  if (isWatch() || d.planId === 'quick' || d.planId === 'wcfill') return 0;
+  if (isWatch() || d.planId === 'quick' || d.planId === 'wcfill' || d.planId === 'rep') return 0;
   const f = findDay(d.planId, d.dayId); if (!f.p || !f.d || f.p.quick) return 0;
   const inPlan = x => f.d.exercises.findIndex(p => (x.exId && p.id === x.exId) || exSame(p.name, x.name));
   let k = -1; for (let i = Math.min(at, before.length - 1); i >= 0 && k < 0; i--) k = inPlan(before[i]);   /* detrás del último que sí está en la rutina */

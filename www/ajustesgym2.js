@@ -253,7 +253,7 @@ window.addEventListener('click', ev => {
 
 /* ---------- 5. Reemplazar un ejercicio queda en la rutina ---------- */
 function g2KeepSwap(d, exId, old, name) {
-  if (isWatch() || !d || d.planId === 'quick' || d.planId === 'wcfill') return 0;
+  if (isWatch() || !d || d.planId === 'quick' || d.planId === 'wcfill' || d.planId === 'rep') return 0;
   const f = findDay(d.planId, d.dayId); if (!f.p || !f.d || f.p.quick) return 0;
   const L = f.d.exercises, k = L.findIndex(p => (exId && p.id === exId) || exSame(p.name, old)); if (k < 0) return 0;
   if (L.some((p, n) => n !== k && exSame(p.name, name))) return -1;   /* ya está en la rutina: no se duplica */
@@ -266,7 +266,7 @@ function g2KeepSwap(d, exId, old, name) {
 const _swapDoG2 = swapDo;
 swapDo = function (i, name, keep) {
   const d = state.draft, e = d && d.exercises[i];
-  if (!e || isWatch() || d.planId === 'quick' || d.planId === 'wcfill') return _swapDoG2.apply(this, arguments);
+  if (!e || isWatch() || d.planId === 'quick' || d.planId === 'wcfill' || d.planId === 'rep') return _swapDoG2.apply(this, arguments);
   const exId = e.exId, old = e.name;
   const r = _swapDoG2.call(this, i, name, false);
   const k = g2KeepSwap(d, exId, old, name);
@@ -277,7 +277,7 @@ swapDo = function (i, name, keep) {
 const _openSheetG2 = openSheet;
 openSheet = function () {
   const r = _openSheetG2.apply(this, arguments), k = document.getElementById('sw-keep'), d = state.draft;
-  if (k && !isWatch() && d && d.planId !== 'quick' && d.planId !== 'wcfill') { const l = k.closest('label'); if (l) l.outerHTML = '<div class="muted g2-swn">El cambio queda también en tu rutina, en el mismo lugar.</div>'; }
+  if (k && !isWatch() && d && d.planId !== 'quick' && d.planId !== 'wcfill' && d.planId !== 'rep') { const l = k.closest('label'); if (l) l.outerHTML = '<div class="muted g2-swn">El cambio queda también en tu rutina, en el mismo lugar.</div>'; }
   return r;
 };
 
@@ -322,7 +322,7 @@ function g2SsSheet(i) {
   const cur = typeof ssMembers === 'function' && ssMembers(d, i);
   const R = g2PairRest(), L = d.exercises.map((x, k) => ({ x, k })).filter(o => o.k !== i && !exComplete(o.x) && !(typeof ssOf === 'function' && ssOf(d, o.x)))
     .map(o => Object.assign(o, { P: g2PairScore(e.name, o.x.name, R) })).sort((a, b) => b.P.s - a.P.s || a.k - b.k);
-  const f = findDay(d.planId, d.dayId), plan = !!(f.p && f.d && !f.p.quick && d.planId !== 'quick' && d.planId !== 'wcfill');
+  const f = findDay(d.planId, d.dayId), plan = !!(f.p && f.d && !f.p.quick && d.planId !== 'quick' && d.planId !== 'wcfill' && d.planId !== 'rep');
   /* Recomendados: de los de hoy, los que no compiten; y hasta 3 de tu gimnasio para agregar (músculo opuesto, descansado) */
   const rec = L.filter(o => o.P.s >= 60).slice(0, 3), others = L.filter(o => rec.indexOf(o) < 0), add = g2PairAdd(d, e.name, R).slice(0, Math.max(1, 3 - rec.length));
   const row = (o, top) => `<button type="button" class="qk-ex g2-ssp ${top ? 'g2-ssr' : ''}" data-g2="ss-pick" data-i="${i}" data-k="${o.k}">${thumb(o.x.name)}<span class="grow"><b>${esc(o.x.name)}</b><small class="muted">${esc(o.P.why)} · ${o.x.log.filter(s => !s.done).length} series por hacer</small></span></button>`;
