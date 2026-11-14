@@ -59,6 +59,8 @@ async function open({ watch, settings, plans, sessions } = {}) {
     localStorage.setItem('cdh.settings', JSON.stringify(s)); localStorage.setItem('cdh.plans', JSON.stringify(pl)); localStorage.setItem('cdh.sessions', JSON.stringify(ss));
     localStorage.setItem('cdh.gyms', JSON.stringify(g)); localStorage.setItem('cdh.newsSeen', '"n6"'); localStorage.setItem('cdh.reminders', '[]'); }, [settings || SETTINGS, plans || PLANS, sessions || SESSIONS, GYMS]);
   await p.goto(`http://127.0.0.1:${srv.address().port}/index.html`); await p.waitForTimeout(2000);
+  /* ajustes-gym-5 cambió los rangos y descansos por grupo (los prueba tests/tgym5.mjs); esta prueba sigue midiendo el motor del coach con la tabla PG_RX */
+  await p.evaluate(() => { if (typeof _pgRxG5 !== 'undefined') { pgRx = _pgRxG5; g2FillRx = _g2FillRxG5; pgSystemTxt = _pgSystemTxtG5; } });
   await p.evaluate(() => { state.settings.healthOk = 1; closeSheet(); render(); });
   p.done = async () => { await ctx.close(); srv.close(); };
   return p;

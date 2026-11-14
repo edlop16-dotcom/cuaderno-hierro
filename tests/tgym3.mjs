@@ -129,7 +129,7 @@ const HIST = [SES('h1', 3, 'bombeo', [['Extensión de Pierna', [[40, 15, 2, 40],
   ok(/optBoolean\("auto", false\)\) root\.postDelayed/.test(src) && /10000\)/.test(src), 'nativo: a los 10 s vuelve a la sesión');
   ok(/screenBrightness = on \? 0\.01f/.test(pl) && /createConfirmDeviceCredentialIntent/.test(pl) && !/DevicePolicyManager|lockNow|BIND_DEVICE_ADMIN/.test(pl + src), 'nativo: brillo de la ventana y tu patrón con la pantalla de Android; sin pedir administrador del dispositivo');
   /* Salir de la sesión después de oscurecerla: tu patrón */
-  await p.T(reEnd + 175000); await p.waitForTimeout(1300);
+  await p.T(reEnd + 60000 + rest * 1000 + 25000); await p.waitForTimeout(1300);   /* 25 s después del fin del descanso de la 3.ª serie (antes, con 90 s de descanso, 175 s) */
   ok(await dimmed(p), 'otra vez a oscuras');
   await p.evaluate(() => { window.__confirm = false; });
   await p.evaluate(() => document.getElementById('g3-dim').dispatchEvent(new Event('pointerdown', { bubbles: true })));

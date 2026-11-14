@@ -34,7 +34,7 @@ const SET = prof => { const s = Object.assign(structuredClone(OWNER_SETTINGS), {
 const ids = h => h.replace(/\b(id|for|aria-controls|data-id|data-exid)="[^"]*\d[^"]*"/g, '$1="#"')
   .replace(/class="w2-ov[^"]*"/g, 'class="w2-ov"')                                     /* capa oculta: su clase depende del instante */
   .replace(/<div id="bd-ph-list">.*?<\/div><\/div>/, '<div id="bd-ph-list"></div>');   /* fotos: carga asíncrona */
-async function screens(dir, settings) {
+async function screens(dir, settings, classic) {
   const srv = await serve(dir);
   const ctx = await browser.newContext({ viewport: { width: 410, height: 500 }, hasTouch: true });
   await ctx.route(/googleapis|gstatic|google\.com|firebase|github/, r => r.abort());
@@ -45,6 +45,7 @@ async function screens(dir, settings) {
     localStorage.setItem('cdh.settings', JSON.stringify(s)); localStorage.setItem('cdh.plans', JSON.stringify(pl)); localStorage.setItem('cdh.sessions', JSON.stringify(ss));
     localStorage.setItem('cdh.gyms', JSON.stringify(g)); localStorage.setItem('cdh.newsSeen', '"n6"'); localStorage.setItem('cdh.reminders', '[]'); }, [settings, PLANS, SESS, GYMS]);
   await p.goto(`http://127.0.0.1:${srv.address().port}/index.html`); await p.waitForTimeout(1800);
+  if (classic) await p.evaluate(() => { if (typeof _pgRxG5 !== 'undefined') pgRx = _pgRxG5; });   /* ajustes-gym-5: rangos y descansos de antes, para comparar solo la pantalla */
   const shot = () => p.evaluate(() => document.getElementById('app').innerHTML);
   const out = {};
   await p.evaluate(() => { state.settings.healthOk = 1; closeSheet(); state.tab = 'train'; render(); });
@@ -63,10 +64,14 @@ async function screens(dir, settings) {
 }
 for (const [t, prof] of [['intermedio', { exp: 2 }], ['avanzado', { exp: 3 }], ['sin experiencia', { exp: null }]]) {
   console.log('Reloj · ' + t);
-  const a = await screens(NEW, SET(prof)), b = await screens(OLD, SET(prof));
+  const a = await screens(NEW, SET(prof), true), b = await screens(OLD, SET(prof)), g = await screens(NEW, SET(prof));
   ok(a.watch && b.watch, 'las dos copias abren en modo reloj');
   for (const k of ['inicio', 'ajustes', 'perfil', 'sesion', 'serie', 'serie2']) { const x = ids(a[k]), y = ids(b[k]); let i = 0; while (i < x.length && x[i] === y[i]) i++; ok(x === y && a[k].length > 50, `${k}: igual (${a[k].length} caracteres)${x === y ? '' : ` · nueva: ${x.slice(Math.max(0, i - 40), i + 60)} · anterior: ${y.slice(Math.max(0, i - 40), i + 60)}`}`); }
-  ok(a.datos === b.datos, 'las series, rangos, descansos y RIR de la sesión son los mismos');
+  ok(a.datos === b.datos, 'con los rangos y descansos de antes: las series, rangos, descansos y RIR de la sesión son los mismos');
+  console.log('      con los de ajustes-gym-5: ' + g.datos);
+  const G = JSON.parse(g.datos);
+  ok(G[0][1] === 6 && G[0][2] === 8 && G[0][3] === 150 && g.ajustes === b.ajustes && g.perfil === b.perfil, 'con los rangos nuevos: el reloj recibe los del coach (Prensa pesado 6-8, 2 min 30 s); Ajustes y Perfil no cambian');
+  ok(!g.errs.length, 'sin errores de JS con los rangos nuevos');
   ok(!a.errs.length, 'sin errores de JS ' + a.errs.join(' | '));
 }
 await browser.close();

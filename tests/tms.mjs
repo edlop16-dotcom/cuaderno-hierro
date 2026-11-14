@@ -112,12 +112,12 @@ for (const mode of ['rutina', 'a mano empezando por el segundo']) {
     await p.T(clk += 40000); await mark(p, b, j, 2); const s2 = await snap(p);
     log.push([s1, s2]);
     ok(s1.rest == null && s1.cur === b && s1.page === b, `${mode}, vuelta ${j + 1}: tras la serie del primero, sin descanso y pasa al segundo`);
-    ok(s2.rest > 60 && s2.cur === a && s2.page === a, `${mode}, vuelta ${j + 1}: tras la serie del segundo, empieza el descanso (${s2.rest} s) y vuelve al primero`);
+    ok(s2.rest > 30 && s2.cur === a && s2.page === a, `${mode}, vuelta ${j + 1}: tras la serie del segundo, empieza el descanso (${s2.rest} s) y vuelve al primero`);
   }
   /* Sin elegir el RIR: el descanso sigue y, al terminar, vuelve al primero (también con la pantalla automática) */
   await p.evaluate(() => { state.settings.autoScr = true; });
   await p.T(clk += 40000); await mark(p, a, 2, 2); await p.T(clk += 40000); await mark(p, b, 2, null);
-  let s = await snap(p); ok(s.rest > 60 && s.page === b, mode + ': sin RIR elegido, el descanso corre y sigues en el segundo');
+  let s = await snap(p); ok(s.rest > 30 && s.page === b, mode + ': sin RIR elegido, el descanso corre y sigues en el segundo');
   await p.T(clk += 95000); await p.evaluate(() => { tick(); }); await p.waitForTimeout(900);
   s = await snap(p);
   /* como en un ejercicio normal: el siguiente pendiente hacia abajo; si no hay, el primero que falte */
@@ -130,7 +130,7 @@ for (const mode of ['rutina', 'a mano empezando por el segundo']) {
   /* Sin RIR a media superserie: al acabar el descanso vuelve a A1 */
   const p = await open({ plans: PLAN(true) }); await start(p, 'dT'); await p.waitForTimeout(500);
   await mark(p, 0, 0, 2); await mark(p, 1, 0, null);
-  let s = await snap(p); ok(s.rest > 60 && s.page === 1, 'sin RIR tras A2: descanso en marcha');
+  let s = await snap(p); ok(s.rest > 30 && s.page === 1, 'sin RIR tras A2: descanso en marcha');
   await p.T(95000); await p.evaluate(() => { tick(); }); await p.waitForTimeout(900);
   s = await snap(p); ok(s.cur === 0 && s.page === 0, 'y al terminar el descanso vuelve a A1');
   noErr(p); await p.done();
@@ -294,7 +294,7 @@ console.log('H. Usuario nuevo y reloj');
   noErr(p); await p.done();
 }
 if (BASE) {
-  const shots = async dir => { const p = await open({ watch: true, dir, plans: PLAN(true) }); const a = await p.screenshot(); await start(p, 'dT'); await p.waitForTimeout(700); const b = await p.screenshot(); const t = await p.evaluate(() => document.body.innerText); await p.evaluate(() => { markSet(0, 0, true); }); await p.waitForTimeout(500); const c = await p.screenshot(); const c1 = await p.evaluate(() => ({ cur: state.draft.cur, rest: !!state.rest })); await p.evaluate(() => { markSet(1, 0, true); }); await p.waitForTimeout(500); const d = await p.screenshot(); const c2 = await p.evaluate(() => ({ cur: state.draft.cur, rest: !!state.rest, prev: state.draft.exercises[0].prev.length })); const e = p.errs.slice(); await p.done(); return { a, b, c, d, t, c1, c2, e }; };
+  const shots = async dir => { const p = await open({ watch: true, dir, plans: PLAN(true) }); const a = await p.screenshot(); await p.evaluate(() => { if (typeof _pgRxG5 !== 'undefined') pgRx = _pgRxG5; });   /* ajustes-gym-5: rangos y descansos de antes, para comparar solo la pantalla del reloj */ await start(p, 'dT'); await p.waitForTimeout(700); const b = await p.screenshot(); const t = await p.evaluate(() => document.body.innerText); await p.evaluate(() => { markSet(0, 0, true); }); await p.waitForTimeout(500); const c = await p.screenshot(); const c1 = await p.evaluate(() => ({ cur: state.draft.cur, rest: !!state.rest })); await p.evaluate(() => { markSet(1, 0, true); }); await p.waitForTimeout(500); const d = await p.screenshot(); const c2 = await p.evaluate(() => ({ cur: state.draft.cur, rest: !!state.rest, prev: state.draft.exercises[0].prev.length })); const e = p.errs.slice(); await p.done(); return { a, b, c, d, t, c1, c2, e }; };
   const A = await shots(DIR), B = await shots(BASE);
   ok(A.a.equals(B.a), 'reloj: inicio idéntico a la versión anterior');
   ok(A.b.equals(B.b) && A.t === B.t, 'reloj: sesión idéntica (con su "Anterior" de siempre)');
