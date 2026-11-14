@@ -126,7 +126,7 @@ console.log('3. "Sube" sube el peso (y el texto coincide con la tabla)');
   const ex = await p.evaluate(n => !!libFind(n) && libFind(n).name, PM); ok(ex === PM, 'Press Militar (Mancuernas) está en el catálogo');
   const L = await p.evaluate(n => ['fuerza', 'bombeo'].map(k => { const rx = g2FillRx(n, k); const L = g2Load(n, rx, 'gym', k); return { k, w: L.w, note: L.note, r: rx.rMin + '-' + rx.rMax }; }), PM);
   L.forEach(x => console.log(`      ${x.k} (${x.r}): ${x.w} kg · ${x.note}`));
-  const F = L[0], nx = CASE.pm[0] + 2.5; ok(F.w === nx && F.note.indexOf('sube a ' + nx + ' kg') >= 0, 'Fuerza: hiciste ' + CASE.pm[0] + '×' + CASE.pm[1] + ' → sube al siguiente escalón, ' + nx + ' kg (no ' + CASE.pm[0] + ')');
+  const F = L[0], nx = CASE.pm[0] + 2.5; ok(F.w === nx && /sube (un escalón, )?a /.test(F.note) && F.note.indexOf('a ' + nx + ' kg') >= 0, 'Fuerza: hiciste ' + CASE.pm[0] + '×' + CASE.pm[1] + ' → sube al siguiente escalón, ' + nx + ' kg (no ' + CASE.pm[0] + ')');
   /* Barrido: miles de historias inventadas; si el texto dice "sube", el peso sube; si mantiene, dice "mantén" */
   const S = await p.evaluate(() => {
     const names = ['Press Militar (Mancuernas)', 'Curl Femoral Tumbado', 'Prensa 45°', 'Press Banca con Mancuernas', 'Remo Sentado con Cable', 'Curl Bíceps', 'Elevación de Talones de Pie', 'Sentadilla con Barra', 'Extensión de Pierna', 'Elevaciones Laterales'].filter(n => libFind(n));
@@ -221,7 +221,7 @@ console.log('7. Usuario nuevo y reloj');
   noErr(p); await p.done();
 }
 if (BASE) {
-  const shots = async dir => { const p = await open({ watch: true, dir }); const a = await p.screenshot(); await p.evaluate(() => { state.settings.nextS = { dB: { pick: 'plan' } }; startSession('pA', 'dB'); render(); }); await p.waitForTimeout(700); const b = await p.screenshot(); const t = await p.evaluate(() => document.body.innerText); const e = p.errs.slice(); await p.done(); return { a, b, t, e }; };
+  const shots = async dir => { const p = await open({ watch: true, dir }); const a = await p.screenshot(); await p.evaluate(() => { if (typeof _pgRxG5 !== 'undefined') pgRx = _pgRxG5; });   /* ajustes-gym-5: rangos y descansos de antes, para comparar solo la pantalla del reloj */ await p.evaluate(() => { state.settings.nextS = { dB: { pick: 'plan' } }; startSession('pA', 'dB'); render(); }); await p.waitForTimeout(700); const b = await p.screenshot(); const t = await p.evaluate(() => document.body.innerText); const e = p.errs.slice(); await p.done(); return { a, b, t, e }; };
   const A = await shots(DIR), Bs = await shots(BASE);
   ok(A.a.equals(Bs.a), 'reloj: inicio idéntico a la versión anterior');
   ok(A.b.equals(Bs.b) && A.t === Bs.t, 'reloj: sesión idéntica a la versión anterior');

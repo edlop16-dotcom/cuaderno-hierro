@@ -1,6 +1,7 @@
 // Datos ficticios. No se conectan cuentas reales.
 export const OWNER_SETTINGS = {
   "owner": 1,
+  "g5Seed": 1,
   "healthOk": 1,
   "planRev": 2,
   "gymRev": 1,

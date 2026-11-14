@@ -141,7 +141,7 @@ const ANTES = SES('antes', 7, 'bombeo', SAMPLE.map(x => [x[0], x[2].map(() => [x
   ok(!/baja/.test(said['Extensión de Pierna'] || ''), 'superserie: la caída de la Extensión no pide bajar el peso');
   const dum = await p.evaluate(() => { const s = exDraftSession(), r = agTable(Object.assign(s, { exercises: s.exercises })).find(x => x.n === 'Sentadilla con Mancuernas'); return r; });
   console.log('      Sentadilla con Mancuernas para la próxima:', JSON.stringify(dum));
-  ok(dum && (dum.w === 30 || dum.w === 32.5) && dum.reps >= 12 && dum.reps <= 15, 'Sentadilla con Mancuernas en bombeo: un peso posible (30 o 32,5) y reps del rango de bombeo (12-15)');
+  ok(dum && (dum.w === 30 || dum.w === 32.5) && dum.reps >= 10 && dum.reps <= 12, 'Sentadilla con Mancuernas en bombeo: un peso posible (30 o 32,5) y reps del rango de bombeo (10-12, grandes de pierna)');
   /* Deja que la pantalla siga sola, sin tocar nada */
   ok(await p.evaluate(() => !document.querySelector('#toast:not([hidden])') || !/Ahora conviene/.test(document.getElementById('toast').textContent)), '"Ahora conviene…" ya no flota encima del tiempo ni de Terminar');
   await p.T(t + 300000);
@@ -242,7 +242,7 @@ console.log('6. Superserie fácil de encontrar');
   ok(R.same, 'en la sesión de hoy queda la superserie');
   ok(JSON.stringify(R.plan) === JSON.stringify(['Prensa 45°', 'Extensión de Pierna+', 'Abducción de Cadera', 'Curl Femoral Tumbado']), 'y en tu rutina, juntos: ' + R.plan.join(', '));
   ok(await p.evaluate(() => /Superserie con Abducción/.test(document.querySelector('.sx-page[data-i="1"] .g2-ssb').innerText)), 'el botón dice con quién');
-  await act(p, '.sx-page[data-i="1"] .g2-ssb'); await p.waitForTimeout(150); await act(p, '[data-g2="ss-off"]'); await p.waitForTimeout(200);
+  await act(p, '.sx-page[data-i="1"] .g2-ssb'); await p.waitForTimeout(150); await act(p, '[data-g2="ss-off"]'); await p.waitForTimeout(200); await act(p, '#sheet [data-g5="split-go"][data-p="1"]'); await p.waitForTimeout(200);   /* ajustes-gym-5: pregunta solo hoy o también en la rutina */
   ok(await p.evaluate(() => !ssOf(state.draft, state.draft.exercises[1]) && !state.plans[0].days[0].exercises.some(e => e.ss)), 'y se puede quitar');
   noErr(p); await p.done();
 }
@@ -257,7 +257,7 @@ console.log('7. Rango del coach frente al de tu IA');
   const R = await p.evaluate(() => state.draft.exercises.map(e => ({ n: e.name, ia: e.ns, r: e.repsMin + '-' + e.repsMax, rx: agRxOf(state.draft, e).rMin + '-' + agRxOf(state.draft, e).rMax })));
   console.log('      ' + JSON.stringify(R));
   const ext = R.find(x => x.n === 'Extensión de Pierna'), cf = R.find(x => x.n === 'Curl Femoral Tumbado');
-  ok(ext && ext.r === '15-20' && ext.rx === '15-20', 'con tus datos: el rango del coach para bombeo (15-20), no el 12-16 de la IA');
+  ok(ext && ext.r === '12-15' && ext.rx === '12-15', 'con tus datos: el rango del coach para bombeo (12-15, aislamiento), no el 12-16 de la IA');
   ok(cf && cf.rx === '12-16', 'sin datos tuyos aquí: se respeta el de tu IA');
   noErr(p); await p.done();
 }
@@ -291,14 +291,14 @@ const stubWeek = p => p.evaluate(W => { wcVolume = () => ({ rows: Object.keys(W)
     const W = n => (B.list.find(e => e.n === n) || {}).w;
     if (kind === 'bombeo') {
       ok(W('Curl Bíceps') === 12.5, 'Curl Bíceps: el peso con el que terminaste (12,5 kg), no 17,5');
-      ok(W('Remo Sentado con Cable') >= 55 && W('Press de Banca en Smith') >= 35, 'Remo y Press Smith: no por debajo de lo que hiciste');
+      ok(W('Remo Sentado con Cable') >= 45 && W('Remo Sentado con Cable') <= 55 && W('Press de Banca en Smith') >= 35, 'Remo y Press Smith: Smith igual (35×10 ya cae en 10-12) y el remo convertido para más reps (55×9 → ' + W('Remo Sentado con Cable') + ' kg)');
       /* Ajustes del gimnasio 4: solo hay un día pesado, así que en Bombeo cada peso sale convertido de ese día y lo dice */
       ok(B.list.every(e => /lo convertí desde tu sesión pesada/.test(e.why)), 'Bombeo sin una sesión de bombeo: cada peso dice que viene convertido del día pesado');
       const g = B.list.filter(e => e.t === 'comp').map(e => e.r), i = B.list.filter(e => e.t !== 'comp' && e.t !== 'cardio').map(e => e.r);
-      ok(g.every(r => r === '8-10') && i.every(r => r === '12-15'), 'Bombeo: grandes 8-10 y aislados 12-15 (la parte alta de 6-10 y 10-15)');
+      ok(g.every(r => r === '10-12') && B.list.filter(e => e.t !== 'comp' && e.t !== 'cardio').every(e => e.r === (/talones|lateral/i.test(e.n) ? '15-20' : '12-15')), 'Bombeo: grandes 10-12, aislados 12-15 y pantorrillas y laterales 15-20 (ajustes-gym-5)');
     } else {
       const g = B.list.filter(e => e.t === 'comp').map(e => e.r), i = B.list.filter(e => e.t !== 'comp' && e.t !== 'cardio').map(e => e.r);
-      ok(g.every(r => r === '6-8') && i.every(r => r === '10-12'), 'Fuerza: grandes 6-8 y aislados 10-12 (la parte baja)');
+      ok(B.list.filter(e => e.t === 'comp').every(e => e.r === (['cuad', 'isq', 'glu', 'pant', 'adu'].indexOf(e.z) >= 0 ? '6-8' : '6-10')) && B.list.filter(e => e.t !== 'comp' && e.t !== 'cardio').every(e => e.r === (/talones|lateral/i.test(e.n) ? '10-15' : '8-12')), 'Fuerza: grandes de pierna 6-8, de torso 6-10, aislados 8-12 y pantorrillas y laterales 10-15 (ajustes-gym-5)');
       ok(W('Curl Femoral Tumbado') > 40, 'Curl Femoral: hiciste 40×12, en tope del rango: sube');
     }
   }
@@ -306,7 +306,7 @@ const stubWeek = p => p.evaluate(W => { wcVolume = () => ({ rows: Object.keys(W)
   await p.evaluate(() => { state.settings.prof.mins = 30; wc.kind = 'bombeo'; wc.where = 'gym'; wcFillSheet(); }); await p.waitForTimeout(200);
   const sh = await p.evaluate(() => document.getElementById('sheet').innerText);
   ok(/Quedan sin cubrir/.test(sh) && /No es grave/.test(sh), 'si el tiempo no alcanza, dice cuáles quedan y que no es grave');
-  ok(/Te faltan/.test(sh) && /Gimnasio de hoy/.test(sh) && /grandes 8-10, aislados 12-15/.test(sh), 'la hoja muestra la razón, el lugar y el rango que da cada tipo');
+  ok(/Te faltan/.test(sh) && /Gimnasio de hoy/.test(sh) && /grandes 10-12, aislados 12-15/.test(sh), 'la hoja muestra la razón, el lugar y el rango que da cada tipo');
   /* Al empezar: los mismos pesos, reps y RIR que viste */
   await p.evaluate(() => { state.settings.prof.mins = 75; wc.kind = 'bombeo'; wcFillSheet(); }); await p.waitForTimeout(150);
   const L = await p.evaluate(() => wc.list.map(e => [e.name, e.weight, e.g2Reps]));

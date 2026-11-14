@@ -169,7 +169,8 @@ function pgStep(name, w) {
   if (fam === 'maq' || fam === 'polea') return Math.max(increment({ type: typeOf(name) }, w), legs ? (lb ? 10 : 5) : 0);   /* el siguiente disco de la máquina */
   return legs ? (lb ? 10 : 5) : (lb ? 5 : 2.5);
 }
-const pgRound = (name, w, down) => { const i = pgInc(name, w); return Math.max(0, (down ? Math.floor(w / i + 1e-9) : Math.round(w / i)) * i); };
+/* Función (no constante): ajustesgym5.js la envuelve para usar solo los pesos que hay en cada gimnasio */
+function pgRound(name, w, down) { const i = pgInc(name, w); return Math.max(0, (down ? Math.floor(w / i + 1e-9) : Math.round(w / i)) * i); }
 /* Tope de subida por sesión, también al cambiar de rango: piernas +10 % (o +10 kg si es menor), tren superior +5 %
    (sobre la carga total, con la barra); nunca menos que un escalón */
 function pgUpMax(name, from) {
@@ -298,7 +299,7 @@ function pgGymRow(name) {
 /* Semana de descarga propuesta y aceptada (settings.pgDl = lunes de esa semana) */
 const pgDlNow = () => state.settings.pgDl === wkKey(new Date());
 /* ---------- Peso máximo por ejercicio y gimnasio (settings.exMax[gymId][clave] = kg) ---------- */
-const pgMaxOf = (name, gymId) => +(((state.settings.exMax || {})[gymId] || {})[exHKey(name)]) || 0;
+function pgMaxOf(name, gymId) { return +(((state.settings.exMax || {})[gymId] || {})[exHKey(name)]) || 0; }
 /* Al llegar al máximo: más reps (hasta 30) → bajada lenta → pausa abajo → una serie más; cambia de método tras dos
    sesiones seguidas sin mejorar (las reps de la 1.ª serie en el primero, el total de reps en los demás) */
 const PG_CAP_M = ['más reps (hasta 30)', 'bajada lenta de 3-4 s en cada rep', 'pausa de 1-2 s abajo en cada rep', 'una serie más'];
@@ -785,7 +786,7 @@ render = function () {
     if (at && !sx.querySelector('.pg-late')) {
       const L = pgLate(d);
       const html = (L.late >= 300 && L.tips.length ? `<div class="pg-late">${ic('timer', 16)}<div class="grow"><b>Vas ${pgMin(L.late)} min atrasado</b> (≈ ${pgMin(L.real + (L.est - pgExpected(d)))} de ${pgAvail()} min). Para terminar a tiempo: ${L.tips.map(t => esc(t.t)).join('; ')}.${L.tips.some(t => t.k === 'rest') ? ` <button type="button" class="btn small" data-pg="late-rest">Acortar descansos</button>` : ''}</div></div>` : '')
-        + (L.restWarn ? `<div class="pg-late rest">${ic('timer', 16)}<div class="grow">Tus descansos van en <b>${pgRestTxt(Math.round(L.restWarn.a / 5) * 5)}</b> de media; lo recomendado es ${pgRestTxt(Math.round(L.restWarn.b / 5) * 5)}.</div></div>` : '');
+        + (L.restWarn ? `<div class="pg-late rest">${ic('timer', 16)}<div class="grow">Tus descansos van en <b>${pgRestTxt(Math.round(L.restWarn.a / 5) * 5)}</b> de media; lo recomendado para estos ejercicios es ${pgRestTxt(Math.round(L.restWarn.b / 5) * 5)}.</div></div>` : '');
       if (html) at.insertAdjacentHTML('afterend', html);
     }
     return r;

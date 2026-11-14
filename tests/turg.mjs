@@ -241,7 +241,7 @@ console.log('5. Una sesión anterior con 0 repeticiones');
 /* ---------- 6. Reloj idéntico a la versión anterior ---------- */
 if (BASE) {
   console.log('6. Reloj frente a la versión anterior');
-  const shots = async dir => { const p = await open({ watch: true, dir }); const a = await p.screenshot(); await p.evaluate(() => { state.settings.nextS = { dP: { pick: 'plan' } }; startSession('pA', 'dP'); render(); }); await p.waitForTimeout(700); const b = await p.screenshot(); const t = await p.evaluate(() => document.body.innerText); await p.evaluate(() => { markSet(0, 0, true); }); await p.waitForTimeout(500); const c = await p.screenshot(); const e = p.errs.slice(); await p.done(); return { a, b, c, t, e }; };
+  const shots = async dir => { const p = await open({ watch: true, dir }); const a = await p.screenshot(); await p.evaluate(() => { if (typeof _pgRxG5 !== 'undefined') pgRx = _pgRxG5; });   /* ajustes-gym-5: rangos y descansos de antes, para comparar solo la pantalla del reloj */ await p.evaluate(() => { state.settings.nextS = { dP: { pick: 'plan' } }; startSession('pA', 'dP'); render(); }); await p.waitForTimeout(700); const b = await p.screenshot(); const t = await p.evaluate(() => document.body.innerText); await p.evaluate(() => { markSet(0, 0, true); }); await p.waitForTimeout(500); const c = await p.screenshot(); const e = p.errs.slice(); await p.done(); return { a, b, c, t, e }; };
   const A = await shots(DIR), B = await shots(BASE);
   ok(A.a.equals(B.a), 'reloj: inicio idéntico');
   ok(A.b.equals(B.b) && A.t === B.t, 'reloj: sesión idéntica');

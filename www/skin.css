@@ -2467,3 +2467,13 @@ body:not(.watch) .rp-rk { display: flex; align-items: center; gap: 4px; flex-wra
 body:not(.watch) .rp-rk .qk-chip { margin: 0; min-height: 36px; }
 body:not(.watch) .rp-list { flex-shrink: 0; }
 body:not(.watch) .rp-cref { font-size: 12.5px; margin: 6px 0 2px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; flex-shrink: 0; }
+
+/* Ajustes del gimnasio 5: quitar, separar y pesos de cada gimnasio */
+body:not(.watch) .g5-warn { display: flex; gap: 8px; align-items: flex-start; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--bad); color: var(--fg); font-size: 13.5px; flex-shrink: 0; }
+body:not(.watch) .g5-warn .ic { color: var(--bad); flex-shrink: 0; margin-top: 1px; }
+body:not(.watch) .g5-sheet .btn { flex-shrink: 0; min-height: 48px; }
+body:not(.watch) .g5-in { width: 100%; min-height: 44px; flex-shrink: 0; }
+body:not(.watch) .g5-err { color: var(--bad); font-size: 13px; flex-shrink: 0; }
+body:not(.watch) .g5-err:empty { display: none; }
+body:not(.watch) .g5-busy { margin-top: 6px; }
+.w2-ms.g5w-warn { color: #ffb86b; font-weight: 700; }

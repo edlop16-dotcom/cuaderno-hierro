@@ -6,7 +6,8 @@
    ========================================================================== */
 const PLATES = [20, 15, 10, 5, 2.5];
 const PLATE_LOADED = /prensa|hack|remo en t|hip thrust|pantorrilla en prensa|sentadilla con barra|peso muerto|press banca .*barra|press militar con barra|remo con barra|curl con barra|press frances/;
-const loadsPlates = e => !!(e && (e.bar || PLATE_LOADED.test(normName(e.name))));
+/* Con mancuernas o kettlebell nunca son discos por lado: el peso es el de cada mancuerna (ajustes del gimnasio 5) */
+const loadsPlates = e => !!(e && (e.bar || PLATE_LOADED.test(normName(e.name))) && !(typeof pgFam === 'function' && /^(manc|kb)$/.test(pgFam(e.name))));
 
 /* Discos por lado para un total de discos (lo que anotas) */
 function platesPerSide(total) {
