@@ -187,7 +187,7 @@ console.log('6. "c/u" en pantalla');
   await p.evaluate(() => { cuSheet(); document.querySelector('#sheet [data-cu="go"]').click(); startSession('pA', 'd1'); render(); }); await p.waitForTimeout(500);
   const D = await p.evaluate(([PJ, RM, PR]) => { const d = state.draft, pg = n => document.querySelector(`#sx-pager .sx-page[data-i="${d.exercises.findIndex(e => e.name === n)}"] .card.ex`), hd = c => c.querySelectorAll(':scope > .sets > .h')[2].textContent;
     const a = pg(PJ), b = pg(RM), c = pg(PR); return { a: hd(a), prev: (a.querySelector('.sets .prev small') || {}).textContent, hint: !!a.querySelector('.cu-hint'), b: hd(b), bh: !!b.querySelector('.cu-hint'), c: hd(c), coach: [...a.querySelectorAll('.coach, .sugg, .g2-rec')].map(x => x.textContent).join(' ') }; }, [PJ, RM, PR]);
-  ok(D.a === 'Kg c/u' && /^c\/u × 15/.test(D.prev || '') && D.hint, 'sesión, Pájaros: "Kg c/u", "Anterior" con c/u y la nota "Anota el peso de cada mancuerna"');
+  ok(/^kg c\/u/i.test(D.a) && /^c\/u × 15/.test(D.prev || '') && D.hint, 'sesión, Pájaros: "Kg c/u", "Anterior" con c/u y la nota "Anota el peso de cada mancuerna"');
   ok(/kg c\/u/.test(D.coach), 'el coach de la tarjeta dice "kg c/u"');
   ok(D.b === 'Kg' && !D.bh && D.c === 'Kg', 'remo a una mano y prensa: sin "c/u"');
   const T = await p.evaluate(PJ => { const d = state.draft, i = d.exercises.findIndex(e => e.name === PJ), e = d.exercises[i]; e.log[0].w = 2.5; e.log[0].r = 20; e.log[0].rir = 3; e.log[0].done = true; e.log[0].at = Date.now(); return (agTip(d, i) || {}).t; }, PJ);
@@ -203,7 +203,7 @@ console.log('7. Usuario nuevo');
   const p = await open({ first: true });
   await p.evaluate(() => { state.settings.onb = 1; closeSheet(); const o = document.getElementById('onb'); if (o) o.remove(); const P = activePlan(); P.days[0].exercises.unshift({ id: 'nx1', name: 'Elevaciones Laterales', type: 'Hombros', weight: 0, sets: 2, repsMin: 12, repsMax: 15, rest: 60 }); startSession(P.id, P.days[0].id); render(); }); await p.waitForTimeout(500);
   const N = await p.evaluate(() => { const c = document.querySelector('#sx-pager .sx-page[data-i="0"] .card.ex'); return { h: c.querySelectorAll(':scope > .sets > .h')[2].textContent, hint: (c.querySelector('.cu-hint') || {}).textContent || '', pend: cuPending(), owner: !!state.settings.owner }; });
-  ok(N.h === 'Kg c/u' && /cada mancuerna/.test(N.hint) && !N.pend && !N.owner, 'usuario nuevo: "Kg c/u" y "Anota el peso de cada mancuerna"; nada que convertir');
+  ok(/^kg c\/u/i.test(N.h) && /cada mancuerna/.test(N.hint) && !N.pend && !N.owner, 'usuario nuevo: "Kg c/u" y "Anota el peso de cada mancuerna"; nada que convertir');
   const V = await p.evaluate(() => { const d = state.draft; d.exercises[0].log.forEach(s => { s.w = 5; s.r = 12; s.done = true; s.at = Date.now(); }); const id = d.id; finishSession(); closeSheet(); const s = state.sessions.find(x => x.id === id); return { cuv: !!s.cuv, vol: sessStats(s).vol, card: !!document.querySelector('#app .cu-card') }; });
   ok(V.cuv && V.vol === 5 * 2 * 12 * 2 && !V.card, 'su sesión queda por mancuerna y el volumen cuenta las dos (5 c/u × 2 × 12 × 2 series = 240 kg); sin tarjeta de conversión');
   noErr(p); await p.done();
@@ -224,7 +224,9 @@ console.log('8. Reloj');
     const shot = async dir => { const q = await open({ watch: true, dir }); const a = await q.evaluate(() => document.getElementById('app').innerHTML); await q.evaluate(() => { const s = state.sessions; s.forEach(x => x.exercises.forEach(e => { if (/Pájaros|Press Inclinado/.test(e.name)) e.sets.forEach(t => { t.w = t.w / 2; }); x.cuv = 1; })); state.settings.cuConv = { v: 1, at: Date.now(), two: [exHKey('Pájaros (Deltoide Posterior)'), exHKey('Press Inclinado con Mancuernas')], one: [] }; startSession('pA', 'd1'); state.draft.cur = 0; render(); }); await q.waitForTimeout(400); const b = await q.evaluate(() => document.getElementById('app').innerHTML); const e = q.errs.slice(); await q.done(); return { a, b, e }; };
     const A = await shot(DIR), B = await shot(BASE);
     ok(A.a === B.a, 'reloj: inicio idéntico a la versión anterior');
-    { const x = A.b.replace('<small>kg c/u</small>', '<small>kg</small>').replace('<small>kg c/u × ', '<small>kg × '); let i = 0; while (i < x.length && x[i] === B.b[i]) i++; ok(x === B.b && A.b !== B.b, 'reloj: la serie es idéntica salvo "kg c/u"' + (x === B.b ? '' : ' · nueva: ' + x.slice(Math.max(0, i - 60), i + 80) + ' · anterior: ' + B.b.slice(Math.max(0, i - 60), i + 80))); }
+    /* Se quita "c/u" en las dos copias: la anterior puede ser de antes (sin c/u) o la v1.0.68 (con c/u) */
+    const nc = h => h.replace('<small>kg c/u</small>', '<small>kg</small>').replace('<small>kg c/u × ', '<small>kg × '); B.b = nc(B.b);
+    { const x = nc(A.b); let i = 0; while (i < x.length && x[i] === B.b[i]) i++; ok(x === B.b && /kg c\/u/.test(A.b), 'reloj: la serie es idéntica salvo "kg c/u"' + (x === B.b ? '' : ' · nueva: ' + x.slice(Math.max(0, i - 60), i + 80) + ' · anterior: ' + B.b.slice(Math.max(0, i - 60), i + 80))); }
     ok(!A.e.length, 'reloj: sin errores de JS');
   }
 }
