@@ -481,6 +481,14 @@ Solo el dueño (`finOwner()`: owner, no público, no reloj). Acceso: tarjeta "Mi
   - Importar gastos antiguos (`finCsvParse`, vista 'imp'): pegar texto/CSV o abrir archivo; separador coma, punto y coma, tabulación o "|"; encabezado opcional; fechas AAAA-MM-DD, DD/MM/AAAA, DD-MM-AAAA, DD/MM/AA; vista previa (errores y repetidos no se guardan); categorías nuevas: crear o asignar a una existente.
   - Pruebas: tests/tfin3.mjs (desarma el .xlsx: CRC, XML bien formado, hojas, fórmulas, listas y formato condicional).
 
+## Importar rutinas: nombre del plan, superseries y Pesado/Bombeo (rimport.js, rama importar-plan)
+- **Nombre del plan** (`riPlanName`): con "Plan nuevo" sale la casilla "Nombre del plan" (`#ri-pn`, `F.pname`); la línea "Plan: <nombre>" del texto lo propone (`riParse.plan`, no se lee como día). Vacío = "Rutinas de <IA>" (Claude por defecto). Si ya existe en el gimnasio, " 2", " 3"… (nunca reemplaza ni borra).
+- **Superseries**: columna "Superserie"/"SS" con una letra (`col.ss` → `e.ss`); en la vista previa se ve "Superserie A" con "Quitar". Al guardar, los de la misma letra del día quedan seguidos y unidos con `ss: 1` en todos menos el último (`riSsOrder`), igual que "Unir con el siguiente". Sin columna, como antes.
+- **Pesado o Bombeo** (`riKindOf`): si el nombre de la rutina (o su línea de día) dice Pesado/Pesada/Fuerza → fuerza; Bombeo → bombeo; si no, el "(FUERZA)"/"(BOMBEO)" de la línea del día y, al final, el promedio de reps.
+- **Tus nombres exactos** (`riOwn`): antes que el catálogo, tus ejercicios propios, los nombres de tu historial y de tus rutinas (así conservan su historial y no se duplican).
+- El peso del texto se guarda tal cual (mancuernas: kg c/u). El RIR por serie sigue igual. "Copiar formato para tu IA" usa `riFormat` (el de `aixFormat` más la línea "Plan:", la columna Superserie y el peso c/u); el formato de las exportaciones no cambia.
+- Pruebas: tests/tip.mjs (dueño, usuario nuevo y reloj entrenando lo importado; inicio del reloj igual a la versión anterior).
+
 ## Importar rutinas de otra IA (rimport.js, 18-oct-2026)
 - "+ Nueva rutina" (teléfono) pregunta: **Crear desde cero** (`rtNewSheet` de siempre) o **Importar rutinas** (`riPaste`: pegar texto o subir .txt/.md). El reloj no cambia (no se intercepta `rt-new`).
 - `riParse`: cada día es una rutina (encabezados "Día 1", "Day 2", lunes…domingo / monday…, Push/Pull/Legs, Pierna, Torso…, títulos markdown o en negrita). Lee listas ("Press banca 4x6-8 RIR 2, descanso 3 min", "4 series x 8-10 reps", "@ RPE 8" → RIR 2), tablas `| Ejercicio | Series | Reps | RIR | Descanso |` (sin columna Series: una fila por serie y se juntan) y peso en kg/lb. Salta Calentamiento, Notas, Consejos, Cardio… Sin día en el texto: Lun/Mié/Vie… según cuántas (`RI_SPREAD`).
