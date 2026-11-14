@@ -60,6 +60,9 @@ async function pixDiff(a, b) {
   await p.close(); return n;
 }
 const tap = async (p, sel) => { await p.locator(sel).first().click(); await p.waitForTimeout(120); };
+/* La búsqueda espera 100 ms a que dejes de escribir y luego busca entre 400+ ejercicios: con la PC cargada, una espera fija
+   de 150 ms a veces miraba la lista antes de actualizarse. Se hace la búsqueda en el momento, como al terminar esa espera */
+const pkSettle = p => p.evaluate(() => { clearTimeout(luT); luPkRefresh(true); });
 const fill = async (p, i, j, f, v) => { const l = p.locator(`#sheet input[data-se-i="${i}"][data-se-j="${j}"][data-se-f="${f}"]`); await l.fill(String(v)); };
 const sheetText = p => p.evaluate(() => document.getElementById('sheet').innerText);
 /* Sesión de prueba inventada para cubrir correcciones de series. */
@@ -110,14 +113,14 @@ console.log('A. Dueño: corregir la sesión del sábado 17-oct');
   await tap(p, '#sheet .se-open[data-id="wcfill-test-1017"]');
   await tap(p, '#sheet [data-se="swap"][data-i="0"]');
   ok((await sheetText(p)).includes('Cambiar ejercicio'), 'Cambiar ejercicio abre la biblioteca');
-  await p.locator('#pk-q').fill('gemelos en prensa'); await p.waitForTimeout(150);
+  await p.locator('#pk-q').fill('gemelos en prensa'); await pkSettle(p);
   ok(await p.locator('#pk-list [data-act="pk-tog"][data-name="Elevación de Talones en Prensa"]').count() === 1, 'buscar "gemelos en prensa" encuentra Elevación de Talones en Prensa');
-  await p.locator('#pk-q').fill('talones prensa'); await p.waitForTimeout(150);
+  await p.locator('#pk-q').fill('talones prensa'); await pkSettle(p);
   await tap(p, '#pk-list [data-act="pk-tog"][data-name="Elevación de Talones en Prensa"]');
   ok((await sheetText(p)).includes('Elevación de Talones en Prensa') && (await p.locator('#sheet .se-sheet').count()) === 1, 'vuelve a la edición con el ejercicio cambiado y sus 3 series');
   for (let j = 0; j < 3; j++) { await fill(p, 0, j, 'w', 72.5); await fill(p, 0, j, 'r', 23); }
   await tap(p, '#sheet [data-se="swap"][data-i="1"]');
-  await p.locator('#pk-q').fill('barra v'); await p.waitForTimeout(150);
+  await p.locator('#pk-q').fill('barra v'); await pkSettle(p);
   ok(await p.locator('#pk-list [data-act="pk-tog"][data-name="Extensión de Tríceps con Barra V en Polea"]').count() === 1, 'buscar "barra v" encuentra Extensión de Tríceps con Barra V en Polea');
   await tap(p, '#pk-list [data-act="pk-tog"][data-name="Extensión de Tríceps con Barra V en Polea"]');
   for (let j = 0; j < 3; j++) { await fill(p, 1, j, 'w', 23); await fill(p, 1, j, 'r', 15); }
@@ -127,7 +130,7 @@ console.log('A. Dueño: corregir la sesión del sábado 17-oct');
   await tap(p, '#sheet [data-se="del-ex"][data-i="4"]');
   /* Agregar Elevación de Talones Sentado y subirlo al 2.º lugar */
   await tap(p, '#sheet [data-se="add-ex"]');
-  await p.locator('#pk-q').fill('talones sentado'); await p.waitForTimeout(150);
+  await p.locator('#pk-q').fill('talones sentado'); await pkSettle(p);
   await tap(p, '#pk-list [data-act="pk-tog"][data-name="Elevación de Talones Sentado"]');
   await tap(p, '#sheet [data-act="pk-add"]');
   ok(await p.locator('#sheet [data-se-ex]').count() === 5, 'se agregó con una serie');
@@ -214,9 +217,9 @@ console.log('C. Usuario nuevo');
   ok(await p.locator('#sheet .se-open').count() === 1, 'también tiene "Editar sesión"');
   await tap(p, '#sheet .se-open');
   await tap(p, '#sheet [data-se="add-ex"]');
-  await p.locator('#pk-q').fill('gemelos en prensa'); await p.waitForTimeout(150);
+  await p.locator('#pk-q').fill('gemelos en prensa'); await pkSettle(p);
   await tap(p, '#pk-list [data-act="pk-tog"][data-name="Elevación de Talones en Prensa"]');
-  await p.locator('#pk-q').fill('V-bar pushdown'); await p.waitForTimeout(150);
+  await p.locator('#pk-q').fill('V-bar pushdown'); await pkSettle(p);
   ok(await p.locator('#pk-list [data-act="pk-tog"]').count() >= 1, 'el alias en inglés "V-bar pushdown" encuentra la barra V');
   await tap(p, '#pk-list [data-act="pk-tog"][data-name="Extensión de Tríceps con Barra V en Polea"]');
   await tap(p, '#sheet [data-act="pk-add"]');

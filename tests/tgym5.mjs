@@ -295,7 +295,7 @@ console.log('8. Reloj: quitar, separar y unir desde "⋯ Más"');
     const shots = async dir => { const q = await open({ watch: true, dir, settings: SET({ g5Seed: 1 }) }); const a = await q.screenshot(); await q.evaluate(() => { startSession('pA', 'd1'); state.draft.cur = 4; w2.menu = 'main'; render(); }); await q.waitForTimeout(300); const m = await q.evaluate(() => document.querySelector('.w2-menu').innerHTML); const e = q.errs.slice(); await q.done(); return { a, m, e }; };
     const A = await shots(DIR), Bs = await shots(BASE);
     ok(A.a.equals(Bs.a), 'reloj: el inicio es idéntico a la versión anterior');
-    ok(strip(A.m) === Bs.m, 'reloj: "⋯ Más" es el de antes más los botones nuevos');
+    ok(strip(A.m) === strip(Bs.m), 'reloj: "⋯ Más" es el de antes más los botones nuevos');
     ok(!A.e.length, 'reloj: sin errores de JS');
   }
 }

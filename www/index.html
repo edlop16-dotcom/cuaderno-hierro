@@ -1369,7 +1369,7 @@ function vProgress() {
   const now = Date.now(); const ws = weekStart();
   const last30 = state.sessions.filter(s => now - new Date(s.date) < 30 * 864e5);
   const week = state.sessions.filter(s => new Date(s.date) >= ws);
-  const vol = week.reduce((a, s) => a + s.exercises.reduce((b, e) => b + e.sets.reduce((c, x) => c + x.w * x.r, 0), 0), 0);
+  const vol = week.reduce((a, s) => a + s.exercises.reduce((b, e) => b + e.sets.reduce((c, x) => c + x.w * x.r, 0) * (typeof cuMul === 'function' ? cuMul(e.name, s) : 1), 0), 0);
   const setsBy = {}; TYPES.forEach(t => setsBy[t] = 0);
   week.forEach(s => s.exercises.forEach(e => setsBy[e.type] = (setsBy[e.type] || 0) + e.sets.length));
   const nk = {}; state.sessions.filter(inGf).forEach(s => s.exercises.forEach(e => { const k = exHKey(e.name); if (!nk[k]) nk[k] = exClean(e.name); }));
@@ -1478,7 +1478,7 @@ function vHistory() {
   return `${header('Historial', list.length + ' sesiones')}
   ${gfBar()}
   ${list.length ? '' : `<div class="card empty"><div>No hay sesiones en ${esc(gymName(gf()))} todavía.</div></div>`}
-  ${list.map(s => { const vol = s.exercises.reduce((a, e) => a + e.sets.reduce((b, x) => b + x.w * x.r, 0), 0); const ns = s.exercises.reduce((a, e) => a + e.sets.length, 0); const k = sKind(s);
+  ${list.map(s => { const vol = s.exercises.reduce((a, e) => a + e.sets.reduce((b, x) => b + x.w * x.r, 0) * (typeof cuMul === 'function' ? cuMul(e.name, s) : 1), 0); const ns = s.exercises.reduce((a, e) => a + e.sets.length, 0); const k = sKind(s);
     return `<details class="card hist"><summary><div class="grow"><div class="label">${fmtDate(s.date, true)}</div><div style="font-weight:700">${esc(s.dayName)}</div>
       <div class="row" style="gap:6px;margin-top:3px;flex-wrap:wrap"><span class="gtag">${esc(s.gymName || gymName(sGym(s)))}</span><span class="kind k-${k}">${KINDS[k]}</span>${s.source ? `<span class="gtag">${esc(s.source)}</span>` : ''}</div>
       <div class="muted num" style="font-size:12.5px;margin-top:3px">${ns} series · ${fmtKg(vol)} kg · ${Math.round(s.durationSec / 60)} min</div></div>
@@ -1854,5 +1854,6 @@ cloud.init();
 <script src="videos.js"></script>
 <script src="repetir.js"></script>
 <script src="ajustesgym5.js"></script>
+<script src="mancuernas.js"></script>
 </body>
 </html>

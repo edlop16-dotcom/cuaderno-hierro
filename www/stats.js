@@ -54,7 +54,7 @@ function exPoints(name, gym) {
   return state.sessions.slice().reverse().filter(s => gym === 'all' || sGym(s) === gym).map(s => {
     const e = exIn(s, name); if (!e || !e.sets.length) return null;
     const top = e.sets.reduce((a, x) => x.w > a.w || (x.w === a.w && x.r > a.r) ? x : a, e.sets[0]);
-    return { s, d: s.date, gym: sGym(s), sets: e.sets, top, e: Math.max.apply(null, e.sets.map(x => e1rm(x.w, x.r))), vol: e.sets.reduce((a, x) => a + x.w * x.r, 0) };
+    return { s, d: s.date, gym: sGym(s), sets: e.sets, top, e: Math.max.apply(null, e.sets.map(x => e1rm(x.w, x.r))), vol: e.sets.reduce((a, x) => a + x.w * x.r, 0) * (typeof cuMul === 'function' ? cuMul(name, s) : 1) };
   }).filter(Boolean);
 }
 function histWins(pts, name) {   // escudo por sesión comparando con la anterior en el mismo gimnasio

@@ -26,7 +26,8 @@ let fail = 0;
 const ok = (c, msg) => { if (c) console.log('  ok  ', msg); else { fail++; console.log('  FALLA', msg); } };
 const browser = await chromium.launch({ channel: process.env.PW_CHANNEL === 'chromium' ? undefined : 'msedge', headless: process.env.PW_CHANNEL === 'chromium', args: ['--headless=new'] });
 /* I1: la tarjeta "Exportar semana" de Hoy (lunes) es nueva; ya vista, la pantalla se compara igual que antes */
-const OWNER = Object.assign({}, OWNER_SETTINGS, { wxSeen: '2026-10-12' });
+/* cuConv: la conversión de mancuernas ya hecha (mancuernas.js), para comparar Hoy sin su tarjeta con la versión anterior */
+const OWNER = Object.assign({}, OWNER_SETTINGS, { wxSeen: '2026-10-12', cuConv: { v: 1, at: 1, two: [], one: [] } });
 /* Se ocultan en las dos versiones: la anterior puede tenerlos ya */
 const HIDE_NEW = '.hab-omb,.pg-est,.pg-dl,.pg-why{display:none!important}';
 

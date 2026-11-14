@@ -27,7 +27,7 @@ function badgeStats() {
   ss.forEach(s => {
     if (new Date(s.date).getHours() < 8) early++;
     s.exercises.forEach(e => {
-      let top = 0; e.sets.forEach(x => { vol += (+x.w || 0) * (+x.r || 0); top = Math.max(top, e1rm(+x.w || 0, +x.r || 0)); });
+      let top = 0; const cm = (typeof cuMul === 'function' ? cuMul(e.name, s) : 1); e.sets.forEach(x => { vol += (+x.w || 0) * (+x.r || 0) * cm; top = Math.max(top, e1rm(+x.w || 0, +x.r || 0)); });
       const k = exHKey(e.name); if (best[k] && top > best[k] * 1.001) prs++;
       best[k] = Math.max(best[k] || 0, top);
     });

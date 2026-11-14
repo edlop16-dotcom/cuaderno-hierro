@@ -60,7 +60,8 @@ async function pixDiff(a, b) {
 }
 const tap = async (p, sel) => { await p.locator(sel).first().click(); await p.waitForTimeout(150); };
 const lib = p => p.evaluate(() => ({ heads: [...document.querySelectorAll('#lu-list .lu-gh')].map(h => h.innerText.replace(/\s+/g, ' ')), cards: [...document.querySelectorAll('#lu-list .exc .nm')].map(n => n.textContent), svgs: document.querySelectorAll('#app svg.fig-svg').length }));
-const typeQ = async (p, sel, v) => { await p.locator(sel).fill(v); await p.waitForTimeout(400); };
+/* Sin esperas fijas: la búsqueda se hace en el momento, como al terminar su espera de 100-120 ms (con la PC cargada, 400 ms a veces no bastaban) */
+const typeQ = async (p, sel, v) => { await p.locator(sel).fill(v); await p.evaluate(s => { clearTimeout(luT); if (s === '#pk-q') luPkRefresh(true); else if (s === '#guide-q') luGuideRefresh(); }, sel); await p.waitForTimeout(50); };
 
 console.log('A. Dueño: Biblioteca');
 {

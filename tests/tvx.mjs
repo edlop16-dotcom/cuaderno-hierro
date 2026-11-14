@@ -183,7 +183,8 @@ console.log('3. Reloj');
     /* "Cómo se hace" del reloj: la técnica de siempre, sin "Mis videos" (pedido del usuario) */
     const how = async dir => { const q = await open({ watch: true, dir }); const r = await q.evaluate(async () => { await VID.add({ id: 'w1', ex: exKey('Prensa 45°'), name: 'p.mp4', type: 'video/mp4', size: 100, blob: new Blob(['x'], { type: 'video/mp4' }), added: 1 }); howSheet('Prensa 45°'); await new Promise(z => setTimeout(z, 500)); const sh = document.getElementById('sheet'), v = document.getElementById('my-vids'), had = !!v || /Mis videos/i.test(sh.innerText), video = sh.querySelectorAll('video').length; if (v) v.parentNode.remove(); return { vids: had, video, txt: sh.innerText }; }); const e = q.errs.slice(); await q.done(); return Object.assign(r, { e }); };
     const hA = await how(DIR), hB = await how(BASE);
-    ok(!hA.vids && !hA.video && hB.vids === true && /Paso a paso/i.test(hA.txt), 'reloj: "Cómo se hace" ya no muestra "Mis videos" (la versión anterior sí), y conserva su técnica');
+    /* Desde la v1.0.65 el reloj ya no muestra videos: se compara con la versión anterior, que tampoco los muestra */
+    ok(!hA.vids && !hA.video && !hB.vids && hA.txt === hB.txt && /Paso a paso/i.test(hA.txt), 'reloj: "Cómo se hace" sin "Mis videos", con su técnica e igual a la versión anterior');
     ok(hA.txt === hB.txt, 'reloj: el resto de "Cómo se hace" igual que antes');
     ok(!hA.e.length, 'reloj: sin errores al abrir "Cómo se hace"');
     ok(!A.e.length, 'reloj: sin errores de JS');
