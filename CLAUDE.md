@@ -2,7 +2,7 @@
 
 ## Reglas vigentes
 - Los cambios grandes se hacen en una rama aparte y pasan a beta solo con aprobación explícita del usuario. Mostrar el plan antes de programar y los resultados y diff antes de integrar.
-- Nunca compilar, publicar, ejecutar workflows manuales ni tocar main sin la instrucción explícita «compila» en la conversación actual. Próxima versión: v1.0.72.
+- Nunca compilar, publicar, ejecutar workflows manuales ni tocar main sin la instrucción explícita «compila» en la conversación actual. Próxima versión: v1.0.73.
 - Todos los commits que deban evitar una compilación automática llevan `[skip ci]`. Revisar los disparadores de .github/workflows antes de subir cualquier rama.
 - No modificar el keystore ni escribir su contraseña en ningún archivo. Mantener identificadores técnicos de compatibilidad.
 - Nunca borrar ni cambiar datos guardados para limpiar el repositorio. No reactivar migraciones personales retiradas. Las notas históricas de migraciones describen implementaciones anteriores; no autorizan reinstalarlas.
@@ -32,8 +32,8 @@ App de entrenamiento, en español. Celular Android y reloj M99 Pro+ (WebView ant
 > - El 15-oct-2026 se rompió esta regla: se compiló y publicó la v1.0.41 sin su "compila".
 
 ## Versión
-- **Versión compilada actual:** v1.0.71 (14-nov-2026, `main` = 5d77d98): Mis finanzas en Hoy con gasto rápido. Novedades sigue en n6. Es una versión para las pruebas del usuario: `CONTACT_EMAIL` sigue con el correo de ejemplo.
-- **Próxima:** v1.0.72 (el número sale del `run_number` de GitHub Actions).
+- **Versión compilada actual:** v1.0.72 (14-nov-2026, `main` = 6678fca): la barra de finanzas de Hoy sube encima de la tarjeta del entrenamiento. Novedades sigue en n6. Es una versión para las pruebas del usuario: `CONTACT_EMAIL` sigue con el correo de ejemplo.
+- **Próxima:** v1.0.73 (el número sale del `run_number` de GitHub Actions).
 - Al compilar: actualizar estas dos líneas y agregar la versión al inicio de "Versiones compiladas" en `docs/HISTORIAL.md`, en un commit con `[skip ci]` que va solo a beta.
 - Versión web: `.github/workflows/web.yml` publica `www/` en GitHub Pages en cada push a `main`.
 
