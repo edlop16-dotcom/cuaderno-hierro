@@ -43,8 +43,9 @@ const cuOld = s => !!(s && !s.cuv && s.exercises && s.exercises.some(e => cuTwo(
 let cuPC = null;
 const cuPendReset = () => { cuPC = null; };
 function cuPending() {
-  const now = Date.now(); if (cuPC && now - cuPC.t < 400 && cuPC.n === state.sessions.length) return cuPC.v;
-  const v = !!state.settings.owner && !cuActive() && state.sessions.some(cuOld); cuPC = { t: now, n: state.sessions.length, v }; return v;
+  const S = state.settings, C = S.cuConv || {}, k = state.sessions.length + '|' + (S.owner ? 1 : 0) + '|' + (C.at || 0) + '|' + (C.undone || 0) + '|' + JSON.stringify(S.cuPick || {}) + '|' + JSON.stringify(S.cuEx || {});
+  const now = Date.now(); if (cuPC && now - cuPC.t < 400 && cuPC.k === k) return cuPC.v;   /* se recalcula si cambia la conversión o una elección */
+  const v = !!S.owner && !cuActive() && state.sessions.some(cuOld); cuPC = { t: now, k, v }; return v;
 }
 /* Multiplicador del volumen: dos mancuernas en la escala nueva = ×2 (s = null: la sesión en curso) */
 function cuMul(name, s) { if (!cuTwo(name)) return 1; if (s == null) return cuPending() ? 1 : 2; return cuPer(s) ? 2 : 1; }
