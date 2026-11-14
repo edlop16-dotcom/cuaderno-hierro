@@ -70,7 +70,7 @@ for (const [t, prof] of [['intermedio', { exp: 2 }], ['avanzado', { exp: 3 }], [
   ok(a.datos === b.datos, 'con los rangos y descansos de antes: las series, rangos, descansos y RIR de la sesión son los mismos');
   console.log('      con los de ajustes-gym-5: ' + g.datos);
   const G = JSON.parse(g.datos);
-  ok(G[0][1] === 6 && G[0][2] === 8 && G[0][3] === 150 && g.ajustes === b.ajustes && g.perfil === b.perfil, 'con los rangos nuevos: el reloj recibe los del coach (Prensa pesado 6-8, 2 min 30 s); Ajustes y Perfil no cambian');
+  ok(G[0][1] === 6 && G[0][2] === 8 && G[0][3] === 150 && ids(g.ajustes) === ids(b.ajustes) && ids(g.perfil) === ids(b.perfil), 'con los rangos nuevos: el reloj recibe los del coach (Prensa pesado 6-8, 2 min 30 s); Ajustes y Perfil no cambian');
   ok(!g.errs.length, 'sin errores de JS con los rangos nuevos');
   ok(!a.errs.length, 'sin errores de JS ' + a.errs.join(' | '));
 }

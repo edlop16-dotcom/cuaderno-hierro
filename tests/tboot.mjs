@@ -29,7 +29,7 @@ const browser = await chromium.launch({ channel: process.env.PW_CHANNEL === 'chr
 /* cuConv: la conversión de mancuernas ya hecha (mancuernas.js), para comparar Hoy sin su tarjeta con la versión anterior */
 const OWNER = Object.assign({}, OWNER_SETTINGS, { wxSeen: '2026-10-12', cuConv: { v: 1, at: 1, two: [], one: [] } });
 /* Se ocultan en las dos versiones: la anterior puede tenerlos ya */
-const HIDE_NEW = '.hab-omb,.pg-est,.pg-dl,.pg-why{display:none!important}';
+const HIDE_NEW = '.hab-omb,.pg-est,.pg-dl,.pg-why,.fq-bar{display:none!important}';   /* .fq-bar: la barra de finanzas en Hoy (finrapido.js) es nueva */
 
 /* Se inyecta antes que todo: cuenta las escrituras de #app y guarda cada estado distinto que llega a un cuadro */
 const SPY = () => {
