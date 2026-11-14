@@ -1,7 +1,7 @@
 import { OWNER_SETTINGS, seedOwner } from './owner-fixture.mjs';
 // Prueba de "Mis finanzas en Hoy" (finrapido.js): barra delgada y registro rápido. Montos y conceptos inventados.
 // Uso (desde PowerShell): $env:PW_DIR = "<carpeta con node_modules/playwright>"; node tests/tfq.mjs <copia transpilada> <copia transpilada anterior> [capturas]
-// A. Dueño en el teléfono: la barra (una línea, bajo la tarjeta del entrenamiento, solo en Hoy), abrir Mis finanzas,
+// A. Dueño en el teléfono: la barra (una línea, encima de la tarjeta del entrenamiento y a la vista sin deslizar, solo en Hoy), abrir Mis finanzas,
 //    la hoja rápida (monto enfocado, categorías en botones, última usada, vale, validación), guarda igual que el
 //    formulario normal, alertas del presupuesto, "Más opciones", datos solo en cdh.fin, no sale durante una sesión.
 // B. Dueño sin vales y dueño sin "Tus datos". C. Usuario nuevo: nada. D. Reloj: nada y sus pantallas idénticas.
@@ -62,7 +62,7 @@ async function pixDiff(a, b) {
 const bar = p => p.evaluate(() => {
   const L = document.querySelectorAll('#app .fq-bar'), b = L[0]; if (!b) return null;
   const r = b.getBoundingClientRect(), t = b.querySelector('.fq-txt'), a = document.getElementById('app').getBoundingClientRect();
-  return { n: L.length, txt: b.innerText.replace(/\s+/g, ' ').trim(), h: Math.round(r.height), cut: t.scrollWidth - t.clientWidth, out: Math.round(r.right - a.right), lines: Math.round(t.getBoundingClientRect().height / (parseFloat(getComputedStyle(t).lineHeight) || parseFloat(getComputedStyle(t).fontSize) * 1.3)), prev: b.previousElementSibling ? b.previousElementSibling.className : '', next: b.nextElementSibling ? b.nextElementSibling.className : '' };
+  return { n: L.length, txt: b.innerText.replace(/\s+/g, ' ').trim(), h: Math.round(r.height), cut: t.scrollWidth - t.clientWidth, out: Math.round(r.right - a.right), lines: Math.round(t.getBoundingClientRect().height / (parseFloat(getComputedStyle(t).lineHeight) || parseFloat(getComputedStyle(t).fontSize) * 1.3)), top: Math.round(r.top), bottom: Math.round(r.bottom), nav: Math.round(document.getElementById('nav').getBoundingClientRect().top), sy: Math.round(scrollY), prev: b.previousElementSibling ? b.previousElementSibling.className : '', next: b.nextElementSibling ? b.nextElementSibling.className : '' };
 });
 const goTab = async (p, t) => { await p.evaluate(x => { state.tab = x; if (x === 'profile') state.profSub = 'body'; render(); }, t); await p.waitForTimeout(150); };
 const openQuick = async p => { await p.click('#app .fq-add'); await p.waitForTimeout(250); };
@@ -79,7 +79,8 @@ console.log('A. Dueño (teléfono)');
   ok(B && B.n === 1, 'Hoy (dueño): sale la barra de finanzas, una sola');
   ok(B && /^Nov(iembre)?: S\/ 245\.00( gastado)? · ahorro S\/ 1,200\.00 Gasto$/.test(B.txt), 'dice el mes, lo gastado y el ahorro, con el botón "+ Gasto": ' + (B && B.txt));
   ok(B && B.h >= 40 && B.h <= 48 && B.lines === 1 && B.cut <= 0 && B.out <= 0, `una sola línea, de la altura de un botón (${B && B.h} px), sin cortarse ni salirse`);
-  ok(B && /hoy-hero/.test(B.prev), 'va justo debajo de la tarjeta del entrenamiento (' + (B && B.prev) + ')');
+  ok(B && /hoy-hero/.test(B.next) && /gympill|pagehead/.test(B.prev), 'va justo encima de la tarjeta del entrenamiento, bajo el saludo y el gimnasio (' + (B && B.prev + ' → ' + B.next) + ')');
+  ok(B && B.sy === 0 && B.top > 0 && B.bottom < B.nav, `se ve al abrir Hoy, sin deslizar (de ${B && B.top} a ${B && B.bottom} px; la barra de pestañas empieza en ${B && B.nav})`);
   for (const t of ['plans', 'progress', 'profile']) { await goTab(p, t); ok(await p.evaluate(() => !document.querySelector('.fq-bar')), `en ${t === 'plans' ? 'Rutinas' : t === 'progress' ? 'Progreso' : 'Perfil'} no sale la barra`); }
   ok(await p.evaluate(() => !!document.querySelector('.fin-card')), 'Perfil conserva su tarjeta "Mis finanzas"');
   await goTab(p, 'train');
@@ -186,6 +187,7 @@ console.log('A. Dueño (teléfono)');
     const p = await open(DIR, { seed: OWNER_SETTINGS, fin: FIN(), w });
     const B = await bar(p); await shot(p, 'a5-' + w);
     ok(B && B.lines === 1 && B.cut <= 0 && B.out <= 0 && B.h <= 48 && /S\/ 245\.00/.test(B.txt) && /ahorro S\/ 1,200\.00/.test(B.txt), `a ${w} px cabe en una línea con los dos montos: ${B && B.txt}`);
+    ok(B && B.sy === 0 && B.top > 0 && B.bottom < B.nav, `a ${w} px se ve sin deslizar (de ${B && B.top} a ${B && B.bottom} px)`);
     await p.evaluate(() => { const F = fin(); F.m['2026-11'] = { pays: [{ id: 'p1', name: 'Sueldo', amt: 1234567 }], funds: [], bud: {} }; F.ex.push({ id: 'g9', at: 9, d: '2026-11-02', c: 'Prueba', cat: 'c1', amt: 2345678, fund: null, note: '' }); finSave(); render(); fqRefresh(); });
     const C = await bar(p);
     ok(C && C.lines === 1 && C.h <= 48 && C.out <= 0 && /−S\/ 11,356\.11/.test(C.txt), `a ${w} px con montos grandes y ahorro negativo no se rompe la línea: ${C && C.txt}`);

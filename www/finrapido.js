@@ -1,7 +1,8 @@
 /* ==========================================================================
    Mis finanzas en Hoy (finrapido.js, 14-nov-2026), encima de finanzas.js. Solo el dueño y solo el teléfono
    (`finOwner()`): el reloj y los usuarios públicos no ven nada y su pantalla no cambia.
-   1. Barra delgada en Hoy, justo debajo de la tarjeta del entrenamiento: mes, gastado, ahorro y "+ Gasto". No sale
+   1. Barra delgada en Hoy, justo encima de la tarjeta del entrenamiento (se ve al abrir, sin deslizar): mes, gastado,
+      ahorro y "+ Gasto". No sale
       con una sesión en curso (`state.draft`). Tocar el texto abre Mis finanzas completo (`data-fin="open"`).
       Si el texto no cabe en una línea se acorta solo (mes en 3 letras, luego sin la palabra "gastado" y sin el icono).
    2. Registro rápido (`fqOpen`): hoja pequeña con el monto ya enfocado, categorías en botones, concepto opcional y,
@@ -36,8 +37,9 @@ render = function () {
   const r = _renderFq.apply(this, arguments);
   if (!fqShow()) return r;
   const app = document.getElementById('app'); if (!app || app.querySelector('.fq-bar') || app.querySelector('#sx')) return r;
-  const at = app.querySelector(':scope > .hero') || app.querySelector(':scope > .card.empty') || app.querySelector(':scope > .gympill') || app.querySelector(':scope > .pagehead');
-  if (at) at.insertAdjacentHTML('afterend', fqBarHtml()); else app.insertAdjacentHTML('beforeend', fqBarHtml());
+  /* Encima de la tarjeta del entrenamiento (o del aviso de que no hay rutina), bajo el saludo y el gimnasio */
+  const top = app.querySelector(':scope > .hero') || app.querySelector(':scope > .card.empty'), at = app.querySelector(':scope > .gympill') || app.querySelector(':scope > .pagehead');
+  if (top) top.insertAdjacentHTML('beforebegin', fqBarHtml()); else if (at) at.insertAdjacentHTML('afterend', fqBarHtml()); else app.insertAdjacentHTML('beforeend', fqBarHtml());
   fqFit();
   return r;
 };
