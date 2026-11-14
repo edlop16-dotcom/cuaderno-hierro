@@ -45,7 +45,7 @@ async function screens(dir, settings, classic) {
     localStorage.setItem('cdh.settings', JSON.stringify(s)); localStorage.setItem('cdh.plans', JSON.stringify(pl)); localStorage.setItem('cdh.sessions', JSON.stringify(ss));
     localStorage.setItem('cdh.gyms', JSON.stringify(g)); localStorage.setItem('cdh.newsSeen', '"n6"'); localStorage.setItem('cdh.reminders', '[]'); }, [settings, PLANS, SESS, GYMS]);
   await p.goto(`http://127.0.0.1:${srv.address().port}/index.html`); await p.waitForTimeout(1800);
-  if (classic) await p.evaluate(() => { if (typeof _pgRxG5 !== 'undefined') pgRx = _pgRxG5; });   /* ajustes-gym-5: rangos y descansos de antes, para comparar solo la pantalla */
+  if (classic && !fs.existsSync(path.join(OLD, 'ajustesgym5.js'))) await p.evaluate(() => { if (typeof _pgRxG5 !== 'undefined') pgRx = _pgRxG5; });   /* ajustes-gym-5: rangos y descansos de antes, para comparar solo la pantalla */
   const shot = () => p.evaluate(() => document.getElementById('app').innerHTML);
   const out = {};
   await p.evaluate(() => { state.settings.healthOk = 1; closeSheet(); state.tab = 'train'; render(); });

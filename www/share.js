@@ -12,7 +12,7 @@ function wrap2(c, t, max) {
 }
 function sessStats(s) {
   const sets = s.exercises.reduce((a, e) => a + e.sets.length, 0);
-  const vol = s.exercises.reduce((a, e) => a + e.sets.reduce((b, x) => b + (+x.w || 0) * (+x.r || 0), 0), 0);
+  const vol = s.exercises.reduce((a, e) => a + e.sets.reduce((b, x) => b + (+x.w || 0) * (+x.r || 0), 0) * (typeof cuMul === 'function' ? cuMul(e.name, s) : 1), 0);
   return { sets, vol, min: Math.max(1, Math.round((s.durationSec || 0) / 60)) };
 }
 function bestSet(e) { return e.sets.reduce((a, x) => !a || e1rm(x.w, x.r) > e1rm(a.w, a.r) ? x : a, null); }

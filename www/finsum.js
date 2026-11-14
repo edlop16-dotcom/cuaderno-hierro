@@ -29,7 +29,7 @@ function fsCompare(s, prev, bars) {
     return { n: e.name, t, now, bef };
   });
   const skipped = prev.exercises.filter(x => !exIn(s, x.name)).map(x => x.name);
-  const vol = s.exercises.reduce((a, e) => a + fsVol(e.sets, bars[e.name]), 0), volB = prev.exercises.reduce((a, e) => a + fsVol(e.sets, bars[e.name]), 0);
+  const vol = s.exercises.reduce((a, e) => a + fsVol(e.sets, bars[e.name]) * (typeof cuMul === 'function' ? cuMul(e.name, s) : 1), 0), volB = prev.exercises.reduce((a, e) => a + fsVol(e.sets, bars[e.name]) * (typeof cuMul === 'function' ? cuMul(e.name, prev) : 1), 0);
   return { rows, skipped, vol, volB, date: prev.date };
 }
 /* Para la próxima: el ejercicio del plan (o uno armado con lo de hoy) pasa por coachFor */
@@ -47,7 +47,7 @@ function fsNext(s) {
 
 function fsHtml(s, bars) {
   const u = fsU(), prev = fsPrev(s), cmp = fsCompare(s, prev, bars), nx = fsNext(s);
-  const vol = s.exercises.reduce((a, e) => a + fsVol(e.sets, bars[e.name]), 0), sets = s.exercises.reduce((a, e) => a + e.sets.length, 0);
+  const vol = s.exercises.reduce((a, e) => a + fsVol(e.sets, bars[e.name]) * (typeof cuMul === 'function' ? cuMul(e.name, s) : 1), 0), sets = s.exercises.reduce((a, e) => a + e.sets.length, 0);
   const wins = s.wins || {}, prs = Object.keys(wins).filter(n => wins[n] === 'pr'), ups = Object.keys(wins).filter(n => wins[n] === 'up');
   const ICO = { up: '⬆', down: '⬇', same: '＝', new: '✦' }, MODE = { up: '⬆', down: '⬇', back: '↺', pain: '⚠', first: '•', hold: '→' };
   const pct = cmp && cmp.volB ? Math.round((cmp.vol - cmp.volB) / cmp.volB * 100) : null;

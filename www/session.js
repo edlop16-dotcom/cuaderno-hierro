@@ -242,7 +242,7 @@ document.addEventListener('click', ev => {
 function finishAsk() {
   const d = state.draft; if (!d) return;
   const done = d.exercises.reduce((a, e) => a + e.log.filter(stepDone).length, 0), all = d.exercises.reduce((a, e) => a + e.log.length, 0);
-  const vol = d.exercises.reduce((a, e) => a + e.log.filter(x => x.done).reduce((b, x) => b + (+x.w || 0) * (+x.r || 0), 0), 0);
+  const vol = d.exercises.reduce((a, e) => a + e.log.filter(x => x.done).reduce((b, x) => b + (+x.w || 0) * (+x.r || 0), 0) * (typeof cuMul === 'function' ? cuMul(e.name, null) : 1), 0);
   const exDone = d.exercises.filter(e => e.log.some(x => x.done)).length;
   const mins = (Date.now() - new Date(d.start).getTime()) / 60000;
   let wins = 0; if (typeof exWin === 'function') d.exercises.forEach(e => { if (exWin(e, d)) wins++; });
