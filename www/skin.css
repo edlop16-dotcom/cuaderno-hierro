@@ -2506,3 +2506,7 @@ body:not(.watch) .ct-big { align-self: stretch; margin: 6px 0; }
 body:not(.watch) .ct-big button { flex: 1; min-height: 44px; }
 body:not(.watch) .ct-ba { font-size: 14px; padding: 8px 10px; border-radius: 10px; background: var(--surface2); flex-shrink: 0; }
 body:not(.watch) .ct-sheet .btn { flex-shrink: 0; min-height: 46px; }
+
+/* Importar rutinas: superserie en la vista previa */
+body:not(.watch) .ri-ssr { display: flex; align-items: center; gap: 8px; margin: 2px 0 4px; font-size: 12.5px; }
+body:not(.watch) .ri-ss { font-weight: 700; padding: 1px 6px; border: 1px solid var(--accent); border-radius: 4px; color: var(--accent); }

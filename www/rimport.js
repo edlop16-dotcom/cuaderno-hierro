@@ -100,6 +100,7 @@ function riHead(cells) {
     if (/^(dia|dias|day)$/.test(n)) col.day = i;   /* una sola tabla con columna Día: una rutina por día */
     else if (/^(rutina|enfoque|sesion|grupo|split)$/.test(n)) col.rname = i;
     else if (/ejercicio|exercise|movimiento|nombre/.test(n)) { col.name = i; ok = true; }
+    else if (/^(superseries?|super series?|superset|ss)$/.test(n)) col.ss = i;   /* importar-plan: letra A, B, C… */
     else if (/^(series|sets?|serie)$/.test(n)) col.sets = i;
     else if (/rep/.test(n)) col.reps = i;
     else if (/rir|rpe/.test(n)) col.rir = i;
@@ -116,10 +117,12 @@ function riParse(text) {
   const newDay = t => { day = { title: t, ex: [] }; days.push(day); skip = false; };   /* el encabezado de la tabla sigue valiendo */
   const add = e => { if (!day) newDay(''); if (!e.raw || e.raw.length < 2) return; const last = day.ex[day.ex.length - 1];
     const same = e.merge ? day.ex.filter(x => x.merge && normName(x.raw) === normName(e.raw)).pop() : null;
-    if (same) { const last = same; last.sets++; if (e.rest && (!last.rest || e.rest > last.rest)) last.rest = e.rest; if (e.rMin != null) { last.rMin = Math.min(last.rMin == null ? e.rMin : last.rMin, e.rMin); last.rMax = Math.max(last.rMax || 0, e.rMax); } if (e.rir.length) last.rir.push(e.rir[0]); else if (last.rir.length) last.rir.push(last.rir[last.rir.length - 1]); if (e.w != null && (last.w == null || e.w > last.w)) last.w = e.w; return; }
+    if (same) { const last = same; last.sets++; if (e.rest && (!last.rest || e.rest > last.rest)) last.rest = e.rest; if (e.rMin != null) { last.rMin = Math.min(last.rMin == null ? e.rMin : last.rMin, e.rMin); last.rMax = Math.max(last.rMax || 0, e.rMax); } if (e.rir.length) last.rir.push(e.rir[0]); else if (last.rir.length) last.rir.push(last.rir[last.rir.length - 1]); if (e.w != null && (last.w == null || e.w > last.w)) last.w = e.w; if (e.ss && !last.ss) last.ss = e.ss; return; }
     day.ex.push(e); };
+  riParse.plan = '';
   for (const l of lines) {
     if (!l.trim() || /^\s*(```|~~~)/.test(l)) continue;
+    const pm = !riIsRow(l) && l.match(/^\s*[#>*_\-\s]*plan\s*[:=]\s*(.+?)[\s*_]*$/i); if (pm) { riParse.plan = riClean(pm[1]).slice(0, 40); continue; }   /* importar-plan: nombre propuesto */
     if (riIsRow(l)) {
       const cells = riCells(l);
       if (cells.every(c => /^[\s:-]*$/.test(c))) continue;
@@ -138,6 +141,7 @@ function riParse(text) {
         const reps = g('reps');
         const e = riExOf(`${head.sets != null ? g('sets') + ' series de ' : ''}${reps ? reps + ' reps' : ''} ${g('rir') && !/rir|rpe/i.test(g('rir')) ? 'RIR ' + g('rir') : g('rir')} ${g('w') && /\d/.test(g('w')) && !/kg|lb/i.test(g('w')) ? g('w') + ' kg' : g('w')} ${g('rest') ? 'descanso ' + g('rest') : ''}`, nm);
         if (head.rest != null) { const rv = aixRestParse(g('rest')); e.rest = rv && rv >= 10 && rv <= 600 ? rv : e.rest; }
+        if (head.ss != null) { const sv = riClean(g('ss')).toUpperCase().replace(/^SS\s*/, ''); if (/^[A-Z]$/.test(sv)) e.ss = sv; }
         if (head.sets == null) { e.sets = 1; e.merge = true; if (e.rir.length > 1) e.rir = [e.rir[0]]; }
         else if (e.rir.length > 1 && e.sets && e.rir.length !== e.sets) e.rir = [Math.max.apply(null, e.rir)];
         add(e);
@@ -274,6 +278,7 @@ const riNorm = s => normName(s).replace(/[^a-z0-9]+/g, ' ').replace(/\s+/g, ' ')
 function riMatch(raw) {
   const D = riDict(), q = String(raw || '').trim(), n = riNorm(q), tr = riTrans(n), byName = nm => LIB.find(x => x.name === nm);
   if (!n) return { name: null, sure: false, sugg: [] };
+  const own = riOwn()[n]; if (own) return { name: own, sure: true, sugg: [] };   /* importar-plan: conserva su historial */
   const exact = LIB.find(x => riNorm(x.name) === n || (x.al || []).some(a => riNorm(a) === n));
   if (exact) return { name: exact.name, sure: true, sugg: [] };
   if (D[n] && byName(D[n])) return { name: D[n], sure: true, sugg: [] };
@@ -301,6 +306,7 @@ function riBuild(text) {
     return { name: riDayTitle(t) || 'Rutina importada', wd: w.length ? w[0] : null, on: true, ex, kind: dl && dl.kind || null };   /* "LUNES (FUERZA): …" fija el tipo */
   }).filter(d => d.ex.length);
   days.forEach((d, i) => { if (!/[a-záéíóúñ]/i.test(d.name)) d.name = 'Día ' + (i + 1); });
+  days.plan = riParse.plan || '';
   const free = [1, 2, 3, 4, 5, 6, 0].filter(w => !days.some(d => d.wd === w));
   if (days.every(d => d.wd == null)) { const sp = RI_SPREAD[Math.min(7, days.length)] || []; days.forEach((d, i) => { d.wd = sp[i] != null ? sp[i] : free[i % free.length]; }); }
   else days.forEach(d => { if (d.wd == null) d.wd = free.length ? free.shift() : 1; });
@@ -314,6 +320,43 @@ function riUniq(base, taken, tag) {
   if (tag && !has(`${base} (${tag})`)) return `${base} (${tag})`;
   let i = 2; while (has(`${base} ${i}`)) i++;
   return `${base} ${i}`;
+}
+
+/* ---------- importar-plan: nombre del plan, superseries, Pesado/Bombeo y tus nombres ---------- */
+/* Nombre del plan nuevo: el escrito (o el de la línea "Plan:"), si no "Rutinas de <IA>"; si ya existe en el gimnasio, " 2", " 3"… */
+function riPlanName(F, plans) {
+  const base = String(F.pname || '').trim() || 'Rutinas de ' + riSrcOf(F).n, has = s => plans.some(p => normName(p.name) === normName(s));
+  if (!has(base)) return base;
+  let i = 2; while (has(base + ' ' + i)) i++; return base + ' ' + i;
+}
+/* Tipo por el nombre de la rutina: "Pesado" o "Fuerza" = fuerza; "Bombeo" = bombeo; si no dice, null */
+const riKindOf = s => { const n = normName(s || ''); return /\bbombeo\b/.test(n) ? 'bombeo' : /\b(pesado|pesada|fuerza)\b/.test(n) ? 'fuerza' : null; };
+/* Superseries: los de la misma letra quedan seguidos (el resto mantiene su orden); ssLink = "con el siguiente", como `ss` en la rutina */
+function riSsOrder(L) {
+  const cnt = {}; L.forEach(e => { if (e.ss) cnt[e.ss] = (cnt[e.ss] || 0) + 1; });
+  const out = [], used = new Set();
+  L.forEach(e => {
+    if (used.has(e)) return;
+    if (e.ss && cnt[e.ss] > 1) { const G = L.filter(x => x.ss === e.ss); G.forEach((x, k) => { used.add(x); x.ssLink = k < G.length - 1; out.push(x); }); }
+    else { used.add(e); e.ssLink = false; out.push(e); }
+  });
+  return out;
+}
+/* Tus nombres exactos: tus ejercicios propios, tu historial y tus rutinas (sin repetir) */
+function riOwn() {
+  const o = {}, add = n => { const c = n && exClean(n); if (c && !o[riNorm(c)]) o[riNorm(c)] = c; };
+  (state.settings.myEx || []).forEach(m => { if (m && m.name) add(m.name); });
+  state.sessions.forEach(s => (s.exercises || []).forEach(e => add(e.name)));
+  state.plans.forEach(p => p.days.forEach(d => d.exercises.forEach(e => add(e.name))));
+  return o;
+}
+/* "Copiar formato para tu IA": el de siempre más la línea "Plan:", la columna Superserie y el peso c/u */
+function riFormat() {
+  let t = aixFormat([]);
+  t = t.replace('Ejemplo:\n```\n', 'Al principio del bloque, una línea "Plan: nombre del plan" (por ejemplo "Plan: Equilibrio · 4 días"). Columna Superserie: la misma letra (A, B, C…) une en superserie los ejercicios de ese día; vacía si va solo. Peso: en kg; en ejercicios con dos mancuernas, el peso de CADA mancuerna (c/u). Si el nombre de la rutina dice Pesado o Bombeo, ese es su tipo.\nEjemplo:\n```\nPlan: Equilibrio · 4 días\n');
+  t = t.split('Ejercicio | Peso | Reps | RIR | Descanso\n').join('Ejercicio | Peso | Reps | RIR | Descanso | Superserie\n');
+  t = t.replace(/^(Prensa 45° \| 180 \| 12 \| [12] \| 150)$/gm, '$1 | ').replace(/^(Hip Thrust \| 45 \| 12 \| 2 \| 120)$/m, '$1 | A\nElevaciones Laterales | 7.5 | 15 | 1 | 120 | A');
+  return t;
 }
 
 /* ---------- Pantallas ---------- */
@@ -343,7 +386,7 @@ function riRead() {
   if (!days.length) { T.err = 'No encontré rutinas en el texto. Por cada día necesito una línea como «LUNES: Piernas» y debajo la tabla «Ejercicio | Peso | Reps | RIR | Descanso» (o líneas como «Press banca 4x8»). Copia el formato y pídeselo a tu IA.'; T.fmt = 1; return riPaste(); }
   T.err = ''; T.fmt = 0;
   const g = activeGym().id;
-  state.rI = { days, src: state.riLast || 'claude', on: '', oc: RI_COLORS[0], plan: 'new', gym: g, at: Date.now() };
+  state.rI = { days, src: state.riLast || 'claude', on: '', oc: RI_COLORS[0], plan: 'new', pname: days.plan || '', gym: g, at: Date.now() };
   riView(true);
 }
 function riExRow(e, i, j) {
@@ -358,6 +401,7 @@ function riExRow(e, i, j) {
     ${e.on && !e.name ? `<div class="ri-sugg">${e.sugg.map(s => `<button type="button" class="gchip" data-ri="pick" data-d="${i}" data-e="${j}" data-name="${esc(s)}">${esc(s)}</button>`).join('')}
       <button type="button" class="gchip" data-ri="search" data-d="${i}" data-e="${j}">${ic('search', 14)} Buscar otro</button>
       <button type="button" class="gchip" data-ri="create" data-d="${i}" data-e="${j}">${ic('plus', 14)} Crear «${esc(e.raw)}»</button></div>` : ''}
+    ${e.on && e.ss ? `<div class="ri-ssr"><span class="ri-ss">Superserie ${esc(e.ss)}</span><button type="button" class="linkbtn" data-ri="ssoff" data-d="${i}" data-e="${j}" aria-label="Quitar ${esc(e.name || e.raw)} de la superserie ${esc(e.ss)}">Quitar</button></div>` : ''}
     ${e.on ? `<div class="row ri-fs">${f('sets', e.sets == null ? '' : e.sets, 'Series', 58, 'numeric')}${f('reps', reps, 'Reps', 70)}${f('rir', e.rir.join(','), 'RIR', 64)}${f('w', e.w == null ? '' : String(e.w).replace('.', ','), unitL(), 64, null, hw ? fmtKg(hw) : '')}
       ${e.name ? `<button type="button" class="linkbtn ri-chg" data-ri="search" data-d="${i}" data-e="${j}">Cambiar</button>` : ''}</div>` : ''}</div>`;
 }
@@ -371,9 +415,10 @@ function riView(top) {
     <div class="gymbar ri-srcs">${RI_SRC.map(([k, n, c]) => `<button type="button" class="gchip ${F.src === k ? 'on' : ''}" data-ri="src" data-v="${k}">${riDot(c, k)}${n}</button>`).join('')}<button type="button" class="gchip ${F.src === 'other' ? 'on' : ''}" data-ri="src" data-v="other">${riDot(F.oc)}Otra IA</button></div>
     ${F.src === 'other' ? `<div class="ri-other"><input id="ri-on" maxlength="20" placeholder="Nombre (Gemini, Grok…)" value="${esc(F.on)}" autocomplete="off"><div class="ri-cols">${RI_COLORS.map(c => `<button type="button" class="ri-col ${F.oc === c ? 'on' : ''}" data-ri="col" data-v="${c}" style="background:${c}" aria-label="Color ${c}"></button>`).join('')}</div></div>` : ''}
     <label class="field"><span class="label">Guardar en</span><select id="ri-plan">
-      <option value="new" ${F.plan === 'new' ? 'selected' : ''}>Plan nuevo «${esc(riUniq('Rutinas de ' + src.n, plans.map(p => p.name)))}»</option>
+      <option value="new" ${F.plan === 'new' ? 'selected' : ''}>Plan nuevo «${esc(riPlanName(F, plans))}»</option>
       ${plans.filter(p => !p.custom).map(p => `<option value="${p.id}" ${F.plan === p.id ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}
       <option value="__mine" ${F.plan === '__mine' ? 'selected' : ''}>Mis rutinas (aparte)</option></select></label>
+    ${F.plan === 'new' ? `<label class="field"><span class="label">Nombre del plan</span><input id="ri-pn" maxlength="40" value="${esc(F.pname || '')}" placeholder="${esc('Rutinas de ' + src.n)}" autocomplete="off"></label>` : ''}
     <div class="muted ri-help">${ic('shield', 14)} Tus rutinas de ahora no se tocan: si un nombre ya existe, la nueva lleva «(${esc(src.n)})» o un número.</div>
     ${F.days.map((d, i) => `<div class="card ri-day ${d.on ? '' : 'off'}">
       <div class="row ri-dh">${riDot(src.c)}<input class="ri-dn" data-d="${i}" maxlength="40" value="${esc(d.name)}" aria-label="Nombre de la rutina">
@@ -410,12 +455,12 @@ function riSave() {
   const g = activeGym().id, src = riSrcOf(F), taken = [];
   gymPlans(g).forEach(p => p.days.forEach(d => taken.push(d.name)));
   let p;
-  if (F.plan === 'new') { p = { id: uid(), name: riUniq('Rutinas de ' + src.n, gymPlans(g).map(x => x.name)), gymId: g, days: [], src }; state.plans.push(p); }
+  if (F.plan === 'new') { p = { id: uid(), name: riPlanName(F, gymPlans(g)), gymId: g, days: [], src }; state.plans.push(p); }
   else if (F.plan === '__mine') { p = state.plans.find(x => x.gymId === g && x.custom); if (!p) { p = { id: uid(), name: 'Mis rutinas', gymId: g, custom: true, days: [] }; state.plans.push(p); } }
   else p = state.plans.find(x => x.id === F.plan) || state.plans.find(x => x.gymId === g);
   const made = days.map(d => {
     const name = riUniq(d.name.trim() || 'Rutina importada', taken, src.n); taken.push(name);
-    const exercises = d.ex.filter(e => e.on && e.name).map(e => {
+    const exercises = riSsOrder(d.ex.filter(e => e.on && e.name)).map(e => {
       const x = LIB.find(y => y.name === e.name);
       const ex = x ? exFromLib(x) : { id: uid(), name: e.name, type: typeOf(e.name), weight: 0, sets: 3, repsMin: 8, repsMax: 12, rest: 90 };
       if (e.sets) ex.sets = Math.max(1, Math.min(10, Math.round(e.sets)));
@@ -423,10 +468,11 @@ function riSave() {
       if (e.rest) ex.rest = e.rest;
       if (e.w != null) ex.weight = e.w;
       if (e.rir.length) ex.rirT = Array.from({ length: ex.sets }, (_, k) => Math.max(0, Math.min(5, e.rir[Math.min(k, e.rir.length - 1)])));
+      ex.ss = e.ssLink ? 1 : 0;
       return ex;
     });
     const mx = exercises.map(e => +e.repsMax || 12), avg = mx.reduce((a, b) => a + b, 0) / (mx.length || 1);
-    return { id: uid(), name, weekday: d.wd, kind: d.kind || (avg <= 10 ? 'fuerza' : 'bombeo'), exercises, src: { n: src.n, c: src.c }, imp: Date.now() };
+    return { id: uid(), name, weekday: d.wd, kind: riKindOf(name) || riKindOf(d.title) || d.kind || (avg <= 10 ? 'fuerza' : 'bombeo'), exercises, src: { n: src.n, c: src.c }, imp: Date.now() };
   });
   made.forEach(d => p.days.push(d));
   p.days.sort((x, y) => ((x.weekday + 6) % 7) - ((y.weekday + 6) % 7));
@@ -461,7 +507,7 @@ window.addEventListener('click', ev => {
   if (a === 'import') { state.riT = { txt: '', err: '' }; return riPaste(); }
   if (a === 'cancel') { state.riT = null; state.rI = null; return closeSheet(); }
   if (a === 'read') return riRead();
-  if (a === 'fmt') return nsCopy(aixFormat([])).then(ok => toast(ok ? 'Formato copiado: pégalo al final de tu mensaje a la IA.' : 'No se pudo copiar.'));
+  if (a === 'fmt') return nsCopy(riFormat()).then(ok => toast(ok ? 'Formato copiado: pégalo al final de tu mensaje a la IA.' : 'No se pudo copiar.'));
   if (a === 'chip') return riSrcSheet(b.dataset.day);
   if (a === 'ssrc' || a === 'scol' || a === 'snone' || a === 'ssave') {
     const S = state.riS; if (!S) return; const n = document.getElementById('ri-son'); if (n) S.on = n.value;
@@ -480,6 +526,7 @@ window.addEventListener('click', ev => {
   if (a === 'col') { F.oc = b.dataset.v; return riView(); }
   if (a === 'dtog') { F.days[i].on = !F.days[i].on; return riView(); }
   if (a === 'xtog') { const e = F.days[i].ex[j]; e.on = !e.on; return riView(); }
+  if (a === 'ssoff') { delete F.days[i].ex[j].ss; return riView(); }
   if (a === 'search') { F.q = null; return riSearch(i, j); }
   if (a === 'sback') { F.tgt = null; return riView(); }
   if (a === 'pick') {
@@ -507,6 +554,7 @@ window.addEventListener('input', ev => {
   if (t.id === 'ri-son' && state.riS) { state.riS.on = t.value; return; }
   if (!F) return;
   if (t.id === 'ri-on') { F.on = t.value; return; }
+  if (t.id === 'ri-pn') { F.pname = t.value; const o = document.querySelector('#ri-plan option[value="new"]'); if (o) o.textContent = `Plan nuevo «${riPlanName(F, gymPlans(activeGym().id))}»`; return; }
   if (t.classList.contains('ri-dn')) { F.days[+t.dataset.d].name = t.value; return; }
   if (t.classList.contains('ri-in')) {
     const e = F.days[+t.dataset.d].ex[+t.dataset.e], v = t.value.trim();
@@ -518,7 +566,7 @@ window.addEventListener('input', ev => {
 }, true);
 window.addEventListener('change', ev => {
   const t = ev.target;
-  if (t.id === 'ri-plan' && state.rI) { state.rI.plan = t.value; return; }
+  if (t.id === 'ri-plan' && state.rI) { state.rI.plan = t.value; riKeep(); riView(); return; }
   if (t.classList && t.classList.contains('ri-wd') && state.rI) { state.rI.days[+t.dataset.d].wd = +t.value; return; }
   if (t.id === 'ri-file' && t.files && t.files[0]) {
     const f = t.files[0];
