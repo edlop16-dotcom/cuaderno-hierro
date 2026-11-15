@@ -4,7 +4,7 @@
 - Los cambios grandes se hacen en una rama aparte y pasan a beta solo con aprobación explícita del usuario. Mostrar el plan antes de programar y los resultados y diff antes de integrar.
 - Nunca compilar, publicar, ejecutar workflows manuales ni tocar main sin la instrucción explícita «compila» en la conversación actual. Próxima versión: v1.0.73.
 - Todos los commits que deban evitar una compilación automática llevan `[skip ci]`. Revisar los disparadores de .github/workflows antes de subir cualquier rama.
-- No modificar el keystore ni escribir su contraseña en ningún archivo. Mantener identificadores técnicos de compatibilidad.
+- Firma de la app: el keystore y su contraseña viven solo en los Secrets de GitHub (`ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`) y en la copia privada del usuario. Nunca guardar un keystore, su contraseña ni su base64 en el repo, en documentos, pruebas, commits ni en el chat; no crear ni cambiar la llave sin autorización explícita. Mantener identificadores técnicos de compatibilidad.
 - Nunca borrar ni cambiar datos guardados para limpiar el repositorio. No reactivar migraciones personales retiradas. Las notas históricas de migraciones describen implementaciones anteriores; no autorizan reinstalarlas.
 - No guardar datos personales en código, documentación, tests ni commits. Usar ejemplos ficticios. No añadir Novedades sin petición; conservar n6 para los cambios actuales.
 - Dueño sin settings.prof: nombre, edad, peso, estatura y objetivo ausentes quedan vacíos. Leer medidas/peso reales de settings.body cuando existan; omitir frases ausentes con aixFill y ofrecer completar Tus datos. No suponer un objetivo mediante ddGoal.
@@ -42,7 +42,7 @@ App de entrenamiento, en español. Celular Android y reloj M99 Pro+ (WebView ant
 - Los cambios grandes se trabajan en una rama aparte y pasan a `beta` solo con aprobación explícita del usuario. Hay que probarlos y publicar la vista previa (`cuaderno-beta.html`, todos los `<script src>` incrustados y `FIREBASE=null`) en el mismo artifact de siempre, con `files` ex/*.webp desde `www/`.
 - **Solo cuando el usuario dice "compila"** (ver la Regla N.º 1 arriba): `git push origin beta:main`. GitHub Actions (`ci/build.sh`) compila el APK y publica el release `v1.0.N`. La app muestra entonces el banner "Actualizar". Nunca se empuja a `main` sin ese "compila". Tampoco se escribe "versión compilada vX" en este archivo antes de que el usuario lo diga.
 - `ci/legacy.mjs` transpila el JS a chrome51 para el reloj. Todo el código debe pasar por ahí: verificar con acorn ES2016 sobre la salida transpilada.
-- El keystore fijo está en `ci/cuaderno.keystore` (alias de firma existente). No modificarlo ni copiar sus credenciales a documentos, pruebas o commits.
+- Firma: `ci/build.sh` arma `android/app/forja-release.keystore` desde el Secret `ANDROID_KEYSTORE_BASE64` y `ci/patch_gradle.py` lee la contraseña de `ANDROID_KEYSTORE_PASSWORD` (alias `forja`); sin los dos Secrets la compilación se detiene con un mensaje claro. El keystore viejo (`ci/cuaderno.keystore`) se retiró porque estuvo publicado con su contraseña: sigue en el historial de git y no debe volver a usarse. Una app firmada con la llave nueva no se instala encima de una firmada con la vieja (hay que desinstalar; antes, Respaldo completo y exportar Mis finanzas). El acceso con Google en Android necesita la huella SHA-1 de la llave nueva en el cliente OAuth de Android (Google Cloud).
 
 ## Arquitectura (www/)
 - JS vanilla. Cada archivo nuevo **sobrescribe funciones globales encadenando la anterior**:

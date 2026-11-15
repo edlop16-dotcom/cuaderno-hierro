@@ -3,10 +3,10 @@ s = s.replace('versionCode 1\n', 'versionCode Integer.parseInt(System.getenv("BU
 s = s.replace('versionName "1.0"', 'versionName "1.0." + (System.getenv("BUILD_NUMBER") ?: "0") + (System.getenv("VERSION_SUFFIX") ?: "")')
 s = s.replace('    buildTypes {\n        release {\n', """    signingConfigs {
         fixed {
-            storeFile file('cuaderno.keystore')
-            storePassword 'cuaderno2026'
-            keyAlias 'cuaderno'
-            keyPassword 'cuaderno2026'
+            storeFile file('forja-release.keystore')
+            storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
+            keyAlias 'forja'
+            keyPassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
         }
     }
     buildTypes {
