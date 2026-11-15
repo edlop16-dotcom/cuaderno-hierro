@@ -18,7 +18,7 @@
 ## Estado técnico actual
 - Perfil sin datos: HISTORY no es un perfil de demostración. Ningún valor de muestra puede sustituir datos ausentes.
 - El historial se lee de localStorage y Firestore; los importadores automáticos personales y los cuerpos de planFix2/applyRev2 históricos están retirados. Conservar las claves antiguas de compatibilidad y los datos existentes.
-- legal.js: configurar LEGAL_OWNER y CONTACT_EMAIL; el correo de ejemplo no recibe solicitudes. No usar nombre ni correo personales en el repositorio.
+- legal.js: `CONTACT_EMAIL` es el correo de contacto exclusivo de la app (lo puso el usuario el 15-nov-2026); falta confirmar `LEGAL_OWNER`. No usar nombre ni correo personales en el repositorio.
 - Preparar copias web con ci/legacy.mjs para pruebas no autoriza generar APK/AAB. No ejecutarlo sobre www/.
 - Los archivos de pruebas históricos mencionados en docs/HISTORIAL.md pueden no estar incluidos en el checkout actual; comprobar su existencia y no dar por ejecutadas suites ausentes.
 
@@ -32,7 +32,7 @@ App de entrenamiento, en español. Celular Android y reloj M99 Pro+ (WebView ant
 > - El 15-oct-2026 se rompió esta regla: se compiló y publicó la v1.0.41 sin su "compila".
 
 ## Versión
-- **Versión compilada actual:** v1.0.72 (14-nov-2026, `main` = 6678fca): la barra de finanzas de Hoy sube encima de la tarjeta del entrenamiento. Novedades sigue en n6. Es una versión para las pruebas del usuario: `CONTACT_EMAIL` sigue con el correo de ejemplo.
+- **Versión compilada actual:** v1.0.72 (14-nov-2026, `main` = 6678fca): la barra de finanzas de Hoy sube encima de la tarjeta del entrenamiento. Novedades sigue en n6. Es una versión para las pruebas del usuario.
 - **Próxima:** v1.0.73 (el número sale del `run_number` de GitHub Actions).
 - Al compilar: actualizar estas dos líneas y agregar la versión al inicio de "Versiones compiladas" en `docs/HISTORIAL.md`, en un commit con `[skip ci]` que va solo a beta.
 - Versión web: `.github/workflows/web.yml` publica `www/` en GitHub Pages en cada push a `main`.
@@ -71,6 +71,7 @@ App de entrenamiento, en español. Celular Android y reloj M99 Pro+ (WebView ant
 - Recordatorios: no cambiar cómo suenan ni la pantalla completa salvo petición explícita.
 - Reloj (WebView ~Chrome 51): sin CSS grid ni `gap`, sin blur, sombras ni animaciones. Todo estilo nuevo del teléfono va bajo `body:not(.watch)`.
 - Color: el color de un grupo muscular nunca va solo (cada grupo tiene su forma, por daltonismo).
+- Eliminar cuenta (play.js `deleteAccount`): borra `accounts/{acc}` y, con `delCloudExtra`, también `social/{acc}`, `share/{acc}`, `codes/{su código}` y toda `inbox/{acc}/items`, siempre antes de eliminar la cuenta. Toda colección nueva con datos del usuario debe sumarse ahí. Prueba: tests/tdel.mjs (nube simulada).
 - Pendientes decididos por el usuario y sin hacer (videos en la nube, etc.): sección "Pendientes" de docs/HISTORIAL.md.
 
 ## Pruebas

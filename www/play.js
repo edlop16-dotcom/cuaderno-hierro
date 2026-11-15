@@ -127,7 +127,7 @@ function wipeLocal() {
 function delSheet(kind) {
   const a = typeof fb !== 'undefined' && fb.auth, acc = kind === 'acc';
   openSheet(`<div class="row"><h2 class="grow">${acc ? 'Eliminar mi cuenta' : 'Borrar datos de este teléfono'}</h2><button class="icon-btn" data-act="sheet-close" aria-label="Cerrar">${ic('x', 18)}</button></div>
-    <div class="safe stop">${ic('shield', 16)}<span>${acc ? `Se eliminarán <b>tu cuenta (${esc(a && a.email || '')}) y todos tus datos en la nube</b>: entrenamientos, rutinas, hábitos y medidas. Tus relojes vinculados dejarán de sincronizar. <b>No se puede deshacer.</b>` : `Se borrarán de este teléfono tus entrenamientos, rutinas, hábitos, medidas y fotos.${a && a.acc ? ' Tu cuenta y tus datos en la nube <b>no</b> se borran: al volver a entrar se recuperan.' : ' Como no tienes cuenta, <b>se perderán para siempre</b>.'}`}</span></div>
+    <div class="safe stop">${ic('shield', 16)}<span>${acc ? `Se eliminarán <b>tu cuenta (${esc(a && a.email || '')}) y todos tus datos en la nube</b>: entrenamientos, rutinas, hábitos y medidas, y también lo de amigos y entrenador (tu resumen de la semana, lo que compartes con tu entrenador, tu código y tu bandeja). Tus relojes vinculados dejarán de sincronizar. <b>No se puede deshacer.</b>` : `Se borrarán de este teléfono tus entrenamientos, rutinas, hábitos, medidas y fotos.${a && a.acc ? ' Tu cuenta y tus datos en la nube <b>no</b> se borran: al volver a entrar se recuperan.' : ' Como no tienes cuenta, <b>se perderán para siempre</b>.'}`}</span></div>
     ${acc ? `<label class="sw-keep"><input type="checkbox" id="del-local" checked> Borrar también los datos de este teléfono</label>
       <div class="field"><span class="label">Por seguridad, confirma tu identidad</span>
       <input type="password" id="del-pass" placeholder="Tu contraseña (si entras con correo)" autocomplete="current-password">
@@ -135,6 +135,27 @@ function delSheet(kind) {
     <div class="field"><span class="label">Escribe <b>BORRAR</b> para confirmar</span><input id="del-conf" autocomplete="off" autocapitalize="characters"></div>
     <button class="btn danger block" data-act="${acc ? 'del-acc-go' : 'del-local-go'}">${acc ? 'Eliminar cuenta y datos' : 'Borrar datos del teléfono'}</button>
     <div id="del-msg" class="muted" style="font-size:12.5px"></div>`);
+}
+/* Lo que la cuenta tiene fuera de accounts/{acc} (social.js): su resumen para amigos, lo que comparte con sus entrenadores,
+   su código de 6 letras y su bandeja. Cada borrado va aparte y ninguno detiene la eliminación de la cuenta: devuelve
+   los que no se pudieron borrar. Tiene que ir antes de eliminar la cuenta (después ya no hay sesión para borrar nada) */
+const DEL_EXTRA = { social: 'tu resumen para amigos', share: 'lo que compartías con tu entrenador', codes: 'tu código', inbox: 'tu bandeja' };
+async function delCloudExtra(acc) {
+  const bad = [], del = async (k, path) => { try { await fb.fs('DELETE', path); } catch (e) { if (e.status !== 404 && bad.indexOf(k) < 0) bad.push(k); } };
+  const S = state.settings, code = S.myCode && S.myCodeAcc === acc ? String(S.myCode).replace(/[^A-Z0-9]/gi, '') : '';
+  await del('social', 'social/' + acc);
+  await del('share', 'share/' + acc);
+  if (code) await del('codes', 'codes/' + code);
+  try {
+    for (let i = 0; i < 30; i++) {   /* la bandeja se lee por páginas hasta que queda vacía */
+      const j = await fb.fs('GET', 'inbox/' + acc + '/items', 'pageSize=100'), docs = (j && j.documents) || [];
+      if (!docs.length) break;
+      const n = bad.length;
+      for (const d of docs) await del('inbox', 'inbox/' + acc + '/items/' + String(d.name || '').split('/').pop());
+      if (bad.length > n) break;
+    }
+  } catch (e) { if (bad.indexOf('inbox') < 0) bad.push('inbox'); }
+  return bad;
 }
 async function deleteAccount() {
   const msg = document.getElementById('del-msg'), say = t => { if (msg) msg.innerHTML = t; };
@@ -155,10 +176,16 @@ async function deleteAccount() {
     const acc = a.acc;
     try { await fb.fs('DELETE', 'accounts/' + acc); }
     catch (e) { await fb.fs('PATCH', 'accounts/' + acc, 'updateMask.fieldPaths=data&updateMask.fieldPaths=members&updateMask.fieldPaths=at', { fields: { data: fb.str('{}'), members: fb.arr([]), at: { integerValue: String(Date.now()) } } }); }
+    const left = await delCloudExtra(acc);
     say('Eliminando tu cuenta…');
     await fb.idt('delete', { idToken: await fb.token() });
     account.logout();
-    if (local) { wipeLocal(); toast('Cuenta y datos eliminados'); setTimeout(() => location.reload(), 900); }
+    if (left.length) {   /* se dice qué quedó y a quién escribir; el aviso no se cierra solo */
+      if (local) wipeLocal(); else render();
+      say(`Tu cuenta se eliminó, pero no se pudo borrar de la nube: <b>${left.map(k => DEL_EXTRA[k]).join(', ')}</b>. Escríbenos a <b>${esc(LEGAL.contact)}</b> y lo borramos.`);
+      const b = document.querySelector('#sheet [data-act="del-acc-go"]'); if (b) { b.dataset.act = 'del-done'; b.dataset.reload = local ? '1' : ''; b.className = 'btn block'; b.textContent = 'Entendido'; }
+    }
+    else if (local) { wipeLocal(); toast('Cuenta y datos eliminados'); setTimeout(() => location.reload(), 900); }
     else { closeSheet(); render(); toast('Cuenta eliminada. Tus datos siguen en este teléfono.'); }
   } catch (e) {
     if (e && e.silent) { say(''); return; }
@@ -179,7 +206,7 @@ vSettings = function () {
   return h + card;
 };
 document.addEventListener('click', ev => {
-  const b = ev.target.closest('[data-act="priv-open"],[data-act="health-open"],[data-act="health-ok"],[data-act="del-local"],[data-act="del-acc"],[data-act="del-acc-go"],[data-act="del-local-go"]'); if (!b) return;
+  const b = ev.target.closest('[data-act="priv-open"],[data-act="health-open"],[data-act="health-ok"],[data-act="del-local"],[data-act="del-acc"],[data-act="del-acc-go"],[data-act="del-local-go"],[data-act="del-done"]'); if (!b) return;
   ev.stopPropagation();
   const a = b.dataset.act, ok = () => String((document.getElementById('del-conf') || {}).value || '').trim().toUpperCase() === 'BORRAR';
   if (a === 'priv-open') privacySheet();
@@ -187,6 +214,7 @@ document.addEventListener('click', ev => {
   else if (a === 'health-ok') { state.settings.healthOk = 1; saveLocal(); closeSheet(); }
   else if (a === 'del-local') delSheet('local');
   else if (a === 'del-acc') delSheet('acc');
+  else if (a === 'del-done') { if (b.dataset.reload) location.reload(); else closeSheet(); }
   else if (!ok()) { const m = document.getElementById('del-msg'); if (m) m.innerHTML = '<span style="color:var(--bad)">Escribe BORRAR para confirmar.</span>'; }
   else if (a === 'del-local-go') { if (typeof account !== 'undefined' && fb.auth) account.logout(); wipeLocal(); toast('Datos borrados'); setTimeout(() => location.reload(), 700); }
   else if (a === 'del-acc-go') deleteAccount();

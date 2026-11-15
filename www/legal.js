@@ -5,8 +5,8 @@
    - Términos de uso.
    Antes de publicar: completar LEGAL.owner y LEGAL.contact.
    ========================================================================== */
-/* Configurar un contacto exclusivo para la app antes de publicar. */
-var CONTACT_EMAIL = 'contacto@example.com';
+/* Contacto exclusivo de la app (no es un correo personal). */
+var CONTACT_EMAIL = 'forjacontactapp@gmail.com';
 var LEGAL_OWNER = 'Equipo de Forja';
 var LEGAL = {
   v: '2026-10-13b',
