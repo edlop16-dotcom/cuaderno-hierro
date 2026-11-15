@@ -28,6 +28,9 @@ jobs:
         distribution: temurin
         java-version: 17
     - name: Compilar (sin publicar)
+      env:
+        ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
       run: bash ci/build.sh
     - uses: actions/upload-artifact@v4
       with:

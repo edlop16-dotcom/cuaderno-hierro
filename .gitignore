@@ -1,2 +1,8 @@
 node_modules/
 package-lock.json
+# Firma de la app: nunca en el repo (va en los Secrets de GitHub)
+*.keystore
+*.jks
+*.p12
+forja-clave*
+forja-keystore-base64*
