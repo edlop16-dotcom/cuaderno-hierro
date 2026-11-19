@@ -70,6 +70,7 @@ App de entrenamiento, en español. Celular Android y reloj M99 Pro+ (WebView ant
 - Pesos e historial: no modificar pesos ya guardados; nunca mezclar pesos entre gimnasios; no reclasificar automáticamente sesiones importadas al ampliar el catálogo. Importar rutinas nunca reemplaza ni borra las existentes.
 - Recordatorios: no cambiar cómo suenan ni la pantalla completa salvo petición explícita.
 - Reloj (WebView ~Chrome 51): sin CSS grid ni `gap`, sin blur, sombras ni animaciones. Todo estilo nuevo del teléfono va bajo `body:not(.watch)`.
+- Marcas en el DOM: nunca marcar un contenedor con un atributo `data-*` que también sea selector de clics (`data-ct`, `data-cu` y `data-pg` bloquearon el ✓ y las filas de Rutinas); usar otro nombre, como `data-cu-dec`.
 - Color: el color de un grupo muscular nunca va solo (cada grupo tiene su forma, por daltonismo).
 - Eliminar cuenta (play.js `deleteAccount`): borra `accounts/{acc}` y, con `delCloudExtra`, también `social/{acc}`, `share/{acc}`, `codes/{su código}` y toda `inbox/{acc}/items`, siempre antes de eliminar la cuenta. Toda colección nueva con datos del usuario debe sumarse ahí. Prueba: tests/tdel.mjs (nube simulada).
 - Pendientes decididos por el usuario y sin hacer (videos en la nube, etc.): sección "Pendientes" de docs/HISTORIAL.md.

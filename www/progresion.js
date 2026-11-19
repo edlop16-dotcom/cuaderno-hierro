@@ -799,8 +799,8 @@ render = function () {
   }
   if (state.tab === 'plans') {
     app.querySelectorAll('.rt-exm[data-plan][data-day][data-k]').forEach(b => {
-      const { p, d: day } = findDay(b.dataset.plan, b.dataset.day), e = day && day.exercises[+b.dataset.k]; if (!e || b.dataset.pg) return;
-      b.dataset.pg = 1;
+      const { p, d: day } = findDay(b.dataset.plan, b.dataset.day), e = day && day.exercises[+b.dataset.k]; if (!e || b.dataset.pgDec) return;
+      b.dataset.pgDec = 1;   /* no data-pg: ese es el selector de los botones del coach (la fila dejaba de responder) */
       const k = day.kind || kindOfName(day.name), c = pgCoach(e, p.gymId || 'rokaz', k), rx = c.rx, sm = b.querySelector('small'); if (!sm) return;
       sm.innerHTML = `<span class="pg-ty">${PG_T[rx.t]}</span> · ${pgSets(e)} × ${c.goal[0] && c.goal[0] !== rx.rMin ? c.goal[0] + ' (' + rx.rMin + '-' + rx.rMax + ')' : rx.rMin + '-' + rx.rMax} · <b>${c.bw ? c.bw.label : fmtKg(c.w) + ' kg'}</b>${!c.bw && (e.bar || barFor(e.name)) ? ' + barra' : ''}${pgRirPart(rx)} · ${pgRestTxt(rx.rest)}${e.ss ? ' · superserie' : ''}${c.mode === 'cap' ? ' · peso máximo' : ''} <span class="pg-mi">${PG_IC[c.mode] || ''}</span>`;
     });

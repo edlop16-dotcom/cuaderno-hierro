@@ -129,6 +129,23 @@ console.log('C. "Anterior" del mismo tipo de día');
   noErr(p); await p.done();
 }
 
+console.log('E. Ejercicios de dos mancuernas con la conversión a c/u hecha (el ✓ no respondía)');
+{
+  const p = await open();
+  await p.evaluate(() => { state.settings.cuConv = { v: 1, at: Date.now(), two: [], one: [], max: [] }; savePlans(); startSession('pA', 'd1'); state.draft.cur = 0; render(); });
+  await p.waitForTimeout(400);
+  ok(await p.evaluate(() => !cuPending() && cuTwo(state.draft.exercises[0].name) && !!document.querySelector('#sx-pager .card.ex[data-cu-dec]') && !document.querySelector('.card.ex[data-cu]')), 'la tarjeta lleva su marca sin usar data-cu');
+  const sel = '#app [data-act="set"][data-ex="0"][data-set="0"]';
+  await p.evaluate(s => document.querySelector(s).scrollIntoView({ block: 'center' }), sel); await p.waitForTimeout(150);
+  await p.tap(sel); await p.waitForTimeout(400);
+  ok(await p.evaluate(() => state.draft.exercises[0].log[0].done), 'tocar ✓ marca la serie de Pájaros (dos mancuernas, c/u)');
+  await p.evaluate(() => { discardSession(); state.tab = 'plans'; render(); }); await p.waitForTimeout(300);
+  const row = await p.$('.rt-exm[data-act="ex-edit"]');
+  ok(!!row && await p.evaluate(() => !document.querySelector('.rt-exm[data-pg]')), 'Rutinas: la fila del ejercicio no lleva data-pg');
+  if (row) { await row.click(); await p.waitForTimeout(300); ok(await p.evaluate(() => !document.getElementById('sheet').hidden), 'tocar un ejercicio de la rutina abre su edición'); }
+  noErr(p); await p.done();
+}
+
 console.log('D. Reloj');
 {
   const p = await open({ watch: true });

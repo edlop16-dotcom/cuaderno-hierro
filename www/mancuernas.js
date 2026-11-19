@@ -171,8 +171,8 @@ agTip = function (d, i) { const t = _agTipCu.apply(this, arguments), e = d && d.
 function cuSessDecor() {
   const d = state.draft; if (!d || isWatch() || cuPending()) return;
   document.querySelectorAll('#sx-pager > .sx-page').forEach(pg => {
-    const i = +pg.dataset.i, e = d.exercises[i], card = pg.querySelector('.card.ex'); if (!e || !card || !cuTwo(e.name) || card.dataset.cu) return;
-    card.dataset.cu = '1';
+    const i = +pg.dataset.i, e = d.exercises[i], card = pg.querySelector('.card.ex'); if (!e || !card || !cuTwo(e.name) || card.dataset.cuDec) return;
+    card.dataset.cuDec = '1';   /* marca con otro nombre: data-cu es el selector de los botones (con data-cu en la tarjeta, el ✓ no respondía) */
     const hd = card.querySelectorAll(':scope > .sets > .h'); if (hd[2] && /^kg$/i.test(hd[2].textContent.trim())) hd[2].textContent = 'Kg c/u';
     card.querySelectorAll(':scope > .sets .prev small').forEach(sm => { if (!/c\/u/.test(sm.textContent)) sm.textContent = 'c/u ' + sm.textContent; });
     const co = card.querySelectorAll('.coach, .sugg, .g2-rec, .ag-tip'); co.forEach(x => cuWalk(x, s => s.replace(/(\d+(?:[.,]\d+)?) (kg|lb)\b/g, '$1 $2 c/u')));
@@ -234,7 +234,7 @@ render = function () {
 };
 document.addEventListener('change', ev => { if (ev.target && ev.target.id === 'cu-sync') { state.cuSynced = !!ev.target.checked; const b = document.querySelector('#sheet [data-cu="go"]'); if (b) b.disabled = !state.cuSynced || !!state.draft; } }, true);
 document.addEventListener('click', ev => {
-  const b = ev.target.closest && ev.target.closest('[data-cu]'); if (!b) return;
+  const b = ev.target.closest && ev.target.closest('button[data-cu], a[data-cu], [role="button"][data-cu]'); if (!b) return;
   ev.preventDefault(); ev.stopPropagation();
   const a = b.dataset.cu;
   if (a === 'open') return cuSheet();
