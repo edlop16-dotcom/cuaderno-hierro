@@ -11,7 +11,7 @@
      guarda una copia (`keepSnapshot`).
    ========================================================================== */
 const RC_APP = 'forja-respaldo', RC_V = 1, RC_CHUNK = 768 * 1024;
-const RC_SKIP = KEEP_SKIP.concat(['cdh.errq', 'cdh.finPrev']);
+const RC_SKIP = KEEP_SKIP.concat(['cdh.errq', 'cdh.finPrev', 'cdh.finPend']);
 /* Lo que se combina al agregar; lo demás, si ya existe en este equipo, no se toca */
 const RC_ADD = { 'cdh.sessions': 1, 'cdh.daily': 1, 'cdh.links': 1 };
 const rcKeys = () => Object.keys(localStorage).filter(k => k.indexOf('cdh.') === 0 && RC_SKIP.indexOf(k) < 0 && (k !== 'cdh.fin' || finOwner()));
@@ -106,7 +106,9 @@ async function rcApply(file, all, h) {
   let cur = null;
   await rcRead(file, async o => {
     if (o.t === 'ls') {
-      if (o.k === 'cdh.fin' && !fin) return;
+      /* Respaldo del dueño en un teléfono que aún no sabe que es del dueño (antes de iniciar sesión): Mis finanzas
+         se guardan aparte, ocultas y solo en el teléfono; login.js las pasa a `cdh.fin` cuando finOwner() se cumple. */
+      if (o.k === 'cdh.fin' && !fin) { if (h.owner && !localStorage.getItem('cdh.fin')) localStorage.setItem('cdh.finPend', o.v); return; }
       const now = localStorage.getItem(o.k);
       if (now == null) localStorage.setItem(o.k, o.v); else if (RC_ADD[o.k]) localStorage.setItem(o.k, rcMerge(o.k, now, o.v));
     } else if (o.t === 'ph') { if (!hasP[o.o.id]) await new Promise(r => phDB.put(o.o, r)); }
@@ -120,13 +122,14 @@ async function rcApply(file, all, h) {
 }
 let rcFile = null, rcHead = null;
 function rcSheet(local, conf) {
-  const h = rcHead, n = Object.assign({}, h.n); if (!h.owner || !finOwner()) n.fin = h.owner && !localStorage.getItem('cdh.settings') ? n.fin : 0;
+  const h = rcHead, n = Object.assign({}, h.n), finLater = !!(h.owner && n.fin && !finOwner() && !isWatch()); if (!h.owner || isWatch()) n.fin = 0;
   const has = rcCount(local), when = fmtDate(h.at, true);
   openSheet(`<div class="row"><h2 class="grow">Restaurar respaldo completo</h2><button class="icon-btn" data-act="sheet-close" aria-label="Cerrar">${ic('x', 18)}</button></div>
     <div class="muted" style="font-size:13px">Respaldo del ${esc(when)}. Trae: ${esc(rcCount(n).join(', ') || 'solo ajustes')}, y los ajustes de ese equipo.</div>
     ${has.length ? `<div class="safe warn" style="font-size:13px">Este teléfono ya tiene: ${esc(has.join(', '))}.</div>` : ''}
     <button type="button" class="btn primary block" data-rc="add">Agregar lo que falta (no borra nada)</button>
     ${has.length ? `<button type="button" class="btn danger block" data-rc="all">${conf ? '¿Seguro? Se borra lo de este teléfono. Toca otra vez' : 'Reemplazar todo lo de este teléfono'}</button>` : `<button type="button" class="btn block" data-rc="all" data-go="1">Restaurar todo</button>`}
+    ${finLater ? '<div class="muted" style="font-size:12px">Mis finanzas aparecerán cuando inicies sesión con tu cuenta.</div>' : ''}
     <div class="muted" style="font-size:12px">Tu cuenta no va en el respaldo: si usas una, vuelve a entrar.</div>`);
 }
 async function rcPick(file) {
@@ -162,5 +165,5 @@ vSettings = function () {
     <div class="grid2"><button type="button" class="btn" data-rc="make">Hacer respaldo</button><button type="button" class="btn" data-rc="load">Restaurar</button></div><input type="file" id="rc-file" hidden></div>`;
   return h.slice(0, i + k.length) + box + h.slice(i + k.length);
 };
-if (localStorage.getItem('cdh.rcDone')) { localStorage.removeItem('cdh.rcDone'); setTimeout(() => toast('Respaldo restaurado.'), 900); }
+if (localStorage.getItem('cdh.rcDone')) { localStorage.removeItem('cdh.rcDone'); setTimeout(() => toast(typeof fb !== 'undefined' && fb.auth && fb.auth.acc ? 'Respaldo restaurado.' : 'Respaldo restaurado. Entra a tu cuenta para sincronizar.'), 900); }
 bootRender();

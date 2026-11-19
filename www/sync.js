@@ -102,7 +102,7 @@ const sync = {
     try {
       const got = await this.readRemote(), R = got.doc;
       const B = this.base, now = Date.now();
-      let changed = false;
+      let changed = false, profHeld = false;
 
       /* --- Sesiones --- */
       const tomb = Object.assign({}, (R && R.tomb) || {});
@@ -141,10 +141,15 @@ const sync = {
          Gana el cambio más reciente de ESE ajuste, así un equipo no borra lo que otro editó. */
       const rp = R && R.profile, lstamp = state.settings.stamp || 0;
       const oldRule = rp && (!B ? ((R.sessions || []).length >= state.sessions.length) : (rp.stamp || 0) > lstamp);
+      /* Primer inicio de sesión desde una instalación nueva (pub) en una cuenta que ya tiene datos pero no perfil:
+         los datos de la bienvenida de este teléfono no se suben solos. Se guardan aparte y login.js pregunta. */
+      if (!LS.get('setMeta', null) && rp && !isWatch() && state.settings.pub && state.settings.prof && !(rp.settings || {}).prof) {
+        LS.set('profAsk', state.settings.prof); delete state.settings.prof; profHeld = true;
+      }
       const Lv = Object.assign({}, this.shared(), { __plans: state.plans, __gyms: state.gyms }); delete Lv.stamp;
       const Rv = rp ? Object.assign({}, rp.settings || {}, { __plans: rp.plans, __gyms: rp.gyms }) : {}; delete Rv.stamp;
       const Rt = (rp && rp.ts) || {}, meta = LS.get('setMeta', null), first = !meta, M = meta || {}, outT = {};
-      let profChanged = false;
+      let profChanged = profHeld;
       new Set(Object.keys(Lv).concat(Object.keys(Rv))).forEach(k => {
         const inL = k in Lv && Lv[k] !== undefined, inR = k in Rv && Rv[k] !== undefined;
         const lh = inL ? syncHash(Lv[k]) : null;

@@ -283,7 +283,7 @@ document.addEventListener('click', ev => {
   if (a === 'next') { if (!pbOk()) { if (pb.step === 5) { pb.showErr = true; const bad = ['age', 'cm', 'kg'].filter(k => pbErr(k)); bad.forEach(k => pbShowErr(k, true)); const f = $('#pb-' + bad[0]); if (f) f.focus(); } return; } if (pb.step >= PB_STEPS - 1) return pbFinish(); pb.step++; return pbRender(); }
   if (a === 'back') { pb.step = Math.max(0, pb.step - 1); return pbRender(); }
   if (a === 'x') return pbClose();
-  if (a === 'have') { state.settings.onb = 1; savePlans(); pbClose(); state.tab = 'settings'; render(); toast('Inicia sesión en "Tu cuenta" para traer tus datos.'); if (!state.settings.healthOk) setTimeout(() => healthSheet(true), 400); return; }
+  if (a === 'have') { state.settings.onb = 1; savePlans(); pbClose(); state.tab = 'settings'; state.authMode = 'login'; render(); const ac = $('#acct-card'); if (ac && ac.scrollIntoView) ac.scrollIntoView({ block: 'start' }); toast('Inicia sesión en "Tu cuenta" para traer tus datos.'); if (!state.settings.healthOk) setTimeout(() => healthSheet(true), 400); return; }
   if (a === 'set') {
     if (b.dataset.k === 'unit' && o.unit !== b.dataset.v) {
       /* El peso escrito a mano se lee en la unidad nueva; el que venía guardado se convierte para mostrarlo */

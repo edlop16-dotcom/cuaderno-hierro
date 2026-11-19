@@ -2539,3 +2539,7 @@ body:not(.watch) input.fq-sw::after { content: ""; position: absolute; top: 3px;
 body:not(.watch) input.fq-sw:checked { background: var(--ok) !important; }
 body:not(.watch) input.fq-sw:checked::after { transform: translateX(20px); }
 body:not(.watch) .fq-more { align-self: center; min-height: 40px; padding: 0 12px; background: none; border: 0; color: var(--muted); font: inherit; font-size: 13.5px; text-decoration: underline; cursor: pointer; }
+
+/* Inicio de sesión (login.js): botón para cambiar el nombre */
+body:not(.watch) .pcard .lg-name { align-self: flex-start; flex-shrink: 0; margin-top: 4px; }
+body:not(.watch) .lg-row { align-items: center; gap: 8px; }
