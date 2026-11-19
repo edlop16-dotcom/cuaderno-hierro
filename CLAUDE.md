@@ -2,7 +2,7 @@
 
 ## Reglas vigentes
 - Los cambios grandes se hacen en una rama aparte y pasan a beta solo con aprobación explícita del usuario. Mostrar el plan antes de programar y los resultados y diff antes de integrar.
-- Nunca compilar, publicar, ejecutar workflows manuales ni tocar main sin la instrucción explícita «compila» en la conversación actual. Próxima versión: v1.0.75.
+- Nunca compilar, publicar, ejecutar workflows manuales ni tocar main sin la instrucción explícita «compila» en la conversación actual. Próxima versión: v1.0.76.
 - Todos los commits que deban evitar una compilación automática llevan `[skip ci]`. Revisar los disparadores de .github/workflows antes de subir cualquier rama.
 - Firma de la app: el keystore y su contraseña viven solo en los Secrets de GitHub (`ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`) y en la copia privada del usuario. Nunca guardar un keystore, su contraseña ni su base64 en el repo, en documentos, pruebas, commits ni en el chat; no crear ni cambiar la llave sin autorización explícita. Mantener identificadores técnicos de compatibilidad.
 - Nunca borrar ni cambiar datos guardados para limpiar el repositorio. No reactivar migraciones personales retiradas. Las notas históricas de migraciones describen implementaciones anteriores; no autorizan reinstalarlas.
@@ -32,8 +32,8 @@ App de entrenamiento, en español. Celular Android y reloj M99 Pro+ (WebView ant
 > - El 15-oct-2026 se rompió esta regla: se compiló y publicó la v1.0.41 sin su "compila".
 
 ## Versión
-- **Versión compilada actual:** v1.0.74 (19-nov-2026, `main` = 94409b4): inicio de sesión nuevo (pantalla de entrada, registro por pasos, cerrar sesión con guardado bloqueado, usar la cuenta o unir, cambiar el nombre) y arreglos de la sesión (superserie seguida, peso visible al marcar, Anterior del mismo tipo de día). Novedades sigue en n6.
-- **Próxima:** v1.0.75 (el número sale del `run_number` de GitHub Actions).
+- **Versión compilada actual:** v1.0.75 (19-nov-2026, `main` = b77a4db): el ✓ vuelve a marcar en los ejercicios de dos mancuernas (marca data-cu en la tarjeta) y las filas de Rutinas abren su edición (marca data-pg). Antes, ese mismo día, v1.0.74: inicio de sesión nuevo y arreglos de la sesión. Novedades sigue en n6.
+- **Próxima:** v1.0.76 (el número sale del `run_number` de GitHub Actions).
 - Al compilar: actualizar estas dos líneas y agregar la versión al inicio de "Versiones compiladas" en `docs/HISTORIAL.md`, en un commit con `[skip ci]` que va solo a beta.
 - Versión web: `.github/workflows/web.yml` publica `www/` en GitHub Pages en cada push a `main`.
 
