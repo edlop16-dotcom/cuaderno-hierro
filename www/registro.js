@@ -311,3 +311,6 @@ document.addEventListener('click', ev => { const b = ev.target.closest && ev.tar
 /* Instalación nueva: entrada en vez de la bienvenida directa (pub.js ya la abrió al cargar) */
 if (enWant() && $('#onb')) { pbClose(); enRender(); }
 bootRender();
+/* Si la instalación ya no es nueva (terminó la bienvenida, entró a una cuenta o se marcó como hecha), la entrada se cierra sola */
+const _renderEn = render;
+render = function () { _renderEn.apply(this, arguments); if ($('#ent') && !enWant() && !(en.v === 'busy')) enClose(); };

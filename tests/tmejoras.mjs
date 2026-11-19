@@ -276,7 +276,7 @@ const rir = (p, i, j, v = 2) => p.evaluate(([i, j, v]) => { const b = document.q
 console.log('5. Usuario nuevo y dueño sin perfil');
 {
   const p = await open({ first: true });
-  ok(await p.evaluate(() => !!document.getElementById('onb')), 'usuario nuevo: sale la bienvenida'); noErr(p); await p.done();
+  ok(await p.evaluate(() => !!(document.getElementById('ent') || document.getElementById('onb'))), 'usuario nuevo: sale la pantalla de entrada'); noErr(p); await p.done();
   const s = SET({ owner: 0 }); s.onb = 1;
   const q = await open({ settings: s, sessions: [], plans: [planB()] }); await start(q);
   const n = await ex(q, 0);

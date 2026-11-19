@@ -138,7 +138,7 @@ console.log('B. Distribución muscular y aplicar');
 console.log('C. Usuario nuevo, dueño sin perfil y reloj');
 {
   let p = await open({ first: true });
-  ok(await p.evaluate(() => !!document.getElementById('onb')), 'usuario nuevo: sale la bienvenida'); ok(!(await tk(p)).length, 'y no se programa nada'); noErr(p); await p.done();
+  ok(await p.evaluate(() => !!(document.getElementById('ent') || document.getElementById('onb'))), 'usuario nuevo: sale la pantalla de entrada'); ok(!(await tk(p)).length, 'y no se programa nada'); noErr(p); await p.done();
   const noProf = SET(); delete noProf.prof;
   p = await open({ settings: noProf, sessions: SESS });
   const q = await p.evaluate(() => { wcSheet('s'); const c = document.querySelector('#sheet .sheet-card'); return !!c.querySelector('.tk-dist') && state.settings.prof === undefined; });
