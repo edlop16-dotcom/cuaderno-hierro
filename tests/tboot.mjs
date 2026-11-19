@@ -134,7 +134,7 @@ console.log('C. Usuario nuevo');
   const p = await open(DIR, { first: true });
   report(p.B, 'primera apertura (bienvenida)');
   ok(p.B.renders === 1, 'primera apertura: una sola vez');
-  ok(await p.evaluate(() => !!document.getElementById('onb') && document.body.classList.contains('onb-open')), 'sale la bienvenida');
+  ok(await p.evaluate(() => !!(document.getElementById('ent') || document.getElementById('onb')) && document.body.classList.contains('onb-open')), 'sale la pantalla de entrada');
   await p.done();
   const q = await open(DIR);
   report(q.B, 'apertura de todos los días'); counts.nuevo = q.B.renders;

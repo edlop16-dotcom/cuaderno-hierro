@@ -194,10 +194,67 @@ console.log('C. Cambiar el nombre');
 console.log('D. "Ya tengo cuenta" abre Entrar');
 {
   const C = cloud(null), p = await open(C, { empty: true });
-  ok(await p.evaluate(() => !!document.querySelector('#onb [data-pb="have"]')), 'instalación nueva: la bienvenida tiene "Ya tengo cuenta"');
-  await p.click('#onb [data-pb="have"]'); await p.waitForTimeout(600);
-  await p.evaluate(() => { const s = document.getElementById('sheet'); if (!s.hidden) closeSheet(); }); await p.waitForTimeout(200); await shot(p, 'd1-entrar');
-  ok(await p.evaluate(() => state.tab === 'settings' && state.authMode === 'login' && /^Entrar$/.test((document.querySelector('#acct-card [data-act="acct-go"]') || {}).textContent || '')), 'abre Tu cuenta en "Iniciar sesión" con el botón Entrar');
+  ok(await p.evaluate(() => !!document.getElementById('ent') && !document.getElementById('onb')), 'instalación nueva: sale la pantalla de entrada');
+  await p.click('#ent [data-en="start"]'); await p.waitForTimeout(300);
+  ok(await p.evaluate(() => !!document.querySelector('#onb [data-pb="have"]')), 'Empezar abre la bienvenida, que tiene "Ya tengo cuenta"');
+  await p.click('#onb [data-pb="have"]'); await p.waitForTimeout(300); await shot(p, 'd1-entrar');
+  ok(await p.evaluate(() => !document.getElementById('onb') && !!document.getElementById('en-form') && /^Entrar$/.test(document.querySelector('#en-form [type="submit"]').textContent)), '"Ya tengo cuenta" abre Iniciar sesión con el botón Entrar');
+  ok(!p.errs.length, 'sin errores de JS ' + p.errs.join(' | '));
+  await p.done();
+}
+
+console.log('E. Cerrar sesión');
+{
+  /* Dueño con sesión: Mis finanzas, una foto de progreso y un enlace solo en el teléfono */
+  const S = Object.assign({}, OWNER_SETTINGS, { prof: { name: 'Dueño Prueba' } });
+  const SES = JSON.stringify([{ id: 'tel-1', date: '2026-11-17T10:00:00.000Z', exercises: [] }, { id: 'tel-2', date: '2026-11-18T10:00:00.000Z', exercises: [] }]);
+  const C = cloud(ACC({ name: 'Dueño Prueba' })), p = await open(C, { settings: S, extra: { 'cdh.sessions': SES, 'cdh.fin': FIN, 'cdh.links': '{"x":["https://example.com/v"]}', 'cdh.auth': JSON.stringify({ uid: 'u1', acc: 'u1', email: 'prueba@example.com', token: 'ficha-de-prueba', refresh: 'r', exp: 4102444800000 }) } });
+  await p.evaluate(() => new Promise(r => phDB.put({ id: 'foto-prueba', d: '2026-11-18', pose: 'front', data: 'x' }, r)));
+  const nS = await p.evaluate(() => state.sessions.length);
+  await p.evaluate(() => { closeSheet(); state.draft = { planId: 'x' }; });
+  await p.evaluate(() => lgOutStart()); await p.waitForTimeout(300);
+  ok(/entreno en curso/.test(await sheetText(p)), 'con un entreno en curso no deja cerrar sesión');
+  await p.evaluate(() => { state.draft = null; closeSheet(); });
+  /* Sin internet: avisa y no borra */
+  await p.route(/firestore\.googleapis\.com/, r => r.abort('internetdisconnected'));
+  await p.evaluate(() => lgOutStart()); await p.waitForTimeout(1200); await shot(p, 'e1-sin-internet');
+  ok(/No cerré la sesión/.test(await sheetText(p)) && await p.evaluate(() => !!localStorage.getItem('cdh.sessions') && !!fb.auth), 'sin internet: avisa y no borra nada');
+  await p.unroute(/firestore\.googleapis\.com/);
+  await p.evaluate(() => { closeSheet(); return lgOutStart(); }); await p.waitForTimeout(1200); await shot(p, 'e2-listo');
+  const t = await sheetText(p);
+  ok(/ya están guardados en tu cuenta/.test(t) && /Mis finanzas/.test(t) && /foto de progreso/.test(t) && !!(await p.$('[data-lo="bk"]')), 'después de sincronizar: dice qué solo está en el teléfono y ofrece el Respaldo completo');
+  ok((C.get().sessions || []).length === nS, 'las sesiones quedaron en la cuenta (' + nS + ')');
+  await p.click('[data-lo="go"]'); await p.waitForTimeout(200);
+  ok(/¿Seguro\?/.test(await sheetText(p)), 'pide un segundo toque');
+  await p.click('[data-lo="go"]'); await p.waitForTimeout(2500);
+  const A = await p.evaluate(async () => ({ cdh: Object.keys(localStorage).filter(k => k.indexOf('cdh.') === 0).filter(k => !/^cdh\.(settings|plans|gyms|newsSeen|reminders)$/.test(k)), lck: Object.keys(localStorage).filter(k => k.indexOf('lck.u1.') === 0), ent: !!document.getElementById('ent'), fotos: (await rcAll(phDB)).length, auth: !!fb.auth, ses: state.sessions.length }));
+  ok(!A.auth && A.ses === 0 && A.fotos === 0 && A.ent, 'queda sin sesión, sin entrenos ni fotos, en la pantalla de entrada: ' + JSON.stringify(A.cdh));
+  ok(A.lck.includes('lck.u1.fin') && A.lck.includes('lck.u1.links'), 'Mis finanzas y los enlaces quedan guardados bloqueados para esa cuenta');
+  ok(await p.evaluate(() => !finOwner() && localStorage.getItem('cdh.fin') == null), 'otra persona en este teléfono no los ve');
+  /* Volver a entrar con la misma cuenta: todo regresa */
+  await p.evaluate(() => account.signIn('prueba@example.com', 'clave-de-prueba', false)).catch(() => {}); await p.waitForTimeout(3000);
+  const B = await p.evaluate(async () => ({ fin: localStorage.getItem('cdh.fin'), links: localStorage.getItem('cdh.links'), fotos: (await rcAll(phDB)).length, ses: state.sessions.length, lck: Object.keys(localStorage).filter(k => k.indexOf('lck.') === 0).length, own: finOwner() }));
+  ok(B.fin === FIN && !!B.links && B.fotos === 1 && B.ses === nS && !B.lck && B.own, 'al volver a entrar con la misma cuenta vuelven entrenos, Mis finanzas, enlaces y fotos ' + JSON.stringify(Object.assign({}, B, { fin: !!B.fin })));
+  ok(!p.errs.length, 'sin errores de JS ' + p.errs.join(' | '));
+  await p.done();
+}
+{
+  /* Teléfono usado sin cuenta que entra a una cuenta con entrenos: elegir */
+  const acc = ACC(null); acc.sessions = [{ id: 'nube-1', date: '2026-11-10T10:00:00.000Z', exercises: [] }];
+  const C = cloud(acc), p = await open(C, { settings: OWNER_SETTINGS, owner: true });
+  const nL = await p.evaluate(() => state.sessions.length);
+  const go = p.evaluate(() => account.signIn('prueba@example.com', 'clave-de-prueba', false)); await p.waitForTimeout(800);
+  ok(/Tu cuenta ya tiene datos/.test(await sheetText(p)), 'pregunta: usar lo de mi cuenta o unir');
+  await p.click('[data-lo="mix"]'); await go; await p.waitForTimeout(600);
+  ok(await p.evaluate(n => state.sessions.length === n + 1, nL), 'Unir: quedan las del teléfono y las de la cuenta');
+  await p.done();
+}
+{
+  const acc = ACC(null); acc.sessions = [{ id: 'nube-1', date: '2026-11-10T10:00:00.000Z', exercises: [] }];
+  const C = cloud(acc), p = await open(C, { settings: OWNER_SETTINGS, owner: true });
+  const go = p.evaluate(() => account.signIn('prueba@example.com', 'clave-de-prueba', false)); await p.waitForTimeout(800);
+  await p.click('[data-lo="acc"]'); await go; await p.waitForTimeout(600);
+  ok(await p.evaluate(() => state.sessions.length === 1 && state.sessions[0].id === 'nube-1' && !!localStorage.getItem('cdh.preupd')), 'Usar lo de mi cuenta: solo quedan las de la cuenta (con copia automática)');
   ok(!p.errs.length, 'sin errores de JS ' + p.errs.join(' | '));
   await p.done();
 }
